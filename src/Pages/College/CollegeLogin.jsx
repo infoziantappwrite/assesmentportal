@@ -16,7 +16,7 @@ const CollegeLogin = () => {
     if (message?.type === 'success') {
       const timeout = setTimeout(() => {
         setMessage(null)
-        navigate('/assesment')
+        navigate('/college/tests')
       }, 2000)
       return () => clearTimeout(timeout)
     }
