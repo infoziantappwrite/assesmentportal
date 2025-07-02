@@ -3,6 +3,9 @@ import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 
 import Login from './Pages/Candidate/Login'
+import Assesment from "./Pages/Candidate/Assesment/Assesment";
+import Dashboard from './Pages/Candidate/Dashboard/Dashboard';
+import Report from './Pages/Candidate/Dashboard/Report';
 import CollegeLogin from "./Pages/College/CollegeLogin"
 import AdminLogin from "./Pages/Admin/AdminLogin"
 import Assesment from "./Pages/Candidate/Assesment"
@@ -25,6 +28,11 @@ const App = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<Login />} />
+      <Route path="/report" element={<Report />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/assessment" element={<Assesment />} />
+      
+      {/* Add more routes as needed */}
       <Route path="/college-login" element={<CollegeLogin />} />
       <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/assesment" element={<Assesment />} />
