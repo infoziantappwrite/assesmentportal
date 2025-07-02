@@ -84,6 +84,8 @@ const ViewTest = () => {
   const [selectedBatches, setSelectedBatches] = useState([]);
   const [mappedStartDate, setMappedStartDate] = useState("");
   const [mappedEndDate, setMappedEndDate] = useState("");
+  const [editTest, setEditTest] = useState(null);
+
 
   const handleCloseModal = () => setSelectedTest(null);
   const handleCloseMap = () => {
@@ -167,6 +169,12 @@ const ViewTest = () => {
                       >
                         <MapIcon /> Map
                       </button>
+                      <button
+                        onClick={() => setEditTest(test)}
+                        className="flex items-center bg-emerald-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-emerald-600 transition-all duration-200"
+                      >
+                        ✏️ Edit
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -236,98 +244,313 @@ const ViewTest = () => {
       )}
 
       {/* Map Modal */}
-    {mapTest && (
-  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-300 overflow-hidden flex flex-col">
+      {mapTest && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-300 overflow-hidden flex flex-col">
 
-      {/* header */}
-      <header className="p-5 border-b flex justify-between items-center bg-purple-50">
-        <h3 className="text-xl font-bold text-purple-700">Map Test: {mapTest.title}</h3>
+            {/* header */}
+            <header className="p-5 border-b flex justify-between items-center bg-purple-50">
+              <h3 className="text-xl font-bold text-purple-700">Map Test: {mapTest.title}</h3>
+              <button
+                onClick={handleCloseMap}
+                className="text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <CloseIcon />
+              </button>
+            </header>
+
+            {/* scrollable body */}
+            <div className="p-5 space-y-6 overflow-y-auto max-h-[80vh]">
+
+              {/* College select */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">Select College</label>
+                <select
+                  value={selectedCollege}
+                  onChange={(e) => setSelectedCollege(e.target.value)}
+                  className="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 px-3 py-2"
+                >
+                  <option value="">-- Select a College --</option>
+                  {colleges.map((c, idx) => (
+                    <option key={idx} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Batches */}
+              <div>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">Select Batches</label>
+                <div className="space-y-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+                  {batches.map((b, idx) => (
+                    <label
+                      key={idx}
+                      htmlFor={`batch-${idx}`}
+                      className="flex items-center gap-3 py-1 cursor-pointer hover:bg-purple-50 rounded transition-colors"
+                    >
+                      <input
+                        id={`batch-${idx}`}
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        checked={selectedBatches.includes(b)}
+                        onChange={() => toggleBatch(b)}
+                      />
+                      <span className="text-gray-800">{b}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Timing */}
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Mapped Start Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={mappedStartDate}
+                    onChange={(e) => setMappedStartDate(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Mapped End Date & Time</label>
+                  <input
+                    type="datetime-local"
+                    value={mappedEndDate}
+                    onChange={(e) => setMappedEndDate(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* footer */}
+            <footer className="p-5 border-t">
+              <button
+                onClick={handleMapSubmit}
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold px-4 py-3 rounded-lg hover:opacity-90 transition-all shadow"
+              >
+                Map Test
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
+
+      {/* Edit Modal */}
+  {editTest && (
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50 px-4">
+    <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl border border-gray-200 overflow-y-auto max-h-[90vh]">
+      <header className="p-5 border-b flex justify-between items-center bg-gradient-to-r from-emerald-100 to-emerald-50 rounded-t-2xl">
+        <h3 className="text-xl font-bold text-emerald-800">
+          Edit Test: {editTest.title}
+        </h3>
         <button
-          onClick={handleCloseMap}
-          className="text-gray-400 hover:text-red-500 transition-colors"
+          onClick={() => setEditTest(null)}
+          className="text-gray-400 hover:text-red-500 transition"
         >
           <CloseIcon />
         </button>
       </header>
 
-      {/* scrollable body */}
-      <div className="p-5 space-y-6 overflow-y-auto max-h-[80vh]">
+      <div className="p-6 space-y-6 overflow-y-auto max-h-[80vh]">
 
-        {/* College select */}
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-gray-700">Select College</label>
-          <select
-            value={selectedCollege}
-            onChange={(e) => setSelectedCollege(e.target.value)}
-            className="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 px-3 py-2"
-          >
-            <option value="">-- Select a College --</option>
-            {colleges.map((c, idx) => (
-              <option key={idx} value={c}>{c}</option>
-            ))}
-          </select>
+        {/* Test details */}
+        <div className="space-y-4">
+          <label className="block text-sm font-semibold">Title</label>
+          <input
+            className="w-full border rounded px-3 py-2 focus:outline-emerald-500 shadow-sm"
+            value={editTest.title}
+            onChange={(e) =>
+              setEditTest({ ...editTest, title: e.target.value })
+            }
+          />
+
+          <label className="block text-sm font-semibold">Description</label>
+          <textarea
+            className="w-full border rounded px-3 py-2 focus:outline-emerald-500 shadow-sm"
+            rows={3}
+            value={editTest.description}
+            onChange={(e) =>
+              setEditTest({ ...editTest, description: e.target.value })
+            }
+          />
+
+          <label className="block text-sm font-semibold">Duration (minutes)</label>
+          <input
+            type="number"
+            className="w-full border rounded px-3 py-2 focus:outline-emerald-500 shadow-sm"
+            value={editTest.duration}
+            onChange={(e) =>
+              setEditTest({ ...editTest, duration: e.target.value })
+            }
+          />
         </div>
 
-        {/* Batches */}
-        <div>
-          <label className="block text-sm font-semibold mb-2 text-gray-700">Select Batches</label>
-          <div className="space-y-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
-            {batches.map((b, idx) => (
-              <label
-                key={idx}
-                htmlFor={`batch-${idx}`}
-                className="flex items-center gap-3 py-1 cursor-pointer hover:bg-purple-50 rounded transition-colors"
-              >
+        {/* Sections */}
+        <div className="space-y-6">
+          <h4 className="text-lg font-semibold text-indigo-700 border-b pb-2">Sections</h4>
+          {editTest.sections.map((section, sidx) => (
+            <div
+              key={sidx}
+              className="rounded-xl border border-gray-200 p-4 bg-slate-50 shadow-inner space-y-3"
+            >
+              <div>
+                <label className="block text-xs font-semibold mb-1">Section Title</label>
                 <input
-                  id={`batch-${idx}`}
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  checked={selectedBatches.includes(b)}
-                  onChange={() => toggleBatch(b)}
+                  className="w-full border rounded px-2 py-1 focus:outline-indigo-500"
+                  value={section.sectionTitle}
+                  onChange={(e) => {
+                    const updatedSections = [...editTest.sections];
+                    updatedSections[sidx].sectionTitle = e.target.value;
+                    setEditTest({ ...editTest, sections: updatedSections });
+                  }}
                 />
-                <span className="text-gray-800">{b}</span>
-              </label>
-            ))}
-          </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">Section Description</label>
+                <textarea
+                  className="w-full border rounded px-2 py-1 focus:outline-indigo-500"
+                  rows={2}
+                  value={section.sectionDescription}
+                  onChange={(e) => {
+                    const updatedSections = [...editTest.sections];
+                    updatedSections[sidx].sectionDescription = e.target.value;
+                    setEditTest({ ...editTest, sections: updatedSections });
+                  }}
+                />
+              </div>
+
+              {/* Questions */}
+              <div className="space-y-3 mt-4">
+                <h5 className="text-sm font-semibold text-purple-600">Questions</h5>
+                {section.questions.map((q, qidx) => (
+                  <div key={qidx} className="border rounded p-3 bg-white shadow">
+                    <label className="block text-xs font-semibold mb-1 text-gray-600">
+                      {section.sectionType === "mcq"
+                        ? `MCQ Question ${qidx + 1}`
+                        : `Coding Problem ${qidx + 1}`}
+                    </label>
+                    <textarea
+                      className="w-full border rounded mb-2 px-2 py-1 focus:outline-purple-500"
+                      rows={2}
+                      value={q.text}
+                      onChange={(e) => {
+                        const updatedSections = [...editTest.sections];
+                        updatedSections[sidx].questions[qidx].text = e.target.value;
+                        setEditTest({ ...editTest, sections: updatedSections });
+                      }}
+                    />
+
+                    {section.sectionType === "mcq" && (
+                      <div className="space-y-1">
+                        {q.options.map((opt, oidx) => (
+                          <div key={oidx} className="flex items-center gap-2 mb-1">
+                            <input
+                              className="w-full border rounded px-2 py-1 focus:outline-purple-500"
+                              value={opt}
+                              onChange={(e) => {
+                                const updatedSections = [...editTest.sections];
+                                updatedSections[sidx].questions[qidx].options[oidx] =
+                                  e.target.value;
+                                setEditTest({
+                                  ...editTest,
+                                  sections: updatedSections,
+                                });
+                              }}
+                            />
+                            <input
+                              type="radio"
+                              name={`correct-${sidx}-${qidx}`}
+                              checked={q.correctAnswer === opt}
+                              onChange={() => {
+                                const updatedSections = [...editTest.sections];
+                                updatedSections[sidx].questions[qidx].correctAnswer = opt;
+                                setEditTest({
+                                  ...editTest,
+                                  sections: updatedSections,
+                                });
+                              }}
+                              className="accent-green-600"
+                            />
+                            <span className="text-xs">Correct</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {section.sectionType === "coding" && (
+                      <div className="space-y-2 text-xs mt-2">
+                        <input
+                          className="w-full border rounded px-2 py-1"
+                          placeholder="Sample Input"
+                          value={q.sampleInput}
+                          onChange={(e) => {
+                            const updatedSections = [...editTest.sections];
+                            updatedSections[sidx].questions[qidx].sampleInput =
+                              e.target.value;
+                            setEditTest({
+                              ...editTest,
+                              sections: updatedSections,
+                            });
+                          }}
+                        />
+                        <input
+                          className="w-full border rounded px-2 py-1"
+                          placeholder="Sample Output"
+                          value={q.sampleOutput}
+                          onChange={(e) => {
+                            const updatedSections = [...editTest.sections];
+                            updatedSections[sidx].questions[qidx].sampleOutput =
+                              e.target.value;
+                            setEditTest({
+                              ...editTest,
+                              sections: updatedSections,
+                            });
+                          }}
+                        />
+                        <textarea
+                          className="w-full border rounded px-2 py-1"
+                          placeholder="Explanation"
+                          rows={2}
+                          value={q.explanation}
+                          onChange={(e) => {
+                            const updatedSections = [...editTest.sections];
+                            updatedSections[sidx].questions[qidx].explanation =
+                              e.target.value;
+                            setEditTest({
+                              ...editTest,
+                              sections: updatedSections,
+                            });
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Timing */}
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">Mapped Start Date & Time</label>
-            <input
-              type="datetime-local"
-              value={mappedStartDate}
-              onChange={(e) => setMappedStartDate(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700">Mapped End Date & Time</label>
-            <input
-              type="datetime-local"
-              value={mappedEndDate}
-              onChange={(e) => setMappedEndDate(e.target.value)}
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:border-purple-500 focus:ring-purple-500 px-3 py-2"
-            />
-          </div>
-        </div>
-
-      </div>
-
-      {/* footer */}
-      <footer className="p-5 border-t">
+        {/* Save button */}
         <button
-          onClick={handleMapSubmit}
-          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold px-4 py-3 rounded-lg hover:opacity-90 transition-all shadow"
+          onClick={() => {
+            console.log("Updated Test:", editTest);
+            alert("Test updated successfully!");
+            setEditTest(null);
+          }}
+          className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold rounded px-4 py-3 hover:opacity-90 transition-all shadow"
         >
-          Map Test
+          Save Changes
         </button>
-      </footer>
+      </div>
     </div>
   </div>
 )}
+
+
 
     </div>
   );
