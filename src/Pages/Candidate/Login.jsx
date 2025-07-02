@@ -16,7 +16,7 @@ const Login = () => {
     if (message?.type === 'success') {
       const timeout = setTimeout(() => {
         setMessage(null)
-        navigate('/assesment')
+        navigate('/dashboard')
       }, 2000)
       return () => clearTimeout(timeout)
     }
