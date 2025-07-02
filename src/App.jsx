@@ -13,7 +13,6 @@ import CollegeTestList from './Pages/College/CollegeTestList'
 import CandidateList from './Pages/College/CandidateList'
 import CandidatePerformance from './Pages/College/CandidatePerformance'
 //Trainer side
-import Trainer from "./Pages/Trainer/Trainer"
 import Dashboard from './Pages/Trainer/Dashboard'
 import CreateTest from './Pages/Trainer/CreateTest'
 import ViewTest from './Pages/Trainer/ViewTest'
@@ -45,9 +44,9 @@ const App = () => {
         <Route path="admin/settings" element={<><h2>Settings</h2></>} />
 
         {/* Trainer Routes */}
-        <Route path="trainer/dashboard" element={<><h2>Trainer Dashboard</h2></>} />
-        <Route path="trainer/assigned-assessments" element={<><h2>Assigned Assessments</h2></>} />
-        <Route path="trainer/evaluation" element={<><h2>Evaluation</h2></>} />
+            <Route path="trainer/dashboard" element={<Dashboard />} />
+        <Route path="trainer/create-test" element={<CreateTest />} />
+        <Route path="trainer/view-test" element={<ViewTest />} />
         <Route path="trainer/students" element={<><h2>Manage Students</h2></>} />
 
         {/* College Routes */}
@@ -67,11 +66,8 @@ const App = () => {
         
         
       {/* Trainer Route  */}
-      <Route path="/trainer" element={<Trainer />}>
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="create-test" element={<CreateTest />} />
-        <Route path="view-test" element={<ViewTest />} />
-      </Route>
+   
+    
       <Route path="/trainer/login" element={<TrainerLogin />} />
 
     </Routes>

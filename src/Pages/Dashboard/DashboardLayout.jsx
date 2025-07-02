@@ -10,9 +10,11 @@ import {
   FiCheckCircle,
   FiUserCheck,
 } from 'react-icons/fi';
+import { FaUserCheck } from "react-icons/fa";
 import { useLocation } from 'react-router-dom';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { Layers3 } from 'lucide-react';
+
 
 const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -59,14 +61,14 @@ const DashboardLayout = () => {
     ],
     trainer: [
       { key: 'dashboard', label: 'Trainer Dashboard', icon: <FiBarChart2 />, path: '/trainer/dashboard' },
-      { key: 'assignedAssessments', label: 'Assigned Assessments', icon: <FiFileText />, path: '/trainer/assigned-assessments' },
-      { key: 'evaluation', label: 'Evaluate Results', icon: <FiCheckCircle />, path: '/trainer/evaluation' },
+      { key: 'create-test', label: 'Create Test', icon: <FiFileText />, path: '/trainer/create-test' },
+      { key: 'view-test', label: 'View Test', icon: <FiCheckCircle />, path: '/trainer/view-test' },
       { key: 'students', label: 'Manage Students', icon: <FiUsers />, path: '/trainer/students' },
     ],
     college: [
       { key: 'dashboard', label: 'College Dashboard', icon: <FiBarChart2 />, path: '/college/dashboard' },
       { key: 'departments', label: 'Departments', icon: <Layers3 />, path: '/college/departments' },
-      { key: 'trainers', label: 'Manage Trainers', icon: <FiUserCheck />, path: '/college/trainers' },
+      { key: 'trainers', label: 'Manage Trainers', icon: <FaUserCheck />, path: '/college/trainers' },
       { key: 'students', label: 'Manage Students', icon: <FiUsers />, path: '/college/students' },
     ],
   };
