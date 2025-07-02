@@ -12,6 +12,13 @@ import DashboardLayout from './Pages/Dashboard/DashboardLayout'
 import CollegeTestList from './Pages/College/CollegeTestList'
 import CandidateList from './Pages/College/CandidateList'
 import CandidatePerformance from './Pages/College/CandidatePerformance'
+//Trainer side
+import Trainer from "./Pages/Trainer/Trainer"
+import Dashboard from './Pages/Trainer/Dashboard'
+import CreateTest from './Pages/Trainer/CreateTest'
+import ViewTest from './Pages/Trainer/ViewTest'
+import TrainerLogin from './Pages/Trainer/TrainerLogin'
+
 
 const App = () => {
   return (
@@ -56,6 +63,17 @@ const App = () => {
 
       {/* Redirect unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />
+        
+        
+        
+      {/* Trainer Route  */}
+      <Route path="/trainer" element={<Trainer />}>
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="create-test" element={<CreateTest />} />
+        <Route path="view-test" element={<ViewTest />} />
+      </Route>
+      <Route path="/trainer/login" element={<TrainerLogin />} />
+
     </Routes>
   )
 }
