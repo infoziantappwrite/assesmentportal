@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const CREDENTIALS = {
-  'clg1@example.com': '123456',
-  'clg2@example.com': '123456',
-}
+  'clg1@example.com': { password: '123456', collegeId: 'clg123' }, // ABC College
+  'clg2@example.com': { password: '123456', collegeId: 'clg456' }, // XYZ College
+};
+
 
 const CollegeLogin = () => {
   const navigate = useNavigate()
@@ -28,15 +29,20 @@ const CollegeLogin = () => {
   }, [message, navigate])
 
   const handleLogin = (e) => {
-    e.preventDefault()
+  e.preventDefault();
 
-    if (CREDENTIALS[email] && CREDENTIALS[email] === password) {
-      localStorage.setItem('userEmail', email)
-      setMessage({ type: 'success', text: 'Login successful! Redirecting...' })
-    } else {
-      setMessage({ type: 'error', text: 'Invalid email or password.' })
-    }
+  const user = CREDENTIALS[email];
+
+  if (user && user.password === password) {
+    localStorage.setItem('userEmail', email);
+    localStorage.setItem('role', 'college');
+    localStorage.setItem('collegeId', user.collegeId);
+    setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
+  } else {
+    setMessage({ type: 'error', text: 'Invalid email or password.' });
   }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-slate-100 to-teal-100 text-gray-800 relative overflow-hidden">
