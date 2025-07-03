@@ -54,10 +54,9 @@ const DashboardLayout = () => {
     ],
     admin: [
       { key: 'dashboard', label: 'Admin Dashboard', icon: <FiBarChart2 />, path: '/admin/dashboard' },
-      { key: 'manageCandidates', label: 'Manage Candidates', icon: <FiUsers />, path: '/admin/manage-candidates' },
       { key: 'manageAssessments', label: 'Manage Assessments', icon: <HiOutlineDocumentText />, path: '/admin/manage-assessments' },
       { key: 'reports', label: 'Reports', icon: <FiBarChart2 />, path: '/admin/reports' },
-      { key: 'settings', label: 'Settings', icon: <FiSettings />, path: '/admin/settings' },
+      { key: 'students', label: 'Manage Students', icon: <FiUsers />, path: '/admin/students' },
     ],
     trainer: [
       { key: 'dashboard', label: 'Trainer Dashboard', icon: <FiBarChart2 />, path: '/trainer/dashboard' },

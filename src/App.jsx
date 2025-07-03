@@ -21,13 +21,16 @@ import Dashboard from './Pages/Trainer/Dashboard'
 import CreateTest from './Pages/Trainer/CreateTest'
 import ViewTest from './Pages/Trainer/ViewTest'
 import TrainerLogin from './Pages/Trainer/TrainerLogin'
+
 import CollegeList_Trainer from './Pages/Trainer/CollegeList_Trainer'
 import CollegeProfile_Trainer from './Pages/Trainer/CollegeProfile_Trainer'
-
-//Admin side
 import CollegeList_Admin from './Pages/Admin/CollegeList_Admin'
 import CollegeProfile_Admin from './Pages/Admin/CollegeProfile_Admin'
 import CreateCollege from './Pages/Admin/CreateCollege'
+
+//Student Details
+import StudentTable from './Pages/CommonPageForStudent/StudentTable';
+import StudentDetails from './Pages/CommonPageForStudent/StudentDetails';
 
 
 const App = () => {
@@ -41,7 +44,7 @@ const App = () => {
       {/* Add more routes as needed */}
       <Route path="/college-login" element={<CollegeLogin />} />
       <Route path="/admin-login" element={<AdminLogin />} />
-   
+
 
       {/* Dashboard routes with layout */}
       <Route element={<DashboardLayout />}>
@@ -57,18 +60,21 @@ const App = () => {
         <Route path="admin/manage-assessments" element={<><h2>Manage Assessments</h2></>} />
         <Route path="admin/reports" element={<><h2>Reports</h2></>} />
         <Route path="admin/settings" element={<><h2>Settings</h2></>} />
+        <Route path="admin/students" element={<StudentTable />} />
 
         {/* Trainer Routes */}
         <Route path="trainer/dashboard" element={<Dashboard />} />
         <Route path="trainer/create-test" element={<CreateTest />} />
         <Route path="trainer/view-test" element={<ViewTest />} />
-        <Route path="trainer/students" element={<><h2>Manage Students</h2></>} />
+        <Route path="trainer/students" element={<StudentTable />} />
+        <Route path="/college/students/:id" element={<StudentDetails />} />
+
 
         {/* College Routes */}
         <Route path="college/dashboard" element={<><h2>College Dashboard</h2></>} />
         <Route path="college/departments" element={<><h2>Departments</h2></>} />
         <Route path="college/trainers" element={<><h2>Manage Trainers</h2></>} />
-        <Route path="college/students" element={<><h2>Manage Students</h2></>} />
+        <Route path="college/students" element={<StudentTable />} />
       </Route>
 
       <Route path="college/tests" element={<CollegeTestList />} />
@@ -80,9 +86,9 @@ const App = () => {
         
       {/* College Routes */}
       <Route path="/college/mycollege/profile" element={<CollegeProfile />} />
-        
-        
+
       {/* Trainer Route  */}
+
       <Route path="/trainer/login" element={<TrainerLogin />} />
       <Route path="/trainer/colleges" element={<CollegeList_Trainer />} />
       <Route path="/trainer/college/profile" element={<CollegeProfile_Trainer />} />

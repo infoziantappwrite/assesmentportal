@@ -32,6 +32,7 @@ const TrainerLogin = () => {
     if (TRAINER_CREDENTIALS[email] && TRAINER_CREDENTIALS[email] === password) {
       localStorage.setItem('trainerAuth', 'true')
       localStorage.setItem('trainerEmail', email)
+      localStorage.setItem('role', 'trainer');
       setMessage({ type: 'success', text: 'Trainer login successful! Redirecting...' })
     } else {
       setMessage({ type: 'error', text: 'Invalid trainer email or password.' })
