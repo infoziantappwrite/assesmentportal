@@ -8,7 +8,8 @@ import Dashboard1 from './Pages/Candidate/Dashboard/Dashboard';
 import Report from './Pages/Candidate/Dashboard/Report';
 import CollegeLogin from "./Pages/College/CollegeLogin"
 import AdminLogin from "./Pages/Admin/AdminLogin"
-import DashboardLayout from './Pages/Dashboard/DashboardLayout'
+import DashboardLayout from './Pages/Dashboard/DashboardLayout';
+
 
 //College side
 import CollegeTestList from './Pages/College/CollegeTestList'
@@ -18,7 +19,14 @@ import CandidatePerformance from './Pages/College/CandidatePerformance'
 import Dashboard from './Pages/Trainer/Dashboard'
 import CreateTest from './Pages/Trainer/CreateTest'
 import ViewTest from './Pages/Trainer/ViewTest'
-import TrainerLogin from './Pages/Trainer/TrainerLogin'
+import TrainerLogin from './Pages/Trainer/TrainerLogin';
+
+
+//group side
+import Groups from './Pages/Common/Groups/Groups';
+import CreateGroup from './Pages/Common/Groups/CreateGroup';
+import ViewGroup from './Pages/Common/Groups/ViewGroup';
+import EditGroups from './Pages/Common/Groups/EditGroups';
 
 
 const App = () => {
@@ -32,6 +40,11 @@ const App = () => {
       {/* Add more routes as needed */}
       <Route path="/college-login" element={<CollegeLogin />} />
       <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/groups" element={<Groups />} />
+      <Route path="/create-group" element={<CreateGroup />} />
+      <Route path="/view-group" element={<ViewGroup />} />
+      <Route path="/edit-group" element={<EditGroups />} />
+
    
 
       {/* Dashboard routes with layout */}
