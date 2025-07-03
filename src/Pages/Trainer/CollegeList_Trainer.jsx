@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Eye, Edit3, MapPin, GraduationCap, X } from "lucide-react";
+import { FiBookOpen } from "react-icons/fi";
 
 const colleges = [
   { id: 1, name: "Harvard University", city: "Cambridge", state: "MA", established: 1636, type: "Private" },
@@ -17,9 +18,12 @@ const CollegeList = () => {
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 p-4 sm:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-            College Directory
-          </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-teal-500 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
+          <FiBookOpen className="text-teal-600" />
+          College Directory
+        </h2>
+      </div>
           <p className="text-gray-500 mt-1">Explore premier colleges and their details</p>
         </header>
 

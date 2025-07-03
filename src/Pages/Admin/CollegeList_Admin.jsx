@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Eye, Edit3, MapPin, GraduationCap, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { FiBookOpen } from "react-icons/fi"
 
 const colleges = [
   { id: 1, name: "Harvard University", city: "Cambridge", state: "MA", established: 1636, type: "Private" },
@@ -20,9 +21,12 @@ const CollegeList = () => {
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 p-4 sm:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-            College Directory
-          </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-4xl font-bold bg-gradient-to-r from-teal-500 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
+          <FiBookOpen className="text-teal-600" />
+          College Directory
+        </h2>
+      </div>
           <p className="text-gray-500 mt-1">Explore premier colleges and their details</p>
         </header>
 
@@ -30,7 +34,7 @@ const CollegeList = () => {
           <h2 className="text-xl font-semibold text-gray-700">Colleges</h2>
           <button
             onClick={() => navigate("/admin/create/college")}
-            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+            className="bg-gradient-to-r from-teal-500 to-indigo-600 hover:from-indigo-600 hover:to-teal-500 text-white px-4 py-2 rounded-lg shadow-md transition-all"
           >
             + Add College
           </button>
@@ -82,7 +86,7 @@ const CollegeList = () => {
                       </button>
                       <button
                         onClick={() => setEditCollege(college)}
-                        className="bg-emerald-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-emerald-600 transition"
+                        className="bg-yellow-500 text-white px-3 py-2 rounded-lg shadow-md hover:bg-emerald-600 transition"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
