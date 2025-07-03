@@ -52,7 +52,7 @@ const CollegeProfile = () => {
               <GraduationCap className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold">College Profile</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-indigo-600 bg-clip-text text-transparent">College Profile</h1>
               <p className="text-sm text-gray-500">Manage institution details</p>
             </div>
           </div>
