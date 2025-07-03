@@ -30,7 +30,8 @@ const AdminLogin = () => {
     e.preventDefault()
 
     if (CREDENTIALS[email] && CREDENTIALS[email] === password) {
-      localStorage.setItem('userEmail', email)
+      localStorage.setItem('userEmail', email);
+      localStorage.setItem('role', 'admin');
       setMessage({ type: 'success', text: 'Login successful! Redirecting...' })
     } else {
       setMessage({ type: 'error', text: 'Invalid email or password.' })
