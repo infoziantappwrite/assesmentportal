@@ -50,7 +50,7 @@ const App = () => {
         <Route path="admin/settings" element={<><h2>Settings</h2></>} />
 
         {/* Trainer Routes */}
-            <Route path="trainer/dashboard" element={<Dashboard />} />
+        <Route path="trainer/dashboard" element={<Dashboard />} />
         <Route path="trainer/create-test" element={<CreateTest />} />
         <Route path="trainer/view-test" element={<ViewTest />} />
         <Route path="trainer/students" element={<><h2>Manage Students</h2></>} />
