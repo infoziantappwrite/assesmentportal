@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Eye, Edit3, MapPin, GraduationCap, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const colleges = [
   { id: 1, name: "Harvard University", city: "Cambridge", state: "MA", established: 1636, type: "Private" },
@@ -13,6 +14,8 @@ const CollegeList = () => {
   const [viewCollege, setViewCollege] = useState(null);
   const [editCollege, setEditCollege] = useState(null);
 
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 p-4 sm:p-8 font-sans">
       <div className="max-w-6xl mx-auto">
@@ -22,6 +25,17 @@ const CollegeList = () => {
           </h1>
           <p className="text-gray-500 mt-1">Explore premier colleges and their details</p>
         </header>
+
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-700">Colleges</h2>
+          <button
+            onClick={() => navigate("/admin/create-college")}
+            className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+          >
+            + Add College
+          </button>
+        </div>
+
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
