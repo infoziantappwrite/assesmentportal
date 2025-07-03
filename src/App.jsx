@@ -15,6 +15,8 @@ import DashboardLayout from './Pages/Dashboard/DashboardLayout';
 import CollegeTestList from './Pages/College/CollegeTestList'
 import CandidateList from './Pages/College/CandidateList'
 import CandidatePerformance from './Pages/College/CandidatePerformance'
+import CollegeProfile from './Pages/College/CollegeProfile'
+
 //Trainer side
 import Dashboard from './Pages/Trainer/Dashboard'
 import CreateTest from './Pages/Trainer/CreateTest'
@@ -27,6 +29,16 @@ import Groups from './Pages/Common/Groups/Groups';
 import CreateGroup from './Pages/Common/Groups/CreateGroup';
 import ViewGroup from './Pages/Common/Groups/ViewGroup';
 import EditGroups from './Pages/Common/Groups/EditGroups';
+
+import CollegeList_Trainer from './Pages/Trainer/CollegeList_Trainer'
+import CollegeProfile_Trainer from './Pages/Trainer/CollegeProfile_Trainer'
+import CollegeList_Admin from './Pages/Admin/CollegeList_Admin'
+import CollegeProfile_Admin from './Pages/Admin/CollegeProfile_Admin'
+import CreateCollege from './Pages/Admin/CreateCollege'
+
+//Student Details
+import StudentTable from './Pages/CommonPageForStudent/StudentTable';
+import StudentDetails from './Pages/CommonPageForStudent/StudentDetails';
 
 
 const App = () => {
@@ -44,9 +56,6 @@ const App = () => {
       <Route path="/create-group" element={<CreateGroup />} />
       <Route path="/view-group" element={<ViewGroup />} />
       <Route path="/edit-group" element={<EditGroups />} />
-
-   
-
       {/* Dashboard routes with layout */}
       <Route element={<DashboardLayout />}>
         {/* Candidate Routes */}
@@ -61,18 +70,21 @@ const App = () => {
         <Route path="admin/manage-assessments" element={<><h2>Manage Assessments</h2></>} />
         <Route path="admin/reports" element={<><h2>Reports</h2></>} />
         <Route path="admin/settings" element={<><h2>Settings</h2></>} />
+        <Route path="admin/students" element={<StudentTable />} />
 
         {/* Trainer Routes */}
-            <Route path="trainer/dashboard" element={<Dashboard />} />
+        <Route path="trainer/dashboard" element={<Dashboard />} />
         <Route path="trainer/create-test" element={<CreateTest />} />
         <Route path="trainer/view-test" element={<ViewTest />} />
-        <Route path="trainer/students" element={<><h2>Manage Students</h2></>} />
+        <Route path="trainer/students" element={<StudentTable />} />
+        <Route path="/college/students/:id" element={<StudentDetails />} />
+
 
         {/* College Routes */}
         <Route path="college/dashboard" element={<><h2>College Dashboard</h2></>} />
         <Route path="college/departments" element={<><h2>Departments</h2></>} />
         <Route path="college/trainers" element={<><h2>Manage Trainers</h2></>} />
-        <Route path="college/students" element={<><h2>Manage Students</h2></>} />
+        <Route path="college/students" element={<StudentTable />} />
       </Route>
 
       <Route path="college/tests" element={<CollegeTestList />} />
@@ -82,12 +94,21 @@ const App = () => {
       {/* Redirect unknown routes */}
       <Route path="*" element={<Navigate to="/" replace />} />
         
-        
-        
+      {/* College Routes */}
+      <Route path="/college/mycollege/profile" element={<CollegeProfile />} />
+
       {/* Trainer Route  */}
-   
-    
+
       <Route path="/trainer/login" element={<TrainerLogin />} />
+      <Route path="/trainer/colleges" element={<CollegeList_Trainer />} />
+      <Route path="/trainer/college/profile" element={<CollegeProfile_Trainer />} />
+
+      {/* Admin Routes */}
+      <Route path="/admin/colleges" element={<CollegeList_Admin />} />
+      <Route path="/admin/college/profile" element={<CollegeProfile_Admin />} />
+      <Route path="/admin/create/college" element={<CreateCollege />} />
+      
+      {/* Redirect unknown routes */}
 
     </Routes>
   )
