@@ -88,7 +88,7 @@ const CreateCollege = () => {
             <GraduationCap size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Create New College</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-indigo-600 bg-clip-text text-transparent">Create New College</h1>
             <p className="text-sm text-gray-500">Fill in the details to register a college.</p>
           </div>
         </div>
@@ -148,7 +148,7 @@ const CreateCollege = () => {
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 transition shadow-md"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-teal-500 to-indigo-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 transition shadow-md"
             >
               <Save size={18} />
               Create College
