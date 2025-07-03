@@ -82,22 +82,26 @@ const CreateCollege = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 p-4 sm:p-8 font-sans">
       <div className="max-w-3xl mx-auto bg-white border border-gray-200 rounded-2xl shadow-md p-8">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8 border-b pb-4 border-gray-100">
+          <div className="p-3 bg-indigo-100 text-indigo-700 rounded-xl shadow-sm">
             <GraduationCap size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Create New College</h1>
+            <h1 className="text-2xl font-bold text-gray-800">Create New College</h1>
             <p className="text-sm text-gray-500">Fill in the details to register a college.</p>
           </div>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {fields.map(({ name, label, icon, type }) => (
               <div key={name}>
-                <label className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-2">
-                  <span className="text-indigo-500">{icon}</span>
+                <label className="text-sm text-gray-700 font-medium mb-1 flex items-center gap-2">
+                  <span className="bg-indigo-50 text-indigo-600 p-1.5 rounded-md">
+                    {icon}
+                  </span>
                   {label}
                 </label>
                 <input
@@ -107,15 +111,18 @@ const CreateCollege = () => {
                   placeholder={`Enter ${label.toLowerCase()}`}
                   value={formData[name]}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white transition shadow-sm"
                 />
               </div>
             ))}
           </div>
 
+          {/* Address */}
           <div>
-            <label className="text-sm text-gray-600 font-medium mb-1 flex items-center gap-2">
-              <MapPin size={18} className="text-indigo-500" />
+            <label className="text-sm text-gray-700 font-medium mb-1 flex items-center gap-2">
+              <span className="bg-indigo-50 text-indigo-600 p-1.5 rounded-md">
+                <MapPin size={18} />
+              </span>
               Address
             </label>
             <textarea
@@ -125,22 +132,23 @@ const CreateCollege = () => {
               rows={3}
               value={formData.address}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none transition"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none transition shadow-sm"
             />
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row justify-end gap-4 border-t border-gray-100 mt-6">
+          {/* Buttons */}
+          <div className="pt-6 flex flex-col sm:flex-row justify-end gap-4 border-t border-gray-100 mt-6">
             <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+              type="button"
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition shadow-sm"
             >
-            <X size={18} />
-            Cancel
+              <X size={18} />
+              Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 transition shadow"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg hover:from-indigo-700 hover:to-blue-700 transition shadow-md"
             >
               <Save size={18} />
               Create College
