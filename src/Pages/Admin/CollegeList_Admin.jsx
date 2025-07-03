@@ -29,13 +29,12 @@ const CollegeList = () => {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-700">Colleges</h2>
           <button
-            onClick={() => navigate("/admin/create-college")}
+            onClick={() => navigate("/admin/create/college")}
             className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
           >
             + Add College
           </button>
         </div>
-
 
         {/* Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -96,21 +95,35 @@ const CollegeList = () => {
         </div>
       </div>
 
-      {/* View Modal */}
+      {/* ===== View College Modal ===== */}
       {viewCollege && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl border border-gray-300 p-6 relative">
-            <button onClick={() => setViewCollege(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative animate-fadeIn">
+            <button
+              onClick={() => setViewCollege(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+            >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-bold text-blue-700 mb-4">{viewCollege.name}</h3>
-            <div className="space-y-3 text-gray-700 text-sm">
-              <p><strong>Location:</strong> {viewCollege.city}, {viewCollege.state}</p>
-              <p><strong>Established:</strong> {viewCollege.established}</p>
-              <p>
-                <strong>Type:</strong>{" "}
+
+            <div className="mb-4">
+              <h2 className="text-2xl font-semibold text-blue-700">{viewCollege.name}</h2>
+              <p className="text-sm text-gray-500">College Details</p>
+            </div>
+
+            <div className="space-y-3 text-sm text-gray-700">
+              <div>
+                <span className="font-medium text-gray-600">Location:</span>{" "}
+                {viewCollege.city}, {viewCollege.state}
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Established:</span>{" "}
+                {viewCollege.established}
+              </div>
+              <div>
+                <span className="font-medium text-gray-600">Type:</span>{" "}
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
                     viewCollege.type === "Private"
                       ? "bg-purple-100 text-purple-800"
                       : "bg-green-100 text-green-800"
@@ -118,35 +131,66 @@ const CollegeList = () => {
                 >
                   {viewCollege.type}
                 </span>
-              </p>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Modal */}
+
+      {/* ===== Edit College Modal ===== */}
       {editCollege && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center z-50">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl border border-gray-200 p-6 relative">
-            <button onClick={() => setEditCollege(null)} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative animate-fadeIn">
+            <button
+              onClick={() => setEditCollege(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+            >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-xl font-bold text-emerald-700 mb-4">Edit College</h3>
+
+            <h2 className="text-2xl font-semibold text-emerald-600 mb-1">Edit College</h2>
+            <p className="text-sm text-gray-500 mb-6">Update the college information</p>
+
             <form className="space-y-4">
-              <input defaultValue={editCollege.name} className="w-full border border-gray-300 rounded px-3 py-2 shadow-sm" />
+              <input
+                defaultValue={editCollege.name}
+                placeholder="College Name"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+              />
+
               <div className="grid grid-cols-2 gap-4">
-                <input defaultValue={editCollege.city} className="border rounded px-3 py-2 shadow-sm" />
-                <input defaultValue={editCollege.state} className="border rounded px-3 py-2 shadow-sm" />
+                <input
+                  defaultValue={editCollege.city}
+                  placeholder="City"
+                  className="border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+                />
+                <input
+                  defaultValue={editCollege.state}
+                  placeholder="State"
+                  className="border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+                />
               </div>
-              <input type="number" defaultValue={editCollege.established} className="w-full border rounded px-3 py-2 shadow-sm" />
-              <select defaultValue={editCollege.type} className="w-full border rounded px-3 py-2 shadow-sm">
+
+              <input
+                type="number"
+                defaultValue={editCollege.established}
+                placeholder="Established Year"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+              />
+
+              <select
+                defaultValue={editCollege.type}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 shadow-sm focus:ring-2 focus:ring-emerald-400 outline-none"
+              >
                 <option>Private</option>
                 <option>Public</option>
               </select>
+
               <button
                 type="button"
                 onClick={() => alert("Save functionality not implemented")}
-                className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold px-4 py-3 rounded-lg shadow hover:opacity-90 transition"
+                className="w-full mt-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-medium px-4 py-3 rounded-lg shadow transition-all"
               >
                 Save Changes
               </button>
@@ -154,6 +198,7 @@ const CollegeList = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };

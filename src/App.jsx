@@ -15,6 +15,7 @@ import CollegeTestList from './Pages/College/CollegeTestList'
 import CandidateList from './Pages/College/CandidateList'
 import CandidatePerformance from './Pages/College/CandidatePerformance'
 import CollegeProfile from './Pages/College/CollegeProfile'
+
 //Trainer side
 import Dashboard from './Pages/Trainer/Dashboard'
 import CreateTest from './Pages/Trainer/CreateTest'
@@ -22,8 +23,9 @@ import ViewTest from './Pages/Trainer/ViewTest'
 import TrainerLogin from './Pages/Trainer/TrainerLogin'
 import CollegeList_Trainer from './Pages/Trainer/CollegeList_Trainer'
 import CollegeProfile_Trainer from './Pages/Trainer/CollegeProfile_Trainer'
+
 //Admin side
-import CollegeList from './Pages/Admin/CollegeList_Admin'
+import CollegeList_Admin from './Pages/Admin/CollegeList_Admin'
 import CollegeProfile_Admin from './Pages/Admin/CollegeProfile_Admin'
 import CreateCollege from './Pages/Admin/CreateCollege'
 
@@ -83,12 +85,12 @@ const App = () => {
       {/* Trainer Route  */}
       <Route path="/trainer/login" element={<TrainerLogin />} />
       <Route path="/trainer/colleges" element={<CollegeList_Trainer />} />
-      <Route path="/trainer/colleges/details" element={<CollegeProfile_Trainer />} />
+      <Route path="/trainer/college/profile" element={<CollegeProfile_Trainer />} />
 
       {/* Admin Routes */}
-      <Route path="/admin/colleges" element={<CollegeList />} />
-      <Route path="/admin/clg/details" element={<CollegeProfile_Admin />} />
-      <Route path="/admin/create-college" element={<CreateCollege />} />
+      <Route path="/admin/colleges" element={<CollegeList_Admin />} />
+      <Route path="/admin/college/profile" element={<CollegeProfile_Admin />} />
+      <Route path="/admin/create/college" element={<CreateCollege />} />
       
       {/* Redirect unknown routes */}
 
