@@ -19,6 +19,9 @@ import Dashboard from './Pages/Trainer/Dashboard'
 import CreateTest from './Pages/Trainer/CreateTest'
 import ViewTest from './Pages/Trainer/ViewTest'
 import TrainerLogin from './Pages/Trainer/TrainerLogin'
+import CollegeList_Trainer from './Pages/Trainer/CollegeList_Trainer'
+//Admin side
+import CollegeList from './Pages/Admin/CollegeList_Admin'
 
 
 const App = () => {
@@ -72,9 +75,11 @@ const App = () => {
         
         
       {/* Trainer Route  */}
-   
-    
       <Route path="/trainer/login" element={<TrainerLogin />} />
+      <Route path="/trainer/colleges" element={<CollegeList_Trainer />} />
+
+      {/* Admin Routes */}
+      <Route path="/admin/colleges" element={<CollegeList />} />
 
     </Routes>
   )
