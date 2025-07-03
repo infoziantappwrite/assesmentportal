@@ -79,7 +79,7 @@ const App = () => {
       <Route path="*" element={<Navigate to="/" replace />} />
         
       {/* College Routes */}
-      <Route path="/college/profile" element={<CollegeProfile />} />
+      <Route path="/college/mycollege/profile" element={<CollegeProfile />} />
         
         
       {/* Trainer Route  */}
