@@ -75,7 +75,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       >
 
         {/* User Info */}
-        <div className="p-5 border-b border-gray-200">
+        <div className="p-5 border-b bg-gradient-to-tl from-blue-300 via-gray-300 to-teal-300">
           <div className="flex items-start justify-between">
             <div className="flex gap-3 items-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-300 to-purple-300 text-white font-bold text-lg flex items-center justify-center shadow-inner">
