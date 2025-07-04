@@ -1,117 +1,95 @@
-// src/App.jsx
-import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+// Importing pages
+import Login from './Pages/Auth/Login';
+import ForgotPassword from './Pages/Auth/ForgotPassword';
+import PageNotFound from './Components/PageNotFound';
+import ResetPassword from './Pages/Auth/ResetPassword';
+import PrivateRoute from './Routes/PrivateRoute';
+import ProtectedLayout from './Components/ProtectedLayout';
 
-import Login from './Pages/Candidate/Login'
-import Assesment from "./Pages/Candidate/Assesment/Assesment";
-import Dashboard1 from './Pages/Candidate/Dashboard/Dashboard';
-import Report from './Pages/Candidate/Dashboard/Report';
-import CollegeLogin from "./Pages/College/CollegeLogin"
-import AdminLogin from "./Pages/Admin/AdminLogin"
-import DashboardLayout from './Pages/Dashboard/DashboardLayout';
+//import Student routes
+import Dashboard from "./Pages/Students/Dashboard/Dashboard";
+import Assesment from "./Pages/Students/Assesment/Assesment";
+import Report from "./Pages/Students/Dashboard/Report"
 
-
-//College side
-import CollegeTestList from './Pages/College/CollegeTestList'
-import CandidateList from './Pages/College/CandidateList'
-import CandidatePerformance from './Pages/College/CandidatePerformance'
-import CollegeProfile from './Pages/College/CollegeProfile'
-
-//Trainer side
-import Dashboard from './Pages/Trainer/Dashboard'
-import CreateTest from './Pages/Trainer/CreateTest'
-import ViewTest from './Pages/Trainer/ViewTest'
-import TrainerLogin from './Pages/Trainer/TrainerLogin';
-
-
-//group side
-import Groups from './Pages/Common/Groups/Groups';
-import CreateGroup from './Pages/Common/Groups/CreateGroup';
-import ViewGroup from './Pages/Common/Groups/ViewGroup';
-import EditGroups from './Pages/Common/Groups/EditGroups';
-
-import CollegeList_Trainer from './Pages/Trainer/CollegeList_Trainer'
-import CollegeProfile_Trainer from './Pages/Trainer/CollegeProfile_Trainer'
-import CollegeList_Admin from './Pages/Admin/CollegeList_Admin'
-import CollegeProfile_Admin from './Pages/Admin/CollegeProfile_Admin'
-import CreateCollege from './Pages/Admin/CreateCollege'
-
-//Student Details
-import StudentTable from './Pages/CommonPageForStudent/StudentTable';
-import StudentDetails from './Pages/CommonPageForStudent/StudentDetails';
 
 
 const App = () => {
   return (
     <Routes>
-      {/* Public routes */}
       <Route path="/" element={<Login />} />
-      <Route path="/report" element={<Report />} />
-      <Route path="/dashboard" element={<Dashboard1 />} />
-      <Route path="/assessment" element={<Assesment />} />
-      {/* Add more routes as needed */}
-      <Route path="/college-login" element={<CollegeLogin />} />
-      <Route path="/admin-login" element={<AdminLogin />} />
-      <Route path="/groups" element={<Groups />} />
-      <Route path="/create-group" element={<CreateGroup />} />
-      <Route path="/view-group" element={<ViewGroup />} />
-      <Route path="/edit-group" element={<EditGroups />} />
-      {/* Dashboard routes with layout */}
-      <Route element={<DashboardLayout />}>
-        {/* Candidate Routes */}
-        <Route path="candidate/dashboard" element={<><h2>Candidate Dashboard</h2></>} />
-        <Route path="candidate/assessments" element={<><h2>Candidate Assessments</h2></>} />
-        <Route path="candidate/results" element={<><h2>Candidate Results</h2></>} />
-        <Route path="candidate/courses" element={<><h2>Candidate Courses</h2></>} />
-
-        {/* Admin Routes */}
-        <Route path="admin/dashboard" element={<><h2>Admin Dashboard</h2></>} />
-        <Route path="admin/manage-candidates" element={<><h2>Manage Candidates</h2></>} />
-        <Route path="admin/manage-assessments" element={<><h2>Manage Assessments</h2></>} />
-        <Route path="admin/reports" element={<><h2>Reports</h2></>} />
-        <Route path="admin/settings" element={<><h2>Settings</h2></>} />
-        <Route path="admin/students" element={<StudentTable />} />
-
-        {/* Trainer Routes */}
-        <Route path="trainer/dashboard" element={<Dashboard />} />
-        <Route path="trainer/create-test" element={<CreateTest />} />
-        <Route path="trainer/view-test" element={<ViewTest />} />
-        <Route path="trainer/students" element={<StudentTable />} />
-        <Route path="/college/students/:id" element={<StudentDetails />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
 
-        {/* College Routes */}
-        <Route path="college/dashboard" element={<><h2>College Dashboard</h2></>} />
-        <Route path="college/departments" element={<><h2>Departments</h2></>} />
-        <Route path="college/trainers" element={<><h2>Manage Trainers</h2></>} />
-        <Route path="college/students" element={<StudentTable />} />
+
+      {/* Private Student Routes */}
+      <Route element={<PrivateRoute allowedRoles={['student']} />}>
+        
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/assesment" element={<Assesment />} />
+        <Route path="/report" element={<Report />} />
       </Route>
 
-      <Route path="college/tests" element={<CollegeTestList />} />
-      <Route path="college/test/:testId/candidates" element={<CandidateList />} />
-      <Route path="college/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
 
-      {/* Redirect unknown routes */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-        
-      {/* College Routes */}
-      <Route path="/college/mycollege/profile" element={<CollegeProfile />} />
+      {/* Private College Routes */}
+      <Route element={<PrivateRoute allowedRoles={['college']} />}>
+        <Route element={<ProtectedLayout />}>
+          {/* Add more college-specific routes here */}
+          <Route path="/college/dashboard" element={<div>College Dashboard</div>} />
+          <Route path="/college/courses" element={<div>College Courses</div>} />
+          <Route path="/college/trainers" element={<div>College Trainers</div>} />
+          <Route path="/college/students" element={<div>College Students</div>} />
+          <Route path="/college/assessments" element={<div>College Assessments</div>} />
 
-      {/* Trainer Route  */}
 
-      <Route path="/trainer/login" element={<TrainerLogin />} />
-      <Route path="/trainer/colleges" element={<CollegeList_Trainer />} />
-      <Route path="/trainer/college/profile" element={<CollegeProfile_Trainer />} />
 
-      {/* Admin Routes */}
-      <Route path="/admin/colleges" element={<CollegeList_Admin />} />
-      <Route path="/admin/college/profile" element={<CollegeProfile_Admin />} />
-      <Route path="/admin/create/college" element={<CreateCollege />} />
-      
-      {/* Redirect unknown routes */}
 
+        </Route>
+      </Route>
+
+
+      {/* Private Admin Routes */}
+      <Route element={<PrivateRoute allowedRoles={['admin']} />}>
+        <Route element={<ProtectedLayout />}>
+          {/* Add more admin-specific routes here */}
+          <Route path="/superadmin/dashboard" element={<div>Super Admin Dashboard</div>} />
+          <Route path="/superadmin/colleges" element={<div>Manage Colleges</div>} />
+          <Route path="/superadmin/users" element={<div>Manage Users</div>} />
+          <Route path="/superadmin/reports" element={<div>Reports</div>} />
+          <Route path="/superadmin/settings" element={<div>Settings</div>} />
+
+
+
+
+        </Route>
+      </Route>
+
+
+
+      {/* Private Trainer Routes */}
+      <Route element={<PrivateRoute allowedRoles={['trainer']} />}>
+        <Route element={<ProtectedLayout />}>
+          {/* Add more trainer-specific routes here */}
+          <Route path="/trainer/dashboard" element={<div>Trainer Dashboard</div>} />
+          <Route path="/trainer/courses" element={<div>Trainer Courses</div>} />
+          <Route path="/trainer/assessments" element={<div>Trainer Assessments</div>} />
+          <Route path="/trainer/students" element={<div>Trainer Students</div>} />
+
+
+
+
+
+        </Route>
+      </Route>
+
+
+
+      {/* Catch-all route for 404 Page Not Found */}
+      <Route path="*" element={<PageNotFound />} />
     </Routes>
-  )
-}
+  );
+};
 
-export default App
+export default App;
