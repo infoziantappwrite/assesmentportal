@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '../../context/UserContext';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -10,88 +10,141 @@ import {
   UserCheck,
   School,
   X,
+  ChevronRight,
+  LogOut,
+  Settings,
+  Bell,
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { role, user } = useUser();
   const location = useLocation();
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   if (!role || role === 'student') return null;
 
   const navItems = {
     admin: [
-      { label: 'Dashboard', to: '/superadmin/dashboard', icon: LayoutDashboard },
-      { label: 'Manage Colleges', to: '/superadmin/colleges', icon: School },
-      { label: 'Manage Users', to: '/superadmin/users', icon: Users },
-      { label: 'Reports', to: '/superadmin/reports', icon: FileText },
-      { label: 'Settings', to: '/superadmin/settings', icon: UserCheck },
+      { label: 'Dashboard', to: '/superadmin/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
+      { label: 'Manage Colleges', to: '/superadmin/colleges', icon: School, gradient: 'from-blue-200 to-cyan-100' },
+      { label: 'Manage Users', to: '/superadmin/users', icon: Users, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Reports', to: '/superadmin/reports', icon: FileText, gradient: 'from-orange-200 to-red-100' },
+      { label: 'Settings', to: '/superadmin/settings', icon: UserCheck, gradient: 'from-indigo-200 to-purple-100' },
     ],
     college: [
-      { label: 'Dashboard', to: '/college/dashboard', icon: LayoutDashboard },
-      { label: 'Courses', to: '/college/courses', icon: BookOpen },
-      { label: 'Trainers', to: '/college/trainers', icon: UserCheck },
-      { label: 'Students', to: '/college/students', icon: GraduationCap },
-      { label: 'Assessments', to: '/college/assessments', icon: FileText },
+      { label: 'Dashboard', to: '/college/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
+      { label: 'Courses', to: '/college/courses', icon: BookOpen, gradient: 'from-blue-200 to-cyan-100' },
+      { label: 'Trainers', to: '/college/trainers', icon: UserCheck, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Students', to: '/college/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
+      { label: 'Assessments', to: '/college/assessments', icon: FileText, gradient: 'from-indigo-200 to-purple-100' },
     ],
     trainer: [
-      { label: 'Dashboard', to: '/trainer/dashboard', icon: LayoutDashboard },
-      { label: 'My Courses', to: '/trainer/courses', icon: BookOpen },
-      { label: 'Assessments', to: '/trainer/assessments', icon: FileText },
-      { label: 'Students', to: '/trainer/students', icon: GraduationCap },
+      { label: 'Dashboard', to: '/trainer/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
+      { label: 'My Courses', to: '/trainer/courses', icon: BookOpen, gradient: 'from-blue-200 to-cyan-100' },
+      { label: 'Assessments', to: '/trainer/assessments', icon: FileText, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Students', to: '/trainer/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
     ],
   };
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const roleColors = {
+    admin: 'text-purple-700',
+    college: 'text-blue-700',
+    trainer: 'text-green-700',
+  };
+
+  const firstInitial = user?.name?.charAt(0)?.toUpperCase() || 'U';
 
   return (
-    <div
-      className={`
-        fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 shadow-lg md:shadow-none
-        transform transition-transform duration-300 ease-in-out
-        ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : ''}
-      `}
-    >
-      {/* Top Section */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div>
-          <p className="text-sm text-gray-500">Welcome,</p>
-          <p className="text-base font-semibold text-gray-800 truncate w-44">
-            {user?.name || 'User'}
-          </p>
-          <p className="text-xs text-gray-400 capitalize">Role: {role}</p>
-        </div>
-        {isMobile && (
-          <button onClick={onClose} className="text-gray-500 hover:text-red-500">
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
+    <>
+      {isMobile && isOpen && (
+        <div className="fixed inset-0 bg-black/40 z-30" onClick={onClose} />
+      )}
 
-      {/* Navigation */}
-      <nav className="mt-4 px-2">
-        <ul className="space-y-1">
-          {navItems[role]?.map(({ label, to, icon: Icon }) => {
+      <div
+        className={`fixed md:static inset-y-0 left-0 z-40 w-72 md:w-64 bg-white border-r border-gray-200 shadow-md
+        transform transition-transform duration-300 ease-in-out
+        ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : ''}`}
+      >
+
+        {/* User Info */}
+        <div className="p-5 border-b border-gray-200">
+          <div className="flex items-start justify-between">
+            <div className="flex gap-3 items-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-300 to-purple-300 text-white font-bold text-lg flex items-center justify-center shadow-inner">
+                {firstInitial}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-800 truncate max-w-[130px]">{user?.name || 'User'}</p>
+                <p className={`text-xs ${roleColors[role] || 'text-gray-500'} capitalize`}>{role}</p>
+              </div>
+            </div>
+            {isMobile && (
+              <button onClick={onClose} className="text-gray-500 hover:text-red-500 ml-2">
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 mt-4">
+            <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs shadow-sm">
+              <Bell className="w-4 h-4" />
+              Alerts
+            </button>
+            <button className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 shadow-sm">
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="p-4 space-y-1">
+          {navItems[role]?.map(({ label, to, icon: Icon, gradient }) => {
             const isActive = location.pathname === to;
             return (
-              <li key={to}>
-                <Link
-                  to={to}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-4 py-2 rounded-md transition-all ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-700 font-semibold'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+              <Link
+                to={to}
+                key={to}
+                onClick={onClose}
+                onMouseEnter={() => setHoveredItem(to)}
+                onMouseLeave={() => setHoveredItem(null)}
+                className={`relative group flex items-center gap-3 px-4 py-2 rounded-md transition-all duration-200
+                ${isActive
+                    ? `bg-gradient-to-r ${gradient} text-gray-900 font-semibold shadow`
+                    : 'text-gray-600 hover:bg-gray-100'
                   }`}
-                >
-                 {Icon && <Icon className="w-5 h-5" />}
-                  <span className="text-sm">{label}</span>
-                </Link>
-              </li>
+              >
+                <div className={`w-8 h-8 rounded-md flex items-center justify-center
+                ${isActive ? 'bg-white/30' : 'bg-gray-100 group-hover:bg-gray-200'}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <span className="text-sm flex-1">{label}</span>
+                <ChevronRight
+                  className={`w-4 h-4 transition-transform duration-200 ${hoveredItem === to ? 'opacity-100 translate-x-1' : 'opacity-0'}`}
+                />
+              </Link>
             );
           })}
-        </ul>
-      </nav>
-    </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200">
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors">
+            <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center group-hover:bg-red-100">
+              <LogOut className="w-4 h-4" />
+            </div>
+            <span className="text-sm font-medium">Sign Out</span>
+          </button>
+        </div>
+      </div>
+    </>
   );
 };
 
