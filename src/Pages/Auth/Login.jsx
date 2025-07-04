@@ -26,10 +26,10 @@ const Login = () => {
         setTimeout(() => {
           const role = result.user?.role;
           switch (role) {
-            case 'superadmin':
+            case 'admin':
               navigate('/superadmin/dashboard');
               break;
-            case 'collegeadmin':
+            case 'college':
               navigate('/college/dashboard');
               break;
             case 'trainer':
