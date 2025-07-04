@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Users, ArrowRight, Search, Filter, Clock, BookOpen, TrendingUp } from 'lucide-react'
-import Header from '..//Candidate/Dashboard/Header'
+import Header from '../../Students/Dashboard/Header'
 
 const CollegeTestList = () => {
   const [searchTerm, setSearchTerm] = useState('')

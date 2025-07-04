@@ -7,7 +7,7 @@ import {
     XCircle,
     PlayCircle,
 } from 'lucide-react';
-import Header from './Header';
+import Header from '../../../Components/Header/Header';
 import { useNavigate } from 'react-router-dom';
 import StartTestButton from './StartTestButton';
 

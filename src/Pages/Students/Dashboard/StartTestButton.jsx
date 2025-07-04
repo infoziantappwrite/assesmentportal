@@ -26,7 +26,7 @@ const StartTestButton = ({ test }) => {
     localStorage.setItem('assessment_end_time', end.toISOString());
 
     // Navigate to assessment page
-    navigate('/assessment', { state: { test } });
+    navigate('/assesment', { state: { test } });
   };
 
   return (
