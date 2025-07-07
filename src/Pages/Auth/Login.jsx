@@ -56,7 +56,7 @@
             const role = result.user?.role;
             switch (role) {
               case 'admin':
-                navigate('/superadmin/dashboard');
+                navigate('/admin/dashboard');
                 break;
               case 'college':
                 navigate('/college/dashboard');
