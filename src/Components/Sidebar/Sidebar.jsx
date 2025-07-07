@@ -41,11 +41,11 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   const navItems = {
     admin: [
-      { label: 'Dashboard', to: '/superadmin/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
-      { label: 'Manage Colleges', to: '/superadmin/colleges', icon: School, gradient: 'from-blue-200 to-cyan-100' },
-      { label: 'Manage Users', to: '/superadmin/users', icon: Users, gradient: 'from-green-200 to-emerald-100' },
-      { label: 'Reports', to: '/superadmin/reports', icon: FileText, gradient: 'from-orange-200 to-red-100' },
-      { label: 'Settings', to: '/superadmin/settings', icon: UserCheck, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
+      { label: 'Manage Colleges', to: '/admin/colleges', icon: School, gradient: 'from-blue-200 to-cyan-100' },
+      { label: 'Manage Users', to: '/admin/users', icon: Users, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Reports', to: '/admin/reports', icon: FileText, gradient: 'from-orange-200 to-red-100' },
+      { label: 'Settings', to: '/admin/settings', icon: UserCheck, gradient: 'from-indigo-200 to-purple-100' },
     ],
     college: [
       { label: 'Dashboard', to: '/college/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },

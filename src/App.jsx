@@ -60,11 +60,11 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['admin']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more admin-specific routes here */}
-          <Route path="/superadmin/dashboard" element={<div>Super Admin Dashboard</div>} />
-          <Route path="/superadmin/colleges" element={<div>Manage Colleges</div>} />
-          <Route path="/superadmin/users" element={<div>Manage Users</div>} />
-          <Route path="/superadmin/reports" element={<div>Reports</div>} />
-          <Route path="/superadmin/settings" element={<div>Settings</div>} />
+          <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
+          <Route path="/admin/colleges" element={<div>Manage Colleges</div>} />
+          <Route path="/admin/users" element={<div>Manage Users</div>} />
+          <Route path="/admin/reports" element={<div>Reports</div>} />
+          <Route path="/admin/settings" element={<div>Settings</div>} />
         </Route>
       </Route>
 
