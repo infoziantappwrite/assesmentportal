@@ -16,7 +16,10 @@ const CollegeTestList = () => {
       status: 'active',
       duration: '120 min',
       difficulty: 'Intermediate',
-      description: 'Comprehensive evaluation of React, JavaScript, and CSS skills'
+      description: 'Comprehensive evaluation of React, JavaScript, and CSS skills',
+      totalCandidates: 45,
+      completed: 30,
+      averageScore: 76.4
     },
     { 
       id: 2, 
@@ -26,7 +29,10 @@ const CollegeTestList = () => {
       status: 'completed',
       duration: '90 min',
       difficulty: 'Advanced',
-      description: 'Server-side programming and database management assessment'
+      description: 'Server-side programming and database management assessment',
+      totalCandidates: 32,
+      completed: 32,
+      averageScore: 84.1
     },
     { 
       id: 3, 
@@ -36,7 +42,10 @@ const CollegeTestList = () => {
       status: 'active',
       duration: '150 min',
       difficulty: 'Expert',
-      description: 'Advanced React concepts including hooks, context, and performance optimization'
+      description: 'Advanced React concepts including hooks, context, and performance optimization',
+      totalCandidates: 67,
+      completed: 45,
+      averageScore: 91.3
     },
     { 
       id: 4, 
@@ -46,9 +55,13 @@ const CollegeTestList = () => {
       status: 'upcoming',
       duration: '180 min',
       difficulty: 'Advanced',
-      description: 'End-to-end development skills assessment with real-world scenarios'
+      description: 'End-to-end development skills assessment with real-world scenarios',
+      totalCandidates: 23,
+      completed: 0,
+      averageScore: 0
     },
   ]
+
 
   const filteredTests = mockTests.filter(test => {
     const matchesSearch = test.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -175,72 +188,60 @@ return (
         {filteredTests.map((test) => (
           <div
             key={test.id}
-            onClick={() => handleTestClick(test.id)}
-            className="group cursor-pointer bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-2xl rounded-2xl p-6 transition-all duration-300 hover:transform hover:scale-105 hover:bg-white"
+            onClick={() => navigate(`/college/test/${test.id}/candidates`, { state: { test } })}
+            className="group cursor-pointer bg-white border border-gray-200 shadow-md hover:shadow-xl rounded-2xl p-6 transition-all duration-300 hover:scale-[1.03]"
           >
-            {/* Header */}
+            {/* Top: Title & Arrow */}
             <div className="flex justify-between items-start mb-4">
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                <h2 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors line-clamp-2">
                   {test.name}
                 </h2>
-                <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
                   {test.description}
                 </p>
               </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0 ml-2" />
+              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-transform" />
+            </div>
+
+            {/* Meta Info */}
+            <div className="mt-4 space-y-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span>{test.date}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span>{test.duration}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gray-400" />
+                <span>{test.candidates} Candidates</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-gray-400" />
+                <span className="capitalize">{test.difficulty}</span>
+              </div>
             </div>
 
             {/* Status Badge */}
-            <div className="mb-4">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(test.status)}`}>
-                {test.status.charAt(0).toUpperCase() + test.status.slice(1)}
+            <div className="mt-4">
+              <span
+                className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                  test.status === 'active'
+                    ? 'bg-green-100 text-green-700'
+                    : test.status === 'completed'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}
+              >
+                {test.status}
               </span>
-            </div>
-
-            {/* Test Details */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Calendar className="w-4 h-4" />
-                <span>{formatDate(test.date)}</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="w-4 h-4" />
-                <span>{test.candidates} candidates</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock className="w-4 h-4" />
-                <span>{test.duration}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Difficulty:</span>
-                  <span className={`text-sm font-medium ${getDifficultyColor(test.difficulty)}`}>
-                    {test.difficulty}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Bar (for visual appeal) */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
-                <span>Completion Rate</span>
-                <span>{Math.floor(Math.random() * 30 + 70)}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.floor(Math.random() * 30 + 70)}%` }}
-                ></div>
-              </div>
             </div>
           </div>
         ))}
       </div>
+
 
       {/* Empty State */}
       {filteredTests.length === 0 && (

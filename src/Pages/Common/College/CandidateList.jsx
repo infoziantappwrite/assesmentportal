@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   ArrowLeft, Search, Download, Eye,
   CheckCircle, XCircle, AlertCircle, Clock, FileText
@@ -13,14 +14,15 @@ const CandidateList = () => {
 
   const navigate = useNavigate()
 
-  const mockTest = {
-    id: '12345',
-    name: 'ReactJS Advanced Assessment',
-    totalCandidates: 45,
-    completed: 42,
-    pending: 3,
-    averageScore: 78.5,
+  const location = useLocation()
+  const test = location.state?.test || {
+    id: 'unknown',
+    name: 'Unnamed Test',
+    totalCandidates: 0,
+    completed: 0,
+    averageScore: 0,
   }
+
 
   const mockCandidates = [
     {
@@ -118,7 +120,7 @@ const CandidateList = () => {
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div>
-            <h2 className="text-xl font-semibold">{mockTest.name}</h2>
+            <h2 className="text-xl font-semibold">{test.name}</h2>
             <p className="text-sm text-gray-500">Candidate Performance Overview</p>
           </div>
         </div>
@@ -135,9 +137,9 @@ const CandidateList = () => {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Total Candidates', value: mockTest.totalCandidates },
-          { label: 'Completed', value: mockTest.completed, color: 'text-green-600' },
-          { label: 'Average Score', value: `${mockTest.averageScore}%`, color: 'text-blue-600' }
+          { label: 'Total Candidates', value: test.totalCandidates },
+          { label: 'Completed', value: test.completed, color: 'text-green-600' },
+          { label: 'Average Score', value: `${test.averageScore}%`, color: 'text-blue-600' }
         ].map((stat, i) => (
           <div key={i} className="bg-white shadow rounded-lg p-4">
             <p className="text-sm text-gray-500">{stat.label}</p>
@@ -214,7 +216,8 @@ const CandidateList = () => {
                   <td className="px-4 py-3 text-gray-500">{candidate.timeSpent}</td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => navigate(`/college/test/${mockTest.id}/candidate/${candidate.id}`)}
+                      onClick={() => navigate(`/college/test/${test.id}/candidate/${candidate.id}`)}
+
                       className="text-blue-600 hover:underline flex items-center gap-1"
                     >
                       <Eye className="w-4 h-4" /> View

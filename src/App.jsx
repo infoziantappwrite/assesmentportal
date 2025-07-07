@@ -21,6 +21,9 @@ import StudentDetails from './Pages/Common/Students/StudentDetails';
 import StudentTable from './Pages/Common/Students/StudentTable';
 import CandidatePerformance from './Pages/Common/College/CandidatePerformance';
 import CollegeDashboard from './Pages/Common/College/CollegeDashboard';
+import CollegeAnalytics from './Pages/Common/College/CollegeAnalytics';
+import CollegeProfile from './Pages/Common/College/CollegeProfile';
+import CollegeReports from './Pages/Common/College/CollegeReports';
 
 
 
@@ -47,14 +50,13 @@ const App = () => {
         <Route element={<ProtectedLayout />}>
           {/* Add more college-specific routes here */}
           <Route path="/college/dashboard" element={<CollegeDashboard />} />
-          <Route path="/college/courses" element={<div>College Courses</div>} />
           <Route path="/college/students" element={<StudentTable />} />
           <Route path="/college/assessments" element={<CollegeTestList />} />
           <Route path="/college/submissions" element={<CandidateList />} />
           <Route path="/college/groups" element={<Groups />} />
-          <Route path="/college/analytics" element={<div>College Analytics</div>} />
-          <Route path="/college/reports" element={<div>College Reports</div>} />
-          <Route path="/college/profile" element={<div>College Profile</div>} />
+          <Route path="/college/analytics" element={<CollegeAnalytics />} />
+          <Route path="/college/reports" element={<CollegeReports />} />
+          <Route path="/college/profile" element={<CollegeProfile />} />
           <Route path="college/test/:testId/candidates" element={<CandidateList />} />
           <Route path="college/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
           <Route path="/college/students/:studentId" element={<StudentDetails />} />
