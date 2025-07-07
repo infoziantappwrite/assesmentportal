@@ -13,6 +13,16 @@ import Dashboard from "./Pages/Students/Dashboard/Dashboard";
 import Assesment from "./Pages/Students/Assesment/Assesment";
 import Report from "./Pages/Students/Dashboard/Report"
 
+//import Trainer routes
+import TrainerDashboard from "./Pages/Trainer/Dashboard"
+import TrainerAssesment from "./Pages/Trainer/ViewTest"
+
+
+
+//common route for Trainer and admin
+import CreateTest from "./Pages/Trainer/CreateTest";
+import Assignments from './Pages/Trainer/Assignments';
+
 
 
 const App = () => {
@@ -69,10 +79,11 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['trainer']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more trainer-specific routes here */}
-          <Route path="/trainer/dashboard" element={<div>Trainer Dashboard</div>} />
+          <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
           <Route path="/trainer/groups" element={<div>Trainer Groups</div>} />
-          <Route path="/trainer/assessments" element={<div>Trainer Assessments</div>} />
-          <Route path="/trainer/assignments" element={<div>Trainer Assignments</div>} />
+          <Route path="/trainer/assessments" element={<TrainerAssesment />} />
+          <Route path="/trainer/create-test" element={<CreateTest />} />
+          <Route path="/trainer/assignments" element={<Assignments />} />
           <Route path="/trainer/submissions" element={<div>Trainer Submissions</div>} />
           <Route path="/trainer/students" element={<div>Trainer Students</div>} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
