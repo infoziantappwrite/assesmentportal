@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../Controllers/authController';
 import { Mail, Lock } from 'lucide-react';
@@ -10,7 +10,35 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { login } = useUser(); // Get login function from UserContext
+  const { user,login } = useUser(); // Get login function from UserContext
+
+   useEffect(() => {
+  if (user) {
+    setMessage({ type: 'success', text: 'You are already logged in. Redirecting...' });
+
+    setTimeout(() => {
+      const role = user.role;
+      switch (role) {
+        case 'admin':
+          navigate('/superadmin/dashboard');
+          break;
+        case 'college':
+          navigate('/college/dashboard');
+          break;
+        case 'trainer':
+          navigate('/trainer/dashboard');
+          break;
+        case 'candidate':
+          navigate('/dashboard');
+          break;
+        default:
+          navigate('/dashboard');
+      }
+    }, 1500); // wait 1.5 seconds before redirecting
+  }
+}, [user, navigate]);
+
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
