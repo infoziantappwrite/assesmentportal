@@ -108,6 +108,16 @@ const Sidebar = ({ isOpen, onClose }) => {
               </button>
             )}
           </div>
+
+          <div className="flex items-center gap-2 mt-4">
+            <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs shadow-sm">
+              <Bell className="w-4 h-4" />
+              Alerts
+            </button>
+            <button className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 shadow-sm">
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
