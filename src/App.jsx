@@ -42,10 +42,11 @@ const App = () => {
           <Route path="/college/trainers" element={<div>College Trainers</div>} />
           <Route path="/college/students" element={<div>College Students</div>} />
           <Route path="/college/assessments" element={<div>College Assessments</div>} />
-
-
-
-
+          <Route path="/college/submissions" element={<div>College Submissions</div>} />
+          <Route path="/college/groups" element={<div>College Groups</div>} />
+          <Route path="/college/analytics" element={<div>College Analytics</div>} />
+          <Route path="/college/reports" element={<div>College Reports</div>} />
+          <Route path="/college/profile" element={<div>College Profile</div>} />
         </Route>
       </Route>
 
@@ -59,10 +60,6 @@ const App = () => {
           <Route path="/superadmin/users" element={<div>Manage Users</div>} />
           <Route path="/superadmin/reports" element={<div>Reports</div>} />
           <Route path="/superadmin/settings" element={<div>Settings</div>} />
-
-
-
-
         </Route>
       </Route>
 
@@ -73,14 +70,14 @@ const App = () => {
         <Route element={<ProtectedLayout />}>
           {/* Add more trainer-specific routes here */}
           <Route path="/trainer/dashboard" element={<div>Trainer Dashboard</div>} />
-          <Route path="/trainer/courses" element={<div>Trainer Courses</div>} />
+          <Route path="/trainer/groups" element={<div>Trainer Groups</div>} />
           <Route path="/trainer/assessments" element={<div>Trainer Assessments</div>} />
+          <Route path="/trainer/assignments" element={<div>Trainer Assignments</div>} />
+          <Route path="/trainer/submissions" element={<div>Trainer Submissions</div>} />
           <Route path="/trainer/students" element={<div>Trainer Students</div>} />
-
-
-
-
-
+          <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
+          <Route path="/trainer/reports" element={<div>Trainer Reports</div>} />
+          <Route path="/trainer/profile" element={<div>Trainer Profile</div>} />
         </Route>
       </Route>
 

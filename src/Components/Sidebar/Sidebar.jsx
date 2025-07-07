@@ -14,7 +14,15 @@ import {
   LogOut,
   Settings,
   Bell,
+  Users2,
+  ClipboardList,
+  FileSignature,
+  Inbox,
+  BarChart2,
+  FileBarChart,
+  UserCircle,
 } from 'lucide-react';
+
 
 const Sidebar = ({ isOpen, onClose }) => {
   const { role, user } = useUser();
@@ -41,17 +49,26 @@ const Sidebar = ({ isOpen, onClose }) => {
     ],
     college: [
       { label: 'Dashboard', to: '/college/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
-      { label: 'Courses', to: '/college/courses', icon: BookOpen, gradient: 'from-blue-200 to-cyan-100' },
-      { label: 'Trainers', to: '/college/trainers', icon: UserCheck, gradient: 'from-green-200 to-emerald-100' },
-      { label: 'Students', to: '/college/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
-      { label: 'Assessments', to: '/college/assessments', icon: FileText, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Manage Students', to: '/college/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
+      { label: 'Manage Trainers', to: '/college/trainers', icon: UserCheck, gradient: 'from-blue-200 to-cyan-100' },
+      { label: 'Assessments', to: '/college/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Submissions', to: '/college/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
+      { label: 'Groups', to: '/college/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Analytics', to: '/college/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
+      { label: 'Reports', to: '/college/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Profile', to: '/college/profile', icon: UserCircle, gradient: 'from-pink-200 to-purple-100' },
     ],
     trainer: [
       { label: 'Dashboard', to: '/trainer/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
-      { label: 'My Courses', to: '/trainer/courses', icon: BookOpen, gradient: 'from-blue-200 to-cyan-100' },
-      { label: 'Assessments', to: '/trainer/assessments', icon: FileText, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'My Groups', to: '/trainer/groups', icon: Users2, gradient: 'from-blue-200 to-cyan-100' },
+      { label: 'Assessments', to: '/trainer/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Assignments', to: '/trainer/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Submissions', to: '/trainer/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
       { label: 'Students', to: '/trainer/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
-    ],
+      { label: 'Analytics', to: '/trainer/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
+      { label: 'Reports', to: '/trainer/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Profile', to: '/trainer/profile', icon: UserCircle, gradient: 'from-pink-200 to-purple-100' },
+    ]
   };
 
   const roleColors = {
@@ -75,7 +92,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       >
 
         {/* User Info */}
-        <div className="p-5 border-b bg-gradient-to-tl from-blue-300 via-gray-300 to-teal-300">
+        <div className="p-5 bg-gradient-to-tl from-blue-300 via-gray-300 to-teal-300">
           <div className="flex items-start justify-between">
             <div className="flex gap-3 items-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-300 to-purple-300 text-white font-bold text-lg flex items-center justify-center shadow-inner">
@@ -136,12 +153,6 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors">
-            <div className="w-8 h-8 rounded-md bg-gray-100 flex items-center justify-center group-hover:bg-red-100">
-              <LogOut className="w-4 h-4" />
-            </div>
-            <span className="text-sm font-medium">Sign Out</span>
-          </button>
         </div>
       </div>
     </>
