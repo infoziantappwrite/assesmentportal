@@ -1,10 +1,10 @@
 import React, { useState } from "react";
+import { ArrowLeft, Save, PlusCircle, Trash2 } from "lucide-react";
 
 const CreateTest = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(60);
-
   const [sections, setSections] = useState([
     {
       sectionTitle: "",
@@ -38,10 +38,7 @@ const CreateTest = () => {
         question.correctAnswer = value;
       }
     } else {
-      if (field === "text") question.text = value;
-      else if (field === "sampleInput") question.sampleInput = value;
-      else if (field === "sampleOutput") question.sampleOutput = value;
-      else if (field === "explanation") question.explanation = value;
+      question[field] = value;
     }
     setSections(updated);
   };
@@ -107,198 +104,176 @@ const CreateTest = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-indigo-50 to-blue-50 py-10 px-4 flex justify-center items-start">
-      <div className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl p-8 space-y-10 border border-slate-200">
-
-        {/* header */}
-        <div className="flex justify-between items-center border-b pb-4">
-          <h1 className="text-4xl font-bold text-indigo-700">Create Test</h1>
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 py-10 px-4 sm:px-8 font-sans">
+      <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl border border-gray-200">
+        <header className="p-6 border-b flex justify-between items-center rounded-t-3xl bg-white sticky top-0 z-10">
+          <div className="flex items-center gap-2 text-indigo-700 font-semibold text-lg">
+            <ArrowLeft className="w-5 h-5" />
+            <span>Create Test</span>
+          </div>
           <button
             onClick={handleSave}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-xl hover:opacity-90 transition shadow"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold px-5 py-2 rounded-xl shadow hover:scale-105 transition"
           >
-            Save Test
+            <Save className="w-4 h-4" /> Save
           </button>
-        </div>
+        </header>
 
-        {/* test details */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold text-indigo-700">Test Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="font-medium text-gray-600 mb-1 block">Title</label>
+        <div className="p-8 space-y-10">
+          {/* Test Details */}
+          <section>
+            <h2 className="text-2xl font-bold text-indigo-800 mb-4">Test Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Test title"
-                className="w-full rounded-lg border px-4 py-3 focus:ring-2 focus:ring-indigo-400"
+                placeholder="Test Title"
+                className="rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-indigo-400 shadow-sm"
               />
-            </div>
-            <div>
-              <label className="font-medium text-gray-600 mb-1 block">Duration (minutes)</label>
               <input
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
-                className="w-full rounded-lg border px-4 py-3 focus:ring-2 focus:ring-indigo-400"
+                placeholder="Duration (minutes)"
+                className="rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-indigo-400 shadow-sm"
               />
             </div>
-          </div>
-          <div>
-            <label className="font-medium text-gray-600 mb-1 block">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Short description"
-              className="w-full rounded-lg border px-4 py-3 focus:ring-2 focus:ring-purple-400"
+              placeholder="Short Description"
+              className="w-full mt-4 rounded-lg border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-purple-400 shadow-sm"
+              rows={3}
             />
-          </div>
-        </div>
+          </section>
 
-        {/* sections */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold text-indigo-700 border-b pb-2">Sections</h2>
-          {sections.map((section, sidx) => (
-            <div
-              key={sidx}
-              className="border rounded-2xl p-6 bg-indigo-50 shadow-inner space-y-4"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-indigo-800">
-                  Section {sidx + 1}
-                </h3>
+          {/* Sections */}
+          <section>
+            <h2 className="text-2xl font-bold text-indigo-800 mb-4 border-b pb-2">Sections</h2>
+            {sections.map((section, sidx) => (
+              <div
+                key={sidx}
+                className="border rounded-2xl p-6 bg-slate-50 shadow-inner space-y-4 mb-6"
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-indigo-700">Section {sidx + 1}</h3>
+                  <button
+                    onClick={() => deleteSection(sidx)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    value={section.sectionTitle}
+                    onChange={(e) => handleSectionChange(sidx, "sectionTitle", e.target.value)}
+                    placeholder="Section Title"
+                    className="rounded border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-400 shadow-sm"
+                  />
+                  <select
+                    value={section.sectionType}
+                    onChange={(e) => handleSectionChange(sidx, "sectionType", e.target.value)}
+                    className="rounded border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-purple-400 shadow-sm"
+                  >
+                    <option value="mcq">MCQ</option>
+                    <option value="coding">Coding</option>
+                  </select>
+                </div>
+
+                <textarea
+                  value={section.sectionDescription}
+                  onChange={(e) => handleSectionChange(sidx, "sectionDescription", e.target.value)}
+                  placeholder="Section Description"
+                  className="w-full rounded border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-purple-400 shadow-sm"
+                />
+
+                {section.questions.map((q, qidx) => (
+                  <div key={qidx} className="border rounded-xl p-4 bg-white shadow space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-indigo-700">
+                        {section.sectionType === "mcq" ? `MCQ ${qidx + 1}` : `Coding Problem ${qidx + 1}`}
+                      </span>
+                      <button
+                        onClick={() => deleteQuestionFromSection(sidx, qidx)}
+                        className="text-red-600 text-xs hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <input
+                      value={q.text}
+                      onChange={(e) => handleQuestionChange(sidx, qidx, "text", e.target.value)}
+                      placeholder={section.sectionType === "mcq" ? "Question" : "Problem statement"}
+                      className="w-full rounded border border-gray-300 px-3 py-2 shadow-sm"
+                    />
+
+                    {section.sectionType === "mcq" && (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          {q.options.map((opt, optIdx) => (
+                            <input
+                              key={optIdx}
+                              value={opt}
+                              onChange={(e) =>
+                                handleQuestionChange(sidx, qidx, `option-${optIdx}`, e.target.value)
+                              }
+                              placeholder={`Option ${optIdx + 1}`}
+                              className="rounded border border-gray-300 px-3 py-2 shadow-sm"
+                            />
+                          ))}
+                        </div>
+                        <input
+                          value={q.correctAnswer}
+                          onChange={(e) => handleQuestionChange(sidx, qidx, "correctAnswer", e.target.value)}
+                          placeholder="Correct Answer"
+                          className="w-full rounded border border-gray-300 px-3 py-2 shadow-sm"
+                        />
+                      </>
+                    )}
+
+                    {section.sectionType === "coding" && (
+                      <>
+                        <input
+                          value={q.sampleInput || ""}
+                          onChange={(e) => handleQuestionChange(sidx, qidx, "sampleInput", e.target.value)}
+                          placeholder="Sample Input"
+                          className="w-full rounded border border-gray-300 px-3 py-2 shadow-sm"
+                        />
+                        <input
+                          value={q.sampleOutput || ""}
+                          onChange={(e) => handleQuestionChange(sidx, qidx, "sampleOutput", e.target.value)}
+                          placeholder="Sample Output"
+                          className="w-full rounded border border-gray-300 px-3 py-2 shadow-sm"
+                        />
+                        <textarea
+                          value={q.explanation || ""}
+                          onChange={(e) => handleQuestionChange(sidx, qidx, "explanation", e.target.value)}
+                          placeholder="Explanation"
+                          className="w-full rounded border border-gray-300 px-3 py-2 shadow-sm"
+                        />
+                      </>
+                    )}
+                  </div>
+                ))}
+
                 <button
-                  onClick={() => deleteSection(sidx)}
-                  className="text-red-600 hover:underline text-xs"
+                  onClick={() => addQuestionToSection(sidx)}
+                  className="mt-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:scale-105 shadow transition"
                 >
-                  Delete
+                  + Add Question
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  value={section.sectionTitle}
-                  onChange={(e) =>
-                    handleSectionChange(sidx, "sectionTitle", e.target.value)
-                  }
-                  placeholder="Section title"
-                  className="rounded border px-4 py-2 focus:ring-2 focus:ring-indigo-400"
-                />
-                <select
-                  value={section.sectionType}
-                  onChange={(e) =>
-                    handleSectionChange(sidx, "sectionType", e.target.value)
-                  }
-                  className="rounded border px-4 py-2 focus:ring-2 focus:ring-purple-400"
-                >
-                  <option value="mcq">MCQ</option>
-                  <option value="coding">Coding</option>
-                </select>
-              </div>
-              <textarea
-                value={section.sectionDescription}
-                onChange={(e) =>
-                  handleSectionChange(sidx, "sectionDescription", e.target.value)
-                }
-                placeholder="Section description"
-                className="w-full rounded border px-4 py-2 focus:ring-2 focus:ring-purple-400"
-              />
+            ))}
 
-              {/* questions */}
-              {section.questions.map((q, qidx) => (
-                <div
-                  key={qidx}
-                  className="border rounded-xl p-4 bg-white shadow space-y-2"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-indigo-700">
-                      {section.sectionType === "mcq"
-                        ? `MCQ ${qidx + 1}`
-                        : `Coding Problem ${qidx + 1}`}
-                    </span>
-                    <button
-                      onClick={() => deleteQuestionFromSection(sidx, qidx)}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <input
-                    value={q.text}
-                    onChange={(e) =>
-                      handleQuestionChange(sidx, qidx, "text", e.target.value)
-                    }
-                    placeholder={section.sectionType === "mcq" ? "Question" : "Problem statement"}
-                    className="w-full rounded border px-3 py-2"
-                  />
-                  {section.sectionType === "mcq" && (
-                    <>
-                      <div className="grid grid-cols-2 gap-2">
-                        {q.options.map((opt, optIdx) => (
-                          <input
-                            key={optIdx}
-                            value={opt}
-                            onChange={(e) =>
-                              handleQuestionChange(sidx, qidx, `option-${optIdx}`, e.target.value)
-                            }
-                            placeholder={`Option ${optIdx + 1}`}
-                            className="rounded border px-3 py-2"
-                          />
-                        ))}
-                      </div>
-                      <input
-                        value={q.correctAnswer}
-                        onChange={(e) =>
-                          handleQuestionChange(sidx, qidx, "correctAnswer", e.target.value)
-                        }
-                        placeholder="Correct answer"
-                        className="w-full rounded border px-3 py-2"
-                      />
-                    </>
-                  )}
-                  {section.sectionType === "coding" && (
-                    <>
-                      <input
-                        value={q.sampleInput || ""}
-                        onChange={(e) =>
-                          handleQuestionChange(sidx, qidx, "sampleInput", e.target.value)
-                        }
-                        placeholder="Sample input"
-                        className="w-full rounded border px-3 py-2"
-                      />
-                      <input
-                        value={q.sampleOutput || ""}
-                        onChange={(e) =>
-                          handleQuestionChange(sidx, qidx, "sampleOutput", e.target.value)
-                        }
-                        placeholder="Sample output"
-                        className="w-full rounded border px-3 py-2"
-                      />
-                      <textarea
-                        value={q.explanation || ""}
-                        onChange={(e) =>
-                          handleQuestionChange(sidx, qidx, "explanation", e.target.value)
-                        }
-                        placeholder="Explanation"
-                        className="w-full rounded border px-3 py-2"
-                      />
-                    </>
-                  )}
-                </div>
-              ))}
-              <button
-                onClick={() => addQuestionToSection(sidx)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded hover:opacity-90 mt-2 shadow"
-              >
-                + Add Question
-              </button>
-            </div>
-          ))}
-          <button
-            onClick={addSection}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:opacity-90 mt-2 shadow"
-          >
-            + Add Section
-          </button>
+            <button
+              onClick={addSection}
+              className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:scale-105 transition shadow"
+            >
+              <PlusCircle className="w-4 h-4" /> Add Section
+            </button>
+          </section>
         </div>
       </div>
     </div>
