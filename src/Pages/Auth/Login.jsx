@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../Controllers/authController';
-import { useUser } from '../../context/UserContext';
 import { Mail, Lock } from 'lucide-react';
+import { useUser } from '../../context/UserContext'; // Importing UserContext to access user role
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useUser(); // Access login function from context
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { login } = useUser(); // Get login function from UserContext
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const result = loginUser(email, password);
+      const result = await loginUser(email, password);
+      //console.log('Login result:', result.user.role);
+      login(result.user); // Store user in context
 
-      if (result.success) {
-        login(result.user); // Save user in context and localStorage
+      if (result.success) {   
         setMessage({ type: 'success', text: result.message });
 
         setTimeout(() => {
@@ -35,7 +36,7 @@ const Login = () => {
             case 'trainer':
               navigate('/trainer/dashboard');
               break;
-            case 'student':
+            case 'candidate':
               navigate('/dashboard');
               break;
             default:

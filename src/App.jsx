@@ -25,7 +25,7 @@ const App = () => {
 
 
       {/* Private Student Routes */}
-      <Route element={<PrivateRoute allowedRoles={['student']} />}>
+      <Route element={<PrivateRoute allowedRoles={['candidate']} />}>
         
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assesment" element={<Assesment />} />

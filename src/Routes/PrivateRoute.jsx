@@ -1,19 +1,22 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useUser } from '../context/UserContext'; // adjust path if needed
+import { useUser } from '../context/UserContext';
 
-/**
- * @param {Array|string} allowedRoles - roles that can access the route
- */
 const PrivateRoute = ({ allowedRoles }) => {
-  const { user } = useUser();
-  console.log('PrivateRoute user:', user);
+  const { user, loading , role } = useUser();
+
+  if (loading) {
+    // Show a loading spinner or just null
+    return <div>Loading...</div>;
+  }
+  //console.log("PrivateRoute user:", allowedRoles,role);
 
   if (!user) {
     return <Navigate to="/" replace />;
   }
+  
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(role)) {
     return <Navigate to="/not-authorized" replace />;
   }
 
