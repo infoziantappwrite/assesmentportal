@@ -7,6 +7,7 @@ import PageNotFound from './Components/PageNotFound';
 import ResetPassword from './Pages/Auth/ResetPassword';
 import PrivateRoute from './Routes/PrivateRoute';
 import ProtectedLayout from './Components/ProtectedLayout';
+import NotAuthorized from './Components/NotAuthorized';
 
 //import Student routes
 import Dashboard from "./Pages/Students/Dashboard/Dashboard";
@@ -84,6 +85,7 @@ const App = () => {
 
 
       {/* Catch-all route for 404 Page Not Found */}
+      <Route path="/not-authorized" element={<NotAuthorized />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

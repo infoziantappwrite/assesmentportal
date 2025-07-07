@@ -1,13 +1,14 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import Loader from '../Components/Loader';
 
 const PrivateRoute = ({ allowedRoles }) => {
   const { user, loading , role } = useUser();
 
   if (loading) {
     // Show a loading spinner or just null
-    return <div>Loading...</div>;
+    return <Loader />;
   }
   //console.log("PrivateRoute user:", allowedRoles,role);
 
