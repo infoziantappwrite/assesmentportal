@@ -137,7 +137,6 @@ const CandidatePerformance = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg hover:shadow-xl transition-all"
                 >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Results</span>
             </button>
           <div className="flex-1">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">

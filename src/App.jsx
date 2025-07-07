@@ -7,11 +7,14 @@ import PageNotFound from './Components/PageNotFound';
 import ResetPassword from './Pages/Auth/ResetPassword';
 import PrivateRoute from './Routes/PrivateRoute';
 import ProtectedLayout from './Components/ProtectedLayout';
+import NotAuthorized from './Components/NotAuthorized';
+import Profile from './Pages/Common/Profile/Profile';
 
 //import Student routes
 import Dashboard from "./Pages/Students/Dashboard/Dashboard";
 import Assesment from "./Pages/Students/Assesment/Assesment";
 import Report from "./Pages/Students/Dashboard/Report"
+
 
 //import Trainer routes
 import TrainerDashboard from "./Pages/Trainer/Dashboard"
@@ -23,6 +26,19 @@ import TrainerAssesment from "./Pages/Trainer/ViewTest"
 import CreateTest from "./Pages/Trainer/CreateTest";
 import Assignments from './Pages/Trainer/Assignments';
 
+//College pages
+import CollegeTestList from './Pages/Common/College/CollegeTestList';
+import CandidateList from './Pages/Common/College/CandidateList';
+import Groups from './Pages/Common/Groups/Groups';
+import StudentDetails from './Pages/Common/Students/StudentDetails';
+import StudentTable from './Pages/Common/Students/StudentTable';
+import CandidatePerformance from './Pages/Common/College/CandidatePerformance';
+import CollegeDashboard from './Pages/Common/College/CollegeDashboard';
+import CollegeAnalytics from './Pages/Common/College/CollegeAnalytics';
+import CollegeProfile from './Pages/Common/College/CollegeProfile';
+import CollegeReports from './Pages/Common/College/CollegeReports';
+
+
 
 
 const App = () => {
@@ -31,11 +47,14 @@ const App = () => {
       <Route path="/" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
+       <Route element={<PrivateRoute />}>
+    <Route path="/my-profile" element={<Profile />} />
+  </Route>
 
 
 
       {/* Private Student Routes */}
-      <Route element={<PrivateRoute allowedRoles={['student']} />}>
+      <Route element={<PrivateRoute allowedRoles={['candidate']} />}>
         
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assesment" element={<Assesment />} />
@@ -47,16 +66,17 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['college']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more college-specific routes here */}
-          <Route path="/college/dashboard" element={<div>College Dashboard</div>} />
-          <Route path="/college/courses" element={<div>College Courses</div>} />
-          <Route path="/college/trainers" element={<div>College Trainers</div>} />
-          <Route path="/college/students" element={<div>College Students</div>} />
-          <Route path="/college/assessments" element={<div>College Assessments</div>} />
-          <Route path="/college/submissions" element={<div>College Submissions</div>} />
-          <Route path="/college/groups" element={<div>College Groups</div>} />
-          <Route path="/college/analytics" element={<div>College Analytics</div>} />
-          <Route path="/college/reports" element={<div>College Reports</div>} />
-          <Route path="/college/profile" element={<div>College Profile</div>} />
+          <Route path="/college/dashboard" element={<CollegeDashboard />} />
+          <Route path="/college/students" element={<StudentTable />} />
+          <Route path="/college/assessments" element={<CollegeTestList />} />
+          <Route path="/college/submissions" element={<CandidateList />} />
+          <Route path="/college/groups" element={<Groups />} />
+          <Route path="/college/analytics" element={<CollegeAnalytics />} />
+          <Route path="/college/reports" element={<CollegeReports />} />
+          <Route path="/college/profile" element={<CollegeProfile />} />
+          <Route path="college/test/:testId/candidates" element={<CandidateList />} />
+          <Route path="college/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
+          <Route path="/college/students/:studentId" element={<StudentDetails />} />
         </Route>
       </Route>
 
@@ -65,11 +85,11 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['admin']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more admin-specific routes here */}
-          <Route path="/superadmin/dashboard" element={<div>Super Admin Dashboard</div>} />
-          <Route path="/superadmin/colleges" element={<div>Manage Colleges</div>} />
-          <Route path="/superadmin/users" element={<div>Manage Users</div>} />
-          <Route path="/superadmin/reports" element={<div>Reports</div>} />
-          <Route path="/superadmin/settings" element={<div>Settings</div>} />
+          <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
+          <Route path="/admin/colleges" element={<div>Manage Colleges</div>} />
+          <Route path="/admin/users" element={<div>Manage Users</div>} />
+          <Route path="/admin/reports" element={<div>Reports</div>} />
+          <Route path="/admin/settings" element={<div>Settings</div>} />
         </Route>
       </Route>
 
@@ -95,6 +115,7 @@ const App = () => {
 
 
       {/* Catch-all route for 404 Page Not Found */}
+      <Route path="/not-authorized" element={<NotAuthorized />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

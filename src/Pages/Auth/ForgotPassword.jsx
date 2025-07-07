@@ -1,15 +1,23 @@
 import React, { useState } from 'react';
 import { Mail, CheckCircle } from 'lucide-react';
+import { requestPasswordReset } from '../../Controllers/authController';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [message, setMessage] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Simulate email submission
-    if (email) {
+    const result = await requestPasswordReset(email);
+
+    setMessage({
+      type: result.success ? 'success' : 'error',
+      text: result.message,
+    });
+
+    if (result.success) {
       setSubmitted(true);
     }
   };
@@ -24,12 +32,19 @@ const ForgotPassword = () => {
           Enter your registered email to receive reset instructions.
         </p>
 
-        {submitted ? (
-          <div className="bg-green-100 border border-green-400 text-green-800 text-sm px-4 py-3 rounded-lg text-center flex items-center justify-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            If this email is registered, a reset link has been sent to your inbox.
+        {message && (
+          <div
+            className={`text-sm px-4 py-3 rounded-lg text-center mb-4 border ${
+              message.type === 'success'
+                ? 'bg-green-100 border-green-400 text-green-800'
+                : 'bg-red-100 border-red-400 text-red-800'
+            }`}
+          >
+            {message.text}
           </div>
-        ) : (
+        )}
+
+        {!submitted && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm text-gray-700 mb-1">

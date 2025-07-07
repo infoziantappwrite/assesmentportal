@@ -8,7 +8,7 @@ const Header = () => {
   const email = localStorage.getItem('userEmail') || 'guest@example.com';
   const name = localStorage.getItem('userName') || 'Guest User';
   const initials = email.charAt(0).toUpperCase();
-  const { role } = useUser();
+  const { role,logout } = useUser();
 
 
   const navigate = useNavigate();
@@ -17,11 +17,10 @@ const Header = () => {
 
   const toggleDropdown = () => setDropdownOpen((prev) => !prev);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    setDropdownOpen(false);
-    navigate('/');
-    window.location.reload();
+  const handleLogout = async () => {
+    await logout();      
+     setDropdownOpen(false);
+    navigate('/');         
   };
 
   const goToProfile = () => {
