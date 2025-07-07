@@ -200,7 +200,7 @@ const CandidateList = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             <button 
-            onClick={() => navigate('/college/tests')}
+            onClick={() => navigate('/college/assessments')}
             className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-white/20 shadow-lg hover:shadow-xl transition-all">
               <ArrowLeft className="w-4 h-4" />
               <span>Back to Tests</span>

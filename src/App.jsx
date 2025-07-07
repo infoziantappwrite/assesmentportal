@@ -13,6 +13,15 @@ import Dashboard from "./Pages/Students/Dashboard/Dashboard";
 import Assesment from "./Pages/Students/Assesment/Assesment";
 import Report from "./Pages/Students/Dashboard/Report"
 
+//College pages
+import CollegeTestList from './Pages/Common/College/CollegeTestList';
+import CandidateList from './Pages/Common/College/CandidateList';
+import Groups from './Pages/Common/Groups/Groups';
+import StudentDetails from './Pages/Common/Students/StudentDetails';
+import StudentTable from './Pages/Common/Students/StudentTable';
+import CandidatePerformance from './Pages/Common/College/CandidatePerformance';
+import CollegeDashboard from './Pages/Common/College/CollegeDashboard';
+
 
 
 const App = () => {
@@ -37,16 +46,18 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['college']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more college-specific routes here */}
-          <Route path="/college/dashboard" element={<div>College Dashboard</div>} />
+          <Route path="/college/dashboard" element={<CollegeDashboard />} />
           <Route path="/college/courses" element={<div>College Courses</div>} />
-          <Route path="/college/trainers" element={<div>College Trainers</div>} />
-          <Route path="/college/students" element={<div>College Students</div>} />
-          <Route path="/college/assessments" element={<div>College Assessments</div>} />
+          <Route path="/college/students" element={<StudentTable />} />
+          <Route path="/college/assessments" element={<CollegeTestList />} />
           <Route path="/college/submissions" element={<div>College Submissions</div>} />
-          <Route path="/college/groups" element={<div>College Groups</div>} />
+          <Route path="/college/groups" element={<Groups />} />
           <Route path="/college/analytics" element={<div>College Analytics</div>} />
           <Route path="/college/reports" element={<div>College Reports</div>} />
           <Route path="/college/profile" element={<div>College Profile</div>} />
+          <Route path="college/test/:testId/candidates" element={<CandidateList />} />
+          <Route path="college/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
+          <Route path="/college/students/:studentId" element={<StudentDetails />} />
         </Route>
       </Route>
 

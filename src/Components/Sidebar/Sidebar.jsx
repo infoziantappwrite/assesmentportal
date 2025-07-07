@@ -50,7 +50,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     college: [
       { label: 'Dashboard', to: '/college/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
       { label: 'Manage Students', to: '/college/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
-      { label: 'Manage Trainers', to: '/college/trainers', icon: UserCheck, gradient: 'from-blue-200 to-cyan-100' },
       { label: 'Assessments', to: '/college/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
       { label: 'Submissions', to: '/college/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
       { label: 'Groups', to: '/college/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
@@ -108,16 +107,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <X className="w-5 h-5" />
               </button>
             )}
-          </div>
-
-          <div className="flex items-center gap-2 mt-4">
-            <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs shadow-sm">
-              <Bell className="w-4 h-4" />
-              Alerts
-            </button>
-            <button className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 shadow-sm">
-              <Settings className="w-4 h-4" />
-            </button>
           </div>
         </div>
 

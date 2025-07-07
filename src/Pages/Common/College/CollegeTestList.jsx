@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Calendar, Users, ArrowRight, Search, Filter, Clock, BookOpen, TrendingUp } from 'lucide-react'
-import Header from '../../Students/Dashboard/Header'
-
 const CollegeTestList = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -93,7 +91,11 @@ const CollegeTestList = () => {
 
 return (
   <div className=' bg-gradient-to-br from-blue-50 to-teal-50'>
-     <Header />
+  <div>
+    <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+      Assesments
+    </h1>
+  </div>
 
     <div className="max-w-7xl mx-auto mt-8 min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-6 w-full">
       {/* Stats Cards */}
