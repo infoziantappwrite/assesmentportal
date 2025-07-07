@@ -14,9 +14,9 @@ import {
 } from 'lucide-react';
 
 const StudentDetails = () => {
-  const { id } = useParams();
+  const { studentId } = useParams();
   const navigate = useNavigate();
-  const student = sampleStudents.find((s) => s.id === parseInt(id));
+  const student = sampleStudents.find((s) => s.id === parseInt(studentId));
 
   if (!student) {
     return (

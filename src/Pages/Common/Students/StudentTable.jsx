@@ -65,14 +65,13 @@ const StudentTable = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f9fcff] p-6 flex justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-6 flex justify-center">
       <div className="w-full max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-semibold text-blue-700 flex items-center gap-2">
+          <h2 className="text-3xl font-bold text-blue-700 flex items-center gap-2">
             <Users size={24} /> Manage Students
           </h2>
-
           {role === "admin" && (
             <button
               onClick={() => {
@@ -80,33 +79,33 @@ const StudentTable = () => {
                 setNewStudent({ name: "", email: "", collegeName: "" });
                 setShowModal(true);
               }}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white px-4 py-2 rounded-md shadow-sm"
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white px-4 py-2 rounded-md shadow hover:scale-105 transition"
             >
               <Plus size={16} /> Create Student
             </button>
           )}
         </div>
 
-        {/* Controls */}
+        {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+          <div className="relative">
+            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
               type="text"
-              placeholder="Search by name, email or college"
+              placeholder="Search by name, email, or college"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 shadow focus:ring-2 focus:ring-blue-400"
             />
           </div>
 
           {(role === "admin" || role === "trainer") && (
             <div className="relative">
-              <Filter className="absolute left-3 top-2.5 text-gray-400" size={18} />
+              <Filter className="absolute left-3 top-3 text-gray-400" size={18} />
               <select
                 value={selectedCollege}
                 onChange={handleFilterChange}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 shadow focus:ring-2 focus:ring-blue-400"
               >
                 <option value="all">All Colleges</option>
                 {[...new Set(sampleStudents.map((s) => s.collegeName))].map((college) => (
@@ -120,35 +119,39 @@ const StudentTable = () => {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto rounded-lg shadow-sm bg-white border border-gray-200">
+        <div className="overflow-x-auto rounded-2xl shadow bg-white border border-gray-200">
           <table className="w-full text-sm text-left text-gray-700">
-            <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+            <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
               <tr>
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Email</th>
-                <th className="px-5 py-3 font-medium">College</th>
-                <th className="px-5 py-3 font-medium">Actions</th>
+                <th className="px-5 py-3">Name</th>
+                <th className="px-5 py-3">Email</th>
+                <th className="px-5 py-3">College</th>
+                <th className="px-5 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredStudents.length > 0 ? (
                 filteredStudents.map((student, index) => (
                   <tr key={student.id} className="border-b border-gray-100 hover:bg-blue-50">
-                    <td className="px-5 py-3">{student.name}</td>
+                    <td className="px-5 py-3 font-medium">{student.name}</td>
                     <td className="px-5 py-3">{student.email}</td>
-                    <td className="px-5 py-3">{student.collegeName}</td>
+                    <td className="px-5 py-3">
+                      <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 text-xs rounded-full">
+                        {student.collegeName}
+                      </span>
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/college/students/${student.id}`)}
-                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md"
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded-md"
                         >
                           View
                         </button>
                         {role === "admin" && (
                           <button
                             onClick={() => handleEdit(student, index)}
-                            className="text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1.5 rounded-md flex items-center gap-1"
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1.5 rounded-md flex items-center gap-1"
                           >
                             <Pencil size={14} /> Edit
                           </button>
@@ -170,8 +173,8 @@ const StudentTable = () => {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl w-full max-w-md p-6 relative border border-gray-200">
               <button
                 onClick={() => setShowModal(false)}
                 className="absolute top-3 right-3 text-gray-500 hover:text-red-500"
@@ -187,19 +190,19 @@ const StudentTable = () => {
                   placeholder="Name"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
                 />
                 <input
                   type="email"
                   placeholder="Email"
                   value={newStudent.email}
                   onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
                 />
                 <select
                   value={newStudent.collegeName}
                   onChange={(e) => setNewStudent({ ...newStudent, collegeName: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400"
                 >
                   <option value="">Select College</option>
                   {[...new Set(sampleStudents.map((s) => s.collegeName))].map((college) => (
@@ -210,7 +213,7 @@ const StudentTable = () => {
                 </select>
                 <button
                   onClick={handleCreateOrEdit}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
                 >
                   {isEditing ? "Update Student" : "Submit"}
                 </button>

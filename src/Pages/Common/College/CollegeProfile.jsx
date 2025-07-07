@@ -21,7 +21,7 @@ const CollegeProfile = () => {
     description:
       "One of the oldest and most prestigious universities in the United States, known for excellence in education, research, and innovation.",
     students: "23,000+",
-    ranking: "#1 National University",
+    ranking: "#1 University",
   };
 
   const [isEdit, setIsEdit] = useState(false);
