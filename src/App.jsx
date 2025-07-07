@@ -50,7 +50,7 @@ const App = () => {
           <Route path="/college/courses" element={<div>College Courses</div>} />
           <Route path="/college/students" element={<StudentTable />} />
           <Route path="/college/assessments" element={<CollegeTestList />} />
-          <Route path="/college/submissions" element={<div>College Submissions</div>} />
+          <Route path="/college/submissions" element={<CandidateList />} />
           <Route path="/college/groups" element={<Groups />} />
           <Route path="/college/analytics" element={<div>College Analytics</div>} />
           <Route path="/college/reports" element={<div>College Reports</div>} />
