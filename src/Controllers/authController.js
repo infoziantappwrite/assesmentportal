@@ -39,8 +39,8 @@ export const logoutUser = async () => {
     await axiosClient.post("/auth/logout");
     //console.log("User logged out successfully");
     return { success: true };
-  } catch (error) {
-    console.error("logoutUser failed:", error);
+  } catch  {
+    //console.error("logoutUser failed:", error);
     return {
       success: false,
       message: "Logout failed",
@@ -55,8 +55,8 @@ export const getUser = async () => {
   try {
     const response = await axiosClient.get("/auth/me");
     return response.data?.data?.user || null;
-  } catch (error) {
-    console.error("getUser failed:", error);
+  } catch  {
+    //console.error("getUser failed:", error);
     return null;
   }
 };
@@ -79,11 +79,72 @@ export const refreshToken = async () => {
       success: false,
       message: "Token refresh failed",
     };
-  } catch (error) {
-    console.error("refreshToken failed:", error);
+  } catch  {
+    //console.error("refreshToken failed:", error);
     return {
       success: false,
       message: "Token refresh error",
+    };
+  }
+};
+
+export const requestPasswordReset = async (email) => {
+  try {
+    const response = await axiosClient.post('/auth/forgot-password', { email });
+    console.log('requestPasswordReset response:', response.data);
+    return {
+      success: true,
+      message: response.data?.message || 'Reset link sent.',
+    };
+  } catch (error) {
+    console.error('requestPasswordReset error:', error);
+    return {
+      success: false,
+      message:
+        error?.response?.data?.message || 'Failed to send reset link. Please try again.',
+    };
+  }
+};
+
+/**
+ * Reset password by sending token and new password
+ * @param {string} token
+ * @param {string} newPassword
+ * @returns {Promise<{ success: boolean, message: string }>}
+ */
+export const resetPasswordAPI = async (token, newPassword) => {
+  try {
+    const response = await axiosClient.post('/auth/reset-password', {
+      token,
+      newPassword,
+    });
+
+    return {
+      success: true,
+      message: response.data?.message || 'Password reset successfully.',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error?.response?.data?.message ||
+        'Failed to reset password. Please try again.',
+    };
+  }
+};
+
+export const changePassword = async (oldPassword, newPassword) => {
+  try {
+    const response = await axiosClient.put("/auth/change-password", {
+      oldPassword,
+      newPassword,
+    });
+    return { success: true, message: response.data.message };
+  } catch (err) {
+    return {
+      success: false,
+      message:
+        err?.response?.data?.message || "Failed to change password. Please try again.",
     };
   }
 };

@@ -1,22 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, CheckCircle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { resetPasswordAPI } from '../../Controllers/authController';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(null);
+  const [token, setToken] = useState(null);
 
-  const handleSubmit = (e) => {
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const tokenFromUrl = searchParams.get('token');
+    setToken(tokenFromUrl);
+  }, [searchParams]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!token) {
+      setError('Reset token is missing.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
-    // Simulate password reset success
-    setError(null);
-    setSubmitted(true);
+    const result = await resetPasswordAPI(token, password);
+
+    if (result.success) {
+      setSubmitted(true);
+      setError(null);
+    } else {
+      setError(result.message);
+    }
   };
 
   return (

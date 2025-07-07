@@ -8,6 +8,7 @@ import ResetPassword from './Pages/Auth/ResetPassword';
 import PrivateRoute from './Routes/PrivateRoute';
 import ProtectedLayout from './Components/ProtectedLayout';
 import NotAuthorized from './Components/NotAuthorized';
+import Profile from './Pages/Common/Profile/Profile';
 
 //import Student routes
 import Dashboard from "./Pages/Students/Dashboard/Dashboard";
@@ -22,6 +23,9 @@ const App = () => {
       <Route path="/" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
+       <Route element={<PrivateRoute />}>
+    <Route path="/my-profile" element={<Profile />} />
+  </Route>
 
 
 
