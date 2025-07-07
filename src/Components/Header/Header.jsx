@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, LogOut, User, LayoutDashboard } from 'lucide-react';
+import { ChevronDown, LogOut, User, LayoutDashboard, Bell, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
@@ -98,9 +98,34 @@ const Header = () => {
                 onClick={goToProfile}
                 className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
               >
-                <User className="w-4 h-4" />
+                <User className="w-4 h-4 text-blue-600" />
                 My Profile
               </button>
+
+              {/* Notifications */}
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/notifications');
+                }}
+                className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
+              >
+                <Bell className="w-4 h-4 text-amber-500" />
+                Notifications
+              </button>
+
+              {/* Settings */}
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/settings');
+                }}
+                className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
+              >
+                <Settings className="w-4 h-4 text-indigo-600" />
+                Settings
+              </button>
+
 
               {/* Logout */}
               <button
