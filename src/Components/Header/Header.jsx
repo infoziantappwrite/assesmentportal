@@ -1,26 +1,41 @@
+// src/components/layout/Header.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, LogOut, User, LayoutDashboard, Bell, Settings } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  LogOut,
+  User,
+  LayoutDashboard,
+  Bell,
+  Settings,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
-
 const Header = () => {
-  const email = localStorage.getItem('userEmail') || 'guest@example.com';
-  const name = localStorage.getItem('userName') || 'Guest User';
-  const initials = email.charAt(0).toUpperCase();
-  const { role,logout } = useUser();
+  /* -------------------------------------------------------------------- */
+  /*  User / routing helpers                                              */
+  /* -------------------------------------------------------------------- */
+  const email      = localStorage.getItem('userEmail') || 'guest@example.com';
+  const initials   = email.charAt(0).toUpperCase();
+  const { role, logout } = useUser();
+  const navigate   = useNavigate();
 
-
-  const navigate = useNavigate();
+  /* -------------------------------------------------------------------- */
+  /*  Local state                                                         */
+  /* -------------------------------------------------------------------- */
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
+  const toggleDropdown = () => setDropdownOpen((p) => !p);
 
+  /* -------------------------------------------------------------------- */
+  /*  Route helpers                                                       */
+  /* -------------------------------------------------------------------- */
   const handleLogout = async () => {
-    await logout();      
-     setDropdownOpen(false);
-    navigate('/');         
+    await logout();
+    setDropdownOpen(false);
+    navigate('/');
   };
 
   const goToProfile = () => {
@@ -29,15 +44,14 @@ const Header = () => {
   };
 
   const goToDashboard = () => {
-  setDropdownOpen(false);
-  if (role === 'student') {
-    navigate('/dashboard');
-  } else {
-    navigate(`/${role}/dashboard`);
-  }
-};
+    setDropdownOpen(false);
+    if (role === 'student') navigate('/dashboard');
+    else navigate(`/${role}/dashboard`);
+  };
 
-
+  /* -------------------------------------------------------------------- */
+  /*  Close on outside click + lock scroll on mobile                      */
+  /* -------------------------------------------------------------------- */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -45,17 +59,32 @@ const Header = () => {
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Lock body scroll on mobile when dropdown is open
+  useEffect(() => {
+    if (dropdownOpen && window.innerWidth < 768) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => document.body.classList.remove('overflow-hidden');
+  }, [dropdownOpen]);
+
+  /* ==================================================================== */
+  /*  RENDER                                                              */
+  /* ==================================================================== */
   return (
-    <header className="w-full border-gray-200 shadow-lg py-3 px-6 flex items-center justify-between">
-      {/* Left: Logo */}
+    <header className="w-full border-b border-gray-300 shadow-lg py-3 px-4 flex items-center justify-between md:px-6">
+
+      {/* ---------- Logo ------------------------------------------------- */}
       <div className="flex items-center gap-4">
-        <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
+        <img src="/Logo.png" alt="Logo" className="h-8 md:h-10 w-auto" />
       </div>
 
-      {/* Right: Profile Dropdown */}
+      {/* ---------- Profile / Dropdown ----------------------------------- */}
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={toggleDropdown}
@@ -67,78 +96,130 @@ const Header = () => {
           <ChevronDown className="w-4 h-4 text-gray-600" />
         </button>
 
-        {/* Dropdown */}
+        {/* ---------- DROPDOWN (mobile = full‑screen fixed) --------------- */}
         {dropdownOpen && (
-          <div className="absolute right-0 mt-3 w-64 bg-blue-50 border border-gray-200 rounded-xl shadow-lg z-50 animate-fade-in-up">
-            <div className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 text-white font-bold flex items-center justify-center text-lg shadow">
-                  {initials}
+          <>
+            {/* Backdrop for mobile */}
+            <div
+              className="fixed inset-0 bg-black/30 z-40 md:hidden"
+              onClick={() => setDropdownOpen(false)}
+            />
+
+            <div
+              className="
+                fixed md:absolute
+                top-0 md:top-auto
+                right-0
+                w-screen md:w-64
+                h-screen md:h-auto
+                mt-0 md:mt-3
+                bg-white
+                border border-gray-200
+                rounded-none md:rounded-xl
+                shadow-lg
+                z-50
+                overflow-y-auto md:overflow-visible
+                animate-fade-in-up
+              "
+            >
+              <div className="p-4 space-y-2 md:space-y-2">
+                {/* Close button (mobile only) */}
+                <div className="flex justify-end md:hidden mb-2">
+                  <button
+                    onClick={() => setDropdownOpen(false)}
+                    className="text-gray-600 hover:text-black px-2 py-1 text-sm"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{name}</p>
-                  <p className="text-xs text-gray-500">{email}</p>
-                </div>
+
+                {/* ---- Dashboard ---- */}
+                <MenuItem
+                  label="Dashboard"
+                  Icon={LayoutDashboard}
+                  bg="purple"
+                  onClick={goToDashboard}
+                />
+
+                {/* ---- My Profile ---- */}
+                <MenuItem
+                  label="My Profile"
+                  Icon={User}
+                  bg="pink"
+                  onClick={goToProfile}
+                />
+
+                {/* ---- Notifications ---- */}
+                <MenuItem
+                  label="Notifications"
+                  Icon={Bell}
+                  bg="yellow"
+                  iconColor="amber-500"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate('/notifications');
+                  }}
+                />
+
+                {/* ---- Settings ---- */}
+                <MenuItem
+                  label="Settings"
+                  Icon={Settings}
+                  bg="indigo"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate('/settings');
+                  }}
+                />
+
+                {/* ---- Logout ---- */}
+                <MenuItem
+                  label="Logout"
+                  Icon={LogOut}
+                  bg="red"
+                  textColor="red-600"
+                  onClick={handleLogout}
+                  extra="font-semibold mt-2"
+                />
               </div>
-
-              <hr className="my-3 border-gray-200" />
-
-              {/* Dashboard */}
-              <button
-                onClick={goToDashboard}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </button>
-
-              {/* My Profile */}
-              <button
-                onClick={goToProfile}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
-              >
-                <User className="w-4 h-4 text-blue-600" />
-                My Profile
-              </button>
-
-              {/* Notifications */}
-              <button
-                onClick={() => {
-                  setDropdownOpen(false);
-                  navigate('/notifications');
-                }}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
-              >
-                <Bell className="w-4 h-4 text-amber-500" />
-                Notifications
-              </button>
-
-              {/* Settings */}
-              <button
-                onClick={() => {
-                  setDropdownOpen(false);
-                  navigate('/settings');
-                }}
-                className="flex items-center gap-2 text-sm text-gray-700 hover:bg-blue-100 p-2 rounded font-semibold transition w-full"
-              >
-                <Settings className="w-4 h-4 text-indigo-600" />
-                Settings
-              </button>
-
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="mt-1 flex items-center gap-2 text-sm text-red-600 hover:bg-red-200 p-2 rounded font-semibold transition w-full"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </header>
+  );
+};
+
+/* ---------------------------------------------------------------------- */
+/*  Reusable menu item component                                          */
+/* ---------------------------------------------------------------------- */
+const MenuItem = ({
+  label,
+  Icon,
+  onClick,
+  bg,
+  iconColor,
+  textColor = 'gray-700',
+  extra = '',
+}) => {
+  const baseColor = iconColor || `${bg}-600`;
+  return (
+    <button
+      onClick={onClick}
+      className={`group flex items-center justify-between text-sm text-${textColor} hover:bg-${bg}-100 p-2 rounded-lg w-full transition ${extra}`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`w-8 h-8 rounded-md bg-${bg}-50 flex items-center justify-center`}
+        >
+          <Icon className={`w-4 h-4 text-${baseColor}`} />
+        </div>
+        {label}
+      </div>
+      <ChevronRight
+        className={`w-4 h-4 text-${baseColor} opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition duration-200`}
+      />
+    </button>
   );
 };
 
