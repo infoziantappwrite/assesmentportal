@@ -21,11 +21,12 @@ import TrainerDashboard from "./Pages/Trainer/Dashboard"
 import TrainerAssesment from "./Pages/Trainer/ViewTest"
 import TrainerCandidateList from './Pages/Trainer/CandidateList';
 
-
-
 //common route for Trainer and admin
 import CreateTest from "./Pages/Trainer/CreateTest";
 import Assignments from './Pages/Trainer/Assignments';
+import AllUsers from './Pages/Admin/User/Allusers';
+import CreateUser from './Pages/Admin/User/CreateUser';
+import UserDetails from './Pages/Admin/User/UserDetails';
 
 //College pages
 import CollegeTestList from './Pages/Common/College/CollegeTestList';
@@ -91,6 +92,10 @@ const App = () => {
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
           <Route path="/admin/users" element={<div>Manage Users</div>} />
+          <Route path="/admin/colleges" element={<div>Manage Colleges</div>} />
+          <Route path="/admin/users" element={<AllUsers/>} />
+          <Route path="/admin/users/create" element={<CreateUser/>} />
+          <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
           <Route path="/superadmin/colleges/:id" element={<ViewCollege />} />
