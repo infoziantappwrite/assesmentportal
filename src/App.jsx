@@ -19,6 +19,7 @@ import Report from "./Pages/Students/Dashboard/Report"
 //import Trainer routes
 import TrainerDashboard from "./Pages/Trainer/Dashboard"
 import TrainerAssesment from "./Pages/Trainer/ViewTest"
+import TrainerCandidateList from './Pages/Trainer/CandidateList';
 
 
 
@@ -104,11 +105,13 @@ const App = () => {
           <Route path="/trainer/assessments" element={<TrainerAssesment />} />
           <Route path="/trainer/create-test" element={<CreateTest />} />
           <Route path="/trainer/assignments" element={<Assignments />} />
-          <Route path="/trainer/submissions" element={<div>Trainer Submissions</div>} />
-          <Route path="/trainer/students" element={<div>Trainer Students</div>} />
+          <Route path="/trainer/submissions" element={<TrainerCandidateList />} />
+          <Route path="/trainer/students" element={<StudentTable />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
           <Route path="/trainer/reports" element={<div>Trainer Reports</div>} />
           <Route path="/trainer/profile" element={<div>Trainer Profile</div>} />
+          <Route path="/trainer/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
+          <Route path="/trainer/students/:studentId" element={<StudentDetails />} />
         </Route>
       </Route>
 

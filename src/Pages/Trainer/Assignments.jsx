@@ -1,16 +1,14 @@
 import React, { useState } from "react";
-import { Eye, PlusCircle } from "lucide-react";
+import { Eye, PlusCircle, Search } from "lucide-react";
 import MapTest from "./MapTest";
 import ViewAssignmentModal from "./ViewAssignmentModal";
 
-// Sample tests
 const testOptions = [
   { id: 1, title: "Full Stack Developer Assessment" },
   { id: 2, title: "Frontend Assessment" },
   { id: 3, title: "Database Skills Test" },
 ];
 
-// Sample colleges and batches
 const colleges = ["ABC College", "XYZ University", "PQR Institute"];
 const batches = ["Batch 1", "Batch 2", "Batch 3"];
 
@@ -42,6 +40,8 @@ const Assignments = () => {
   const [selectedBatches, setSelectedBatches] = useState([]);
   const [mappedStartDate, setMappedStartDate] = useState("");
   const [mappedEndDate, setMappedEndDate] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCollege, setFilterCollege] = useState("all");
 
   const toggleBatch = (batch) => {
     setSelectedBatches((prev) =>
@@ -79,10 +79,18 @@ const Assignments = () => {
     setMappedEndDate("");
   };
 
+  const filteredAssignments = assignments.filter((a) => {
+    const matchesSearch =
+      a.testTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.college.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCollege = filterCollege === "all" || a.college === filterCollege;
+    return matchesSearch && matchesCollege;
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 p-6 sm:p-10">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
               Assignments
@@ -90,7 +98,7 @@ const Assignments = () => {
             <p className="text-gray-500 mt-1">Manage test assignments to students or groups.</p>
           </div>
           <button
-            className="mt-4 sm:mt-0 inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold px-5 py-3 rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-500 text-white font-semibold px-5 py-3 rounded-xl shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
             onClick={() => setShowMapModal(true)}
           >
             <PlusCircle className="w-5 h-5" />
@@ -98,6 +106,35 @@ const Assignments = () => {
           </button>
         </header>
 
+        {/* 🔍 Filter and Search */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3 w-full sm:max-w-md">
+            <Search className="text-gray-400 w-5 h-5 absolute ml-3" />
+            <input
+              type="text"
+              placeholder="Search by test or college..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          <div>
+            <select
+              value={filterCollege}
+              onChange={(e) => setFilterCollege(e.target.value)}
+              className="border border-gray-300 rounded-lg px-4 py-2 shadow-sm focus:ring-purple-500 focus:border-purple-500"
+            >
+              <option value="all">All Colleges</option>
+              {colleges.map((c, idx) => (
+                <option key={idx} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Table */}
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -111,15 +148,30 @@ const Assignments = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {assignments.map((item, idx) => (
+              {filteredAssignments.map((item, idx) => (
                 <tr key={item.id} className="hover:bg-sky-50/40">
                   <td className="p-4 text-gray-500">{idx + 1}</td>
                   <td className="p-4 text-gray-800 font-medium">{item.testTitle}</td>
                   <td className="p-4 text-gray-700">{item.college}</td>
                   <td className="p-4 text-gray-700">{item.batches.join(", ")}</td>
                   <td className="p-4 text-gray-600 text-sm">
-                    {new Date(item.startDate).toLocaleString()} <br />
-                    to {new Date(item.endDate).toLocaleString()}
+                    {new Date(item.startDate).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true
+                    })}{" "}
+                    <br /> to{" "}
+                    {new Date(item.endDate).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true
+                    })}
                   </td>
                   <td className="p-4 text-center">
                     <button
@@ -131,7 +183,7 @@ const Assignments = () => {
                   </td>
                 </tr>
               ))}
-              {assignments.length === 0 && (
+              {filteredAssignments.length === 0 && (
                 <tr>
                   <td colSpan="6" className="p-6 text-center text-gray-500">
                     No assignments found.
