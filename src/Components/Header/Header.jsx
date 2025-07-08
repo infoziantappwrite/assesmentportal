@@ -36,7 +36,7 @@ const Header = () => {
 
   const goToDashboard = () => {
     setDropdownOpen(false);
-    navigate(role === 'student' ? '/dashboard' : `/${role}/dashboard`);
+    navigate(role === 'candidate' ? '/dashboard' : `/${role}/dashboard`);
   };
 
   useEffect(() => {
