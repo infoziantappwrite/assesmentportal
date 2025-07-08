@@ -1,10 +1,7 @@
 // components/common/Table.jsx
 import React from "react";
 
-const Table = ({ columns = [], data = [], noDataText = "No data found." }) => {
-    console.log("data", data)
-    console.log(columns);
-    
+const Table = ({ columns = [], data = [], noDataText = "No data found." }) => {    
     
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-x-auto">
