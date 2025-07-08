@@ -10,7 +10,9 @@ const AllUsers = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [pagination, setPagination] = useState({});
-  const [loading,Setloading]=useState(true)
+  const [loading,Setloading]=useState(true);
+  const [error, setError] = useState('');
+
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
@@ -33,9 +35,12 @@ const AllUsers = () => {
         const data = res.data.users || [];
         setUsers(data);
         setPagination(res.data.pagination || {});
-        Setloading(false)
+        Setloading(false);
+         setError('');
       })
       .catch((err) => {
+         setError('Something went wrong while fetching users.');
+         Setloading(false);
         console.error('Failed to fetch users:', err);
       });
   }, [filters.page]);
@@ -155,7 +160,15 @@ const AllUsers = () => {
 
       {/* Table */}
 
-      <Table columns={columns} data={filteredUsers} />
+      {error ? (
+  <div className="p-4 mt-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-center shadow">
+    <h2 className="text-md font-semibold">Something went wrong</h2>
+    <p className="text-sm">{error}</p>
+  </div>
+) : (
+  <Table columns={columns} data={filteredUsers} />
+)}
+
 
 
       {/* Pagination */}

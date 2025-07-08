@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { getUserById, updateUserById, deleteUserById } from '../../../Controllers/userControllers';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Pencil, Trash2, User2, Check } from 'lucide-react';
+import { Pencil, Trash2, User2, Check,CheckCircle, XCircle } from 'lucide-react';
 import Loader from '../../../Components/Loader';
+import ResetUserPassword from './ResetuserPassword';
 
 const UserDetails = () => {
   const { id } = useParams();
@@ -98,16 +99,21 @@ const UserDetails = () => {
       <div className="p-6 max-w-5xl mx-auto bg-white rounded-xl shadow-lg">
         {/* Status Message */}
         {statusMessage.text && (
-          <div
-            className={`mb-4 px-4 py-2 text-sm rounded-lg border ${
-              statusMessage.type === 'success'
-                ? 'text-green-700 bg-green-50 border-green-200'
-                : 'text-red-700 bg-red-50 border-red-200'
-            }`}
-          >
-            {statusMessage.text}
-          </div>
-        )}
+  <div
+    className={`mb-4 px-4 py-2 text-sm rounded-lg border flex items-center gap-2 ${
+      statusMessage.type === 'success'
+        ? 'text-green-700 bg-green-50 border-green-200'
+        : 'text-red-700 bg-red-50 border-red-200'
+    }`}
+  >
+    {statusMessage.type === 'success' ? (
+      <CheckCircle className="w-4 h-4" />
+    ) : (
+      <XCircle className="w-4 h-4" />
+    )}
+    {statusMessage.text}
+  </div>
+)}
 
         {/* Top Row */}
         <div className="flex justify-between items-center mb-6">
@@ -133,7 +139,7 @@ const UserDetails = () => {
 
             <button
               onClick={() => (editMode ? handleUpdate() : setEditMode(true))}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg shadow transition ${
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg shadow transition ${
                 editMode
                   ? 'bg-green-600 hover:bg-green-700 text-white'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -154,11 +160,13 @@ const UserDetails = () => {
 
             <button
               onClick={handleDelete}
-              className="flex items-center gap-2 px-3 py-1 bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
+              className="flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
             >
               <Trash2 className="w-4 h-4" />
               Delete
             </button>
+            <ResetUserPassword userId={id} />
+
           </div>
         </div>
 
@@ -234,7 +242,7 @@ const UserDetails = () => {
               return (
                 <label
                   key={key}
-                  className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-sm shadow-sm ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm shadow-sm ${
                     formData.permissions?.[key]
                       ? 'bg-blue-100 text-blue-800 border-blue-300'
                       : 'bg-gray-100 text-gray-600 border-gray-300'
