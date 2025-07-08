@@ -55,7 +55,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { label: 'Groups', to: '/college/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
       { label: 'Analytics', to: '/college/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
       { label: 'Reports', to: '/college/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
-      { label: 'Profile', to: '/college/profile', icon: UserCircle, gradient: 'from-pink-200 to-purple-100' },
+     
     ],
     trainer: [
       { label: 'Dashboard', to: '/trainer/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
@@ -66,7 +66,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { label: 'Students', to: '/trainer/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
       { label: 'Analytics', to: '/trainer/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
       { label: 'Reports', to: '/trainer/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
-      { label: 'Profile', to: '/trainer/profile', icon: UserCircle, gradient: 'from-pink-200 to-purple-100' },
+      
     ]
   };
 
@@ -85,7 +85,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       )}
 
       <div
-        className={`fixed md:static inset-y-0 left-0 z-40 w-72 md:w-64 bg-white border-r border-gray-200 shadow-md
+        className={`fixed md:static inset-y-0 left-0 z-40 w-72 md:w-64 bg-white border-r border-gray-300 shadow-md
         transform transition-transform duration-300 ease-in-out
         ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : ''}`}
       >
@@ -109,15 +109,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             )}
           </div>
 
-          <div className="flex items-center gap-2 mt-4">
-            <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs shadow-sm">
-              <Bell className="w-4 h-4" />
-              Alerts
-            </button>
-            <button className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 shadow-sm">
-              <Settings className="w-4 h-4" />
-            </button>
-          </div>
+         
         </div>
 
         {/* Navigation */}
@@ -139,7 +131,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               >
                 <div className={`w-8 h-8 rounded-md flex items-center justify-center
                 ${isActive ? 'bg-white/30' : 'bg-gray-100 group-hover:bg-gray-200'}`}>
-                  <Icon className="w-4 h-4" />
+                  {Icon && <Icon className="w-4 h-4" />}
                 </div>
                 <span className="text-sm flex-1">{label}</span>
                 <ChevronRight
@@ -151,8 +143,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
-        </div>
+       
       </div>
     </>
   );
