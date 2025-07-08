@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Eye, PlusCircle, Search } from "lucide-react";
 import MapTest from "./MapTest";
 import ViewAssignmentModal from "./ViewAssignmentModal";
+import Table from "../../Components/Table"; // ⬅️ Import reusable table
 
 const testOptions = [
   { id: 1, title: "Full Stack Developer Assessment" },
@@ -54,9 +55,7 @@ const Assignments = () => {
       alert("Please fill in all fields.");
       return;
     }
-
     const selectedTest = testOptions.find((t) => t.id === parseInt(selectedTestId));
-
     const newAssignment = {
       id: assignments.length + 1,
       testTitle: selectedTest.title,
@@ -65,7 +64,6 @@ const Assignments = () => {
       startDate: mappedStartDate,
       endDate: mappedEndDate,
     };
-
     setAssignments((prev) => [...prev, newAssignment]);
     handleCloseMap();
   };
@@ -86,6 +84,40 @@ const Assignments = () => {
     const matchesCollege = filterCollege === "all" || a.college === filterCollege;
     return matchesSearch && matchesCollege;
   });
+
+  const tableColumns = [
+    { label: "id", accessor: "id", render: (row, idx) => idx + 1 },
+    { label: "Test", accessor: "testTitle" },
+    { label: "College", accessor: "college" },
+    {
+      label: "Batches",
+      accessor: "batches",
+      render: (row) => row.batches.join(", ")
+    },
+    {
+      label: "Schedule",
+      accessor: "schedule",
+      render: (row) => `${new Date(row.startDate).toLocaleString("en-GB", {
+        day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit", hour12: true
+      })} to ${new Date(row.endDate).toLocaleString("en-GB", {
+        day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit", hour12: true
+      })}`
+    },
+    {
+      label: "Actions",
+      accessor: "actions",
+      render: (row) => (
+        <button
+          onClick={() => setViewAssignment(row)}
+          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+        >
+          <Eye className="w-4 h-4" /> View
+        </button>
+      )
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-purple-50 p-6 sm:p-10">
@@ -126,73 +158,14 @@ const Assignments = () => {
             >
               <option value="all">All Colleges</option>
               {colleges.map((c, idx) => (
-                <option key={idx} value={c}>
-                  {c}
-                </option>
+                <option key={idx} value={c}>{c}</option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="p-4 text-left text-gray-600 font-semibold">#</th>
-                <th className="p-4 text-left text-gray-600 font-semibold">Test</th>
-                <th className="p-4 text-left text-gray-600 font-semibold">College</th>
-                <th className="p-4 text-left text-gray-600 font-semibold">Batches</th>
-                <th className="p-4 text-left text-gray-600 font-semibold">Schedule</th>
-                <th className="p-4 text-center text-gray-600 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredAssignments.map((item, idx) => (
-                <tr key={item.id} className="hover:bg-sky-50/40">
-                  <td className="p-4 text-gray-500">{idx + 1}</td>
-                  <td className="p-4 text-gray-800 font-medium">{item.testTitle}</td>
-                  <td className="p-4 text-gray-700">{item.college}</td>
-                  <td className="p-4 text-gray-700">{item.batches.join(", ")}</td>
-                  <td className="p-4 text-gray-600 text-sm">
-                    {new Date(item.startDate).toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true
-                    })}{" "}
-                    <br /> to{" "}
-                    {new Date(item.endDate).toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true
-                    })}
-                  </td>
-                  <td className="p-4 text-center">
-                    <button
-                      onClick={() => setViewAssignment(item)}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      <Eye className="w-4 h-4" /> View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredAssignments.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="p-6 text-center text-gray-500">
-                    No assignments found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* ✅ Reusable Table */}
+        <Table columns={tableColumns} data={filteredAssignments} />
       </div>
 
       {/* Map Modal */}
@@ -222,16 +195,14 @@ const Assignments = () => {
             >
               <option value="">-- Select a Test --</option>
               {testOptions.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}
-                </option>
+                <option key={t.id} value={t.id}>{t.title}</option>
               ))}
             </select>
           </div>
         </MapTest>
       )}
 
-      {/* View Assignment Modal */}
+      {/* View Modal */}
       {viewAssignment && (
         <ViewAssignmentModal
           assignment={viewAssignment}
