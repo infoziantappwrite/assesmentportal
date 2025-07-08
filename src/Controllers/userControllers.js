@@ -12,12 +12,14 @@ export const getAllUsers = async (params = {}) => {
 // Create a new user
 export const createUser = async (userData) => {
   const response = await axiosClient.post('/users', userData);
+  console.log("Response from createUser:", response.data);
   return response.data;
 };
 
 // Get user by ID
 export const getUserById = async (id) => {
   const response = await axiosClient.get(`/users/${id}`);
+  console.log(response.data)
   return response.data;
 };
 
@@ -29,7 +31,9 @@ export const updateUserById = async (id, userData) => {
 
 // Delete user by ID
 export const deleteUserById = async (id) => {
+  
   const response = await axiosClient.delete(`/users/${id}`);
+  
   return response.data;
 };
 

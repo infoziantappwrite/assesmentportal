@@ -37,8 +37,8 @@ const ProtectedLayout = () => {
   )}
 
   {/* Scrollable main content (with footer) */}
-  <div className="flex-1 flex flex-col h-screen overflow-y-auto  bg-gradient-to-br from-blue-50 via-slate-100 to-teal-50 ">
-    <main className="flex-1 p-4">
+  <div className="flex-1 flex flex-col h-screen overflow-y-auto  bg-gradient-to-br from-blue-50 via-slate-100 to-teal-50 min-h-screen ">
+    <main className="flex-1">
       <Outlet />
     </main>
 

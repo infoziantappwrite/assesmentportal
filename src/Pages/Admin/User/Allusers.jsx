@@ -1,24 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { getAllUsers } from '../../../Controllers/userControllers';
+import { useNavigate } from 'react-router-dom';
+import Table from '../../../Components/Table';
+import Loader from '../../../Components/Loader';
+
+import { Search, ShieldPlus, UserPlus, Users } from 'lucide-react';
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [pagination, setPagination] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading,Setloading]=useState(true)
+  const navigate = useNavigate();
 
   const [filters, setFilters] = useState({
     page: 1,
-    limit: 1,
+    limit: 10,
     sortBy: 'createdAt',
     sortOrder: 'desc',
     search: '',
     role: '',
   });
 
-  // Fetch data from backend (pagination only)
   useEffect(() => {
-    setLoading(true);
     getAllUsers({
       page: filters.page,
       limit: filters.limit,
@@ -29,24 +33,20 @@ const AllUsers = () => {
         const data = res.data.users || [];
         setUsers(data);
         setPagination(res.data.pagination || {});
-        setLoading(false);
+        Setloading(false)
       })
       .catch((err) => {
         console.error('Failed to fetch users:', err);
-        setLoading(false);
       });
   }, [filters.page]);
 
-  // Apply search and role filter in frontend
   useEffect(() => {
     let result = [...users];
 
-    // Filter by role
     if (filters.role) {
       result = result.filter((user) => user.role === filters.role);
     }
 
-    // Filter by search keyword
     if (filters.search) {
       const keyword = filters.search.toLowerCase();
       result = result.filter(
@@ -59,107 +59,161 @@ const AllUsers = () => {
     setFilteredUsers(result);
   }, [users, filters.role, filters.search]);
 
-  return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">
-        All Users ({filteredUsers.length})
-      </h2>
-
-      {/* Filter controls */}
-      <div className="flex gap-4 mb-4">
-        <select
-          value={filters.role}
-          onChange={(e) => setFilters({ ...filters, role: e.target.value })}
-          className="border p-2 rounded"
+  const columns = [
+    { label: 'Name', accessor: 'name' },
+    { label: 'Email', accessor: 'email' },
+    { label: 'Role', accessor: 'role' },
+    {
+      label: 'Status',
+      render: (row) => (
+        <span
+          className={`px-2 py-1 rounded text-xs font-medium ${row.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}
         >
-          <option value="">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="trainer">Trainer</option>
-          <option value="college">College</option>
-          <option value="candidate">Candidate</option>
-        </select>
+          {row.is_active ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+    {
+      label: 'Created',
+      render: (row) => new Date(row.createdAt).toLocaleDateString(),
+    },
+    {
+      label: 'Action',
+      render: (row) => (
+        <button
+          onClick={() => navigate(`/admin/users/${row._id}`)}
+          className="text-blue-600 hover:underline text-sm"
+        >
+          View
+        </button>
+      ),
+    },
+  ];
+  if (loading) {
+    return (
+      <Loader/>
+    );
+  }
 
-        <input
-          type="text"
-          placeholder="Search by name or email"
-          value={filters.search}
-          onChange={(e) =>
-            setFilters({ ...filters, search: e.target.value })
-          }
-          className="border p-2 rounded w-64"
-        />
+  return (
+    <div className="p-6">
+      {/* Header + Filters + Button Row */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+
+        {/* Title Section */}
+        <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-600">
+          <Users className="w-5 h-5 text-blue-500" />
+          All Users
+
+        </h2>
+
+        {/* Controls Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+
+          {/* Search Box */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search name or email"
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="w-full pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white rounded-lg shadow-lg border border-gray-200"
+            />
+          </div>
+
+          {/* Role Dropdown */}
+          <div className="relative w-full sm:w-40">
+            <ShieldPlus className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <select
+              value={filters.role}
+              onChange={(e) => setFilters({ ...filters, role: e.target.value })}
+              className="w-full pl-9 pr-3 py-2 bg-white rounded-lg shadow-lg border border-gray-200 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="trainer">Trainer</option>
+              <option value="college">College</option>
+              <option value="candidate">Candidate</option>
+            </select>
+          </div>
+
+          {/* Create Button */}
+          <button
+            onClick={() => navigate('/admin/users/create')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg bg-green-600 text-white hover:bg-green-700 text-sm whitespace-nowrap"
+          >
+            <UserPlus className="w-4 h-4" />
+            Create User
+          </button>
+        </div>
       </div>
 
-      {/* User table */}
-      {loading ? (
-        <div>Loading users...</div>
-      ) : (
-        <table className="w-full text-sm border">
-          <thead>
-            <tr className="bg-gray-100 text-left">
-              <th className="p-2 border">Name</th>
-              <th className="p-2 border">Email</th>
-              <th className="p-2 border">Role</th>
-              <th className="p-2 border">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.length === 0 ? (
-              <tr>
-                <td colSpan="4" className="text-center p-4">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              filteredUsers.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="p-2 border">{user.name}</td>
-                  <td className="p-2 border">{user.email}</td>
-                  <td className="p-2 border capitalize">{user.role}</td>
-                  <td className="p-2 border">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        user.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {user.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      )}
+
+
+
+      {/* Table */}
+
+      <Table columns={columns} data={filteredUsers} />
+
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="mt-4 flex justify-between text-sm">
+        <div className="mt-6 flex justify-center  items-center flex-wrap gap-2  px-4 py-2">
+
+          {/* Previous */}
           <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
             onClick={() =>
-              setFilters((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))
+              setFilters((prev) => ({
+                ...prev,
+                page: Math.max(prev.page - 1, 1),
+              }))
             }
             disabled={filters.page <= 1}
           >
-            Previous
+            ← Prev
           </button>
-          <div>
-            Page {pagination.currentPage} of {pagination.totalPages}
+
+          {/* Page Numbers */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                className={`px-3 py-1 rounded-lg border text-sm ${filters.page === pageNum
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'border-gray-300 text-gray-700 hover:bg-blue-50'
+                  }`}
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    page: pageNum,
+                  }))
+                }
+              >
+                {pageNum}
+              </button>
+            ))}
           </div>
+
+          {/* Next */}
           <button
-            className="px-3 py-1 border rounded disabled:opacity-50"
+            className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
             onClick={() =>
-              setFilters((prev) => ({ ...prev, page: prev.page + 1 }))
+              setFilters((prev) => ({
+                ...prev,
+                page: prev.page + 1,
+              }))
             }
             disabled={filters.page >= pagination.totalPages}
           >
-            Next
+            Next →
           </button>
         </div>
       )}
+
+
     </div>
   );
 };
