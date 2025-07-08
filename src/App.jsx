@@ -39,6 +39,8 @@ import CollegeDashboard from './Pages/Common/College/CollegeDashboard';
 import CollegeAnalytics from './Pages/Common/College/CollegeAnalytics';
 import CollegeProfile from './Pages/Common/College/CollegeProfile';
 import CollegeReports from './Pages/Common/College/CollegeReports';
+import ManageColleges from './Pages/Admin/ManageColleges';
+import ViewCollege from './Pages/Admin/Buttons/ViewCollege';
 
 
 
@@ -88,12 +90,15 @@ const App = () => {
         <Route element={<ProtectedLayout />}>
           {/* Add more admin-specific routes here */}
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
+          <Route path="/admin/colleges" element={<ManageColleges />} />
+          <Route path="/admin/users" element={<div>Manage Users</div>} />
           <Route path="/admin/colleges" element={<div>Manage Colleges</div>} />
           <Route path="/admin/users" element={<AllUsers/>} />
           <Route path="/admin/users/create" element={<CreateUser/>} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
+          <Route path="/superadmin/colleges/:id" element={<ViewCollege />} />
         </Route>
       </Route>
 
