@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Lock, CheckCircle } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { resetPasswordAPI } from '../../Controllers/authController';
+
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState(null);
-  const [token, setToken] = useState(null);
 
-  const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    const tokenFromUrl = searchParams.get('token');
-    setToken(tokenFromUrl);
-  }, [searchParams]);
+
+  const { token } = useParams();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(token)
 
     if (!token) {
       setError('Reset token is missing.');
@@ -34,6 +32,10 @@ const ResetPassword = () => {
 
     if (result.success) {
       setSubmitted(true);
+      setTimeout(() => {
+       window.location.href = '/';
+
+      }, 1500); // Redirect after 1.5 seconds
       setError(null);
     } else {
       setError(result.message);
@@ -54,6 +56,7 @@ const ResetPassword = () => {
           <div className="bg-green-100 border border-green-400 text-green-800 text-sm px-4 py-3 rounded-lg text-center flex items-center justify-center gap-2">
             <CheckCircle className="w-5 h-5" />
             Password has been successfully reset.
+            
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
