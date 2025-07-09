@@ -98,7 +98,7 @@ const App = () => {
           <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
-          <Route path="/superadmin/colleges/:id" element={<ViewCollege />} />
+          <Route path="/admin/colleges/:id" element={<ViewCollege />} />
         </Route>
       </Route>
 

@@ -97,7 +97,7 @@ const ManageColleges = () => {
     ];
 
     const handleViewCollege = (id) => {
-        navigate(`/superadmin/colleges/${id}`); // 👈 navigate to view page
+        navigate(`/admin/colleges/${id}`); // 👈 navigate to view page
     };
 
 
