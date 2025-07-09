@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { X, School, MapPin, Mail, Phone, Globe, CheckCircle } from "lucide-react";
 import axios from "axios";
+import { createCollege } from "../../../Controllers/CollegeController";
 
 const CreateCollege = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -45,22 +46,19 @@ const CreateCollege = ({ onClose }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        "https://assessment-platform-jua0.onrender.com/api/v1/colleges",
-        formData,
-        { withCredentials: true }
-      );
-      alert("College created successfully!");
-      onClose();
-    } catch (err) {
-      alert("Failed to create college.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  e.preventDefault();
+  setLoading(true);
+  try {
+    await createCollege(formData); // ✅ use the controller method
+    alert("College created successfully!");
+    onClose();
+  } catch (err) {
+    console.error("Error creating college:", err);
+    alert("Failed to create college.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
