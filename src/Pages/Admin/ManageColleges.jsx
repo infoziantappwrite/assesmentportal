@@ -5,6 +5,7 @@ import CreateCollege from "./Buttons/CreateCollege";
 import axios from "axios"
 import ViewCollege from "./Buttons/ViewCollege";
 import { useNavigate } from "react-router-dom"; // 👈 import
+import { getAllColleges } from "../../Controllers/CollegeController";
 
 const ManageColleges = () => {
     const [colleges, setColleges] = useState([]);
@@ -13,60 +14,30 @@ const ManageColleges = () => {
     const [selectedCollegeId, setSelectedCollegeId] = useState(null);
     const navigate = useNavigate(); // 👈 init navigate
 
-
-
     useEffect(() => {
-        const fetchColleges = async () => {
-            try {
-                const res = await axios.get("https://assessment-platform-jua0.onrender.com/api/v1/colleges", {
-                    withCredentials: true,
-                });
-                setColleges(res.data.data.colleges || []);
-            } catch (err) {
-                console.error("Failed to fetch colleges:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+  const fetchColleges = async () => {
+    try {
+      const data = await getAllColleges();
+      setColleges(data);
+    } catch (err) {
+      console.error("Failed to fetch colleges:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-
-        fetchColleges();
-    }, []);
-
+  fetchColleges();
+}, []);
 
     const columns = [
         { label: "S.No", accessor: "_id", render: (_, index) => index + 1 },
         { label: "College Name", accessor: "name" },
         { label: "Code", accessor: "code" },
-        {
-            label: "Address",
-            accessor: "address",
-            render: (row) =>
-                `${row.address.street}, ${row.address.city}, ${row.address.state}, ${row.address.pincode}, ${row.address.country}`,
-        },
+       
         {
             label: "Email",
             accessor: "contact.email",
             render: (row) => row.contact?.email || "-",
-        },
-        {
-            label: "Phone",
-            accessor: "contact.phone",
-            render: (row) => row.contact?.phone || "-",
-        },
-        {
-            label: "Website",
-            accessor: "contact.website",
-            render: (row) => (
-                <a
-                    href={row.contact?.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 underline"
-                >
-                    {row.contact?.website}
-                </a>
-            ),
         },
         { label: "Total Students", accessor: "total_students" },
         {

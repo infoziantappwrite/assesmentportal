@@ -92,6 +92,7 @@ const App = () => {
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
           <Route path="/admin/users" element={<AllUsers/>} />
+           <Route path="/admin/group" element={<div>Groups </div>} />
           <Route path="/admin/users/create" element={<CreateUser/>} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />

@@ -6,6 +6,13 @@ import {
   CalendarDays, Hash, MapPin, Clock4, Trash2, Pencil
 } from "lucide-react";
 import EditCollege from "./EditCollege";
+import {
+  getCollegeById,
+  getStudentsByCollegeId,
+  deleteCollege,
+} from "../../../Controllers/CollegeController";
+import {getAllUsers} from "../../../Controllers/userControllers"
+
 
 const ViewCollege = () => {
   const { id } = useParams();
@@ -16,49 +23,58 @@ const ViewCollege = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
 
-  useEffect(() => {
-    const fetchCollegeDetails = async () => {
-      try {
-        const res = await axios.get(
-          `https://assessment-platform-jua0.onrender.com/api/v1/colleges/${id}`,
-          { withCredentials: true }
-        );
-        setCollege(res.data.data.college);
-      } catch (err) {
-        console.error("Failed to fetch college:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchStudents = async () => {
-      try {
-        const res = await axios.get(
-          `https://assessment-platform-jua0.onrender.com/api/v1/colleges/${id}/students`,
-          { withCredentials: true }
-        );
-        setStudents(res.data.data.students || []);
-      } catch (err) {
-        console.error("Failed to fetch students:", err);
-      }
-    };
-
-    fetchCollegeDetails();
-    fetchStudents();
-  }, [id]);
-
-  const handleDelete = async () => {
+ useEffect(() => {
+  const fetchCollegeDetails = async () => {
     try {
-      await axios.delete(`https://assessment-platform-jua0.onrender.com/api/v1/colleges/${id}`, {
-        withCredentials: true,
-      });
-      alert("College deactivated successfully.");
-      navigate("/admin/manage-colleges");
+      const collegeData = await getCollegeById(id);
+      setCollege(collegeData);
     } catch (err) {
-      console.error("Delete error:", err);
-      alert("Failed to deactivate college.");
+      console.error("Failed to fetch college:", err);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const fetchStudents = async () => {
+    try {
+      const studentsData = await getStudentsByCollegeId(id);
+      setStudents(studentsData);
+    } catch (err) {
+      console.error("Failed to fetch students:", err);
+    }
+  };
+
+  fetchCollegeDetails();
+  fetchStudents();
+}, [id]);
+
+
+useEffect(() => {
+  const fetchCollegeUsers = async () => {
+    try {
+      const allUsersRes = await getAllUsers(); // returns { data: { users: [...] }, ... }
+      const usersArray = allUsersRes?.data?.users || [];
+      const collegeUsers = usersArray.filter(user => user.role === "college");
+      console.log("Filtered college users:", collegeUsers);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+    }
+  };
+
+  fetchCollegeUsers();
+}, [id]);
+
+
+const handleDelete = async () => {
+  try {
+    await deleteCollege(id);
+    alert("College deactivated successfully.");
+    navigate("/admin/manage-colleges");
+  } catch (err) {
+    console.error("Delete error:", err);
+    alert("Failed to deactivate college.");
+  }
+};
 
   if (loading) return <div className="p-10 text-gray-600 text-lg font-medium tracking-wide">Loading...</div>;
   if (!college) return <div className="p-10 text-red-600 text-lg font-semibold">College not found</div>;
