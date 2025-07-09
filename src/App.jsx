@@ -41,6 +41,9 @@ import CollegeProfile from './Pages/Common/College/CollegeProfile';
 import CollegeReports from './Pages/Common/College/CollegeReports';
 import ManageColleges from './Pages/Admin/ManageColleges';
 import ViewCollege from './Pages/Admin/Buttons/ViewCollege';
+import ManageGroup from './Pages/Admin/Groups/ManageGroup';
+import ViewGroup from './Pages/Admin/Groups/ViewGroup';
+import EditGroup from './Pages/Admin/Groups/EditGroup';
 
 
 
@@ -92,9 +95,13 @@ const App = () => {
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
           <Route path="/admin/users" element={<AllUsers/>} />
-           <Route path="/admin/group" element={<div>Groups </div>} />
+           <Route path="/admin/group" element={<ManageGroup />} />
           <Route path="/admin/users/create" element={<CreateUser/>} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
+          <Route path="/admin/groups/:id" element={<ViewGroup />} />
+          <Route path="/admin/groups/edit/:id" element={<EditGroup />} />
+
+
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
           <Route path="/admin/colleges/:id" element={<ViewCollege />} />
