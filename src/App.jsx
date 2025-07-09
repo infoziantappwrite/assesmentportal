@@ -91,8 +91,6 @@ const App = () => {
           {/* Add more admin-specific routes here */}
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
-          <Route path="/admin/users" element={<div>Manage Users</div>} />
-          <Route path="/admin/colleges" element={<div>Manage Colleges</div>} />
           <Route path="/admin/users" element={<AllUsers/>} />
           <Route path="/admin/users/create" element={<CreateUser/>} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
