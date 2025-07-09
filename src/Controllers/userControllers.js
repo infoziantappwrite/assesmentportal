@@ -51,6 +51,8 @@ export const resetUserPassword = async (id, password) => {
 
 // Bulk create candidates
 export const createCandidatesBulk = async (bulkData) => {
+  console.log("Bulk data to create candidates:", bulkData);
   const response = await axiosClient.post('/users/bulk-create', bulkData);
+  //console.log("Response from createCandidatesBulk:", response.data);
   return response.data;
 };

@@ -2,10 +2,10 @@
 import React, { useState, useEffect } from "react";
 import Table from "../../Components/Table";
 import CreateCollege from "./Buttons/CreateCollege";
-import axios from "axios"
 import ViewCollege from "./Buttons/ViewCollege";
 import { useNavigate } from "react-router-dom"; // 👈 import
 import { getAllColleges } from "../../Controllers/CollegeController";
+import Loader from "../../Components/Loader";
 
 const ManageColleges = () => {
     const [colleges, setColleges] = useState([]);
@@ -77,7 +77,7 @@ const ManageColleges = () => {
         <div className="relative min-h-screen px-6 py-8">
 
             {/* 📄 Card-like Content Box */}
-            <div className="bg-white p-6 rounded-xl shadow-md relative">
+            <div className="">
 
                 {/* 🧾 Title */}
                 <h1 className="text-2xl font-bold mb-6">Manage Colleges</h1>

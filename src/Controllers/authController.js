@@ -90,7 +90,7 @@ export const refreshToken = async () => {
 
 export const requestPasswordReset = async (email) => {
   try {
-    const response = await axiosClient.post('/auth/forgot-password', { email });
+    const response = await axiosClient.post('/auth/send-password-reset-link', { email });
     console.log('requestPasswordReset response:', response.data);
     return {
       success: true,

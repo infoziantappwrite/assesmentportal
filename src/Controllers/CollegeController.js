@@ -1,5 +1,4 @@
 import axiosClient from "../api/axiosClient";
- 
 export const getAllColleges = async () => {
   const res = await axiosClient.get(`/colleges`, { withCredentials: true });
   return res.data.data.colleges || [];
@@ -30,7 +29,7 @@ export const deleteCollege = async (id) => {
   });
   return res.data;
 };
- 
+
 export const assignCollegeRepresentative = async (collegeId, representativeID) => {
   const res = await axiosClient.post(
     `/colleges/${collegeId}/assign-representative`,
