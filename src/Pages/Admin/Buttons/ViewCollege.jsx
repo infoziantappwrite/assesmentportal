@@ -12,6 +12,7 @@ import {
   deleteCollege,
 } from "../../../Controllers/CollegeController";
 import {getAllUsers} from "../../../Controllers/userControllers"
+import Loader from "../../../Components/Loader";
 
 
 const ViewCollege = () => {
@@ -76,7 +77,7 @@ const handleDelete = async () => {
   }
 };
 
-  if (loading) return <div className="p-10 text-gray-600 text-lg font-medium tracking-wide">Loading...</div>;
+  if (loading) return <Loader />;
   if (!college) return <div className="p-10 text-red-600 text-lg font-semibold">College not found</div>;
 
   const {
@@ -172,7 +173,7 @@ const handleDelete = async () => {
     {/* Students List */}
     <div className="bg-white rounded-2xl shadow-md border border-slate-200 p-6">
       <h3 className="text-xl font-semibold tracking-wide mb-3 flex items-center gap-2 text-gray-800">
-        <Users size={20} /> Assigned Students <span className="text-sm text-slate-500">({students.length})</span>
+        <Users size={20} /> Assigned Reps <span className="text-sm text-slate-500">({students.length})</span>
       </h3>
       {students.length === 0 ? (
         <p className="text-sm text-gray-500 italic">No students assigned to this college yet.</p>

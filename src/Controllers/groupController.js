@@ -61,7 +61,11 @@ export const removeStudentFromGroup = async (groupId, studentId) => {
 };
 
 export const removeStudentsFromGroup = async (groupId, studentIds) => {
-  return await axios.delete(`/api/v1/groups/${groupId}/students`, {
+  console.log(groupId);
+  console.log(studentIds);
+  
+  
+  return await axiosClient.delete(`/groups/${groupId}/students`, {
     data: { studentIds },
   });
 };
