@@ -54,3 +54,14 @@ export const deleteGroupById = async (id) => {
 export const addStudentsToGroup = async (groupId, studentIds) => {
   return axiosClient.post(`/groups/${groupId}/students`, { studentIds });
 };
+
+export const removeStudentFromGroup = async (groupId, studentId) => {
+  const res = await axiosClient.delete(`/groups/${groupId}/students/${studentId}`);
+  return res.data;
+};
+
+export const removeStudentsFromGroup = async (groupId, studentIds) => {
+  return await axios.delete(`/api/v1/groups/${groupId}/students`, {
+    data: { studentIds },
+  });
+};
