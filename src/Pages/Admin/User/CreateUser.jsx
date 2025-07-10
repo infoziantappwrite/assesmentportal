@@ -29,57 +29,61 @@ const CreateUser = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setSuccess('');
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
-  // Ensure college is selected if role is college
-  if (formData.role === 'college' && formData.assigned_colleges.length === 0) {
-    setError('Please select a college for the user with "college" role.');
-    setTimeout(() => setError(''), 2000);
-    return;
-  }
+    // Ensure college is selected if role is college
+    if (formData.role === 'college_rep' && formData.assigned_colleges.length === 0) {
+      setError('Please select a college for the user with "college" role.');
+      setTimeout(() => setError(''), 2000);
+      return;
+    }
 
-  try {
-    const res = await createUser(formData);
-    const newUser = res?.data?.user;
+    try {
+      const res = await createUser(formData);
+      const newUser = res?.data?.user;
 
-    // If role is 'college', assign as representative to the selected college
-    if (newUser?.role === 'college' && newUser?.assigned_colleges?.length > 0) {
-      const collegeId = newUser.assigned_colleges[0];
-      const userId = newUser._id;
+      // If role is 'college', assign as representative to the selected college
+      if (newUser?.role === 'college_rep' && newUser?.assigned_colleges?.length > 0) {
+        const collegeId = newUser.assigned_colleges[0];
+        const userId = newUser._id;
 
-      try {
-        await assignCollegeRepresentative(collegeId, userId);
-        console.log('Representative assigned to college.');
-      } catch (assignError) {
-        console.error('Failed to assign representative:', assignError);
+        try {
+          await assignCollegeRepresentative(collegeId, userId);
+          setSuccess('Representative assigned to college successfully!');
+          setTimeout(() => setError(''), 2000);
+          //console.log('Representative assigned to college.');
+        } catch (assignError) {
+          setError('Failed to assign representative to college.');
+          setTimeout(() => setError(''), 2000);
+          console.error('Failed to assign representative:', assignError);
+        }
       }
-    }
 
-    setSuccess('User created successfully!');
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: 'candidate',
-      is_active: true,
-      assigned_colleges: [],
-    });
-    setSelectedCollegeName('');
-    setTimeout(() => setSuccess(''), 2000);
-  } catch (err) {
-    if (
-      err?.response?.data?.message?.includes('E11000') &&
-      err?.response?.data?.message?.includes('email')
-    ) {
-      setError('Email already exists.');
-    } else {
-      setError(err?.response?.data?.message || 'Error creating user.');
+      setSuccess('User created successfully!');
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'candidate',
+        is_active: true,
+        assigned_colleges: [],
+      });
+      setSelectedCollegeName('');
+      setTimeout(() => setSuccess(''), 2000);
+    } catch (err) {
+      if (
+        err?.response?.data?.message?.includes('E11000') &&
+        err?.response?.data?.message?.includes('email')
+      ) {
+        setError('Email already exists.');
+      } else {
+        setError(err?.response?.data?.message || 'Error creating user.');
+      }
+      setTimeout(() => setError(''), 2000);
     }
-    setTimeout(() => setError(''), 2000);
-  }
-};
+  };
 
 
   const handleCollegeSelect = ({ id, name }) => {
@@ -158,7 +162,7 @@ const CreateUser = () => {
               >
                 <option value="admin">Admin</option>
                 <option value="trainer">Trainer</option>
-                <option value="college">College</option>
+                <option value="college_rep">College Rep</option>
                 <option value="candidate">Candidate</option>
               </select>
             </div>
@@ -199,7 +203,7 @@ const CreateUser = () => {
 
 
             {/* College Info + Select/Change College */}
-            {formData.role === 'college' && (
+            {formData.role === 'college_rep' && (
               <div className="flex items-center gap-3">
                 {selectedCollegeName && (
                   <div className="flex items-center gap-1 text-sm text-blue-800 font-medium bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200">

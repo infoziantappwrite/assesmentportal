@@ -4,7 +4,7 @@ import axiosClient from "../api/axiosClient";
 // Get all users
 export const getAllUsers = async (params = {}) => {
   const response = await axiosClient.get('/users', { params });
-  console.log("Response from getAllUsers:", response.data);
+  //console.log("Response from getAllUsers:", response.data);
   return response.data;
 };
 
@@ -12,7 +12,7 @@ export const getAllUsers = async (params = {}) => {
 // Create a new user
 export const createUser = async (userData) => {
   const response = await axiosClient.post('/users', userData);
-  console.log("Response from createUser:", response.data);
+  //console.log("Response from createUser:", response.data);
   return response.data;
 };
 
@@ -38,10 +38,16 @@ export const deleteUserById = async (id) => {
 };
 
 // Activate user by ID
-export const activateUserById = async (id) => {
-  const response = await axiosClient.put(`/users/${id}/activate`);
+// frontend: userControllers.js
+export const activateUserById = async (id, status) => {
+  const response = await axiosClient.put(
+    `/users/${id}/activate`,
+    { status }, // ✅ send properly structured body
+    { withCredentials: true } // optional if needed
+  );
   return response.data;
 };
+
 
 // Reset user password
 export const resetUserPassword = async (id, password) => {
