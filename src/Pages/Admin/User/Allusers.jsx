@@ -64,37 +64,49 @@ const AllUsers = () => {
     setFilteredUsers(result);
   }, [users, filters.role, filters.search]);
 
-  const columns = [
-    { label: 'Name', accessor: 'name' },
-    { label: 'Email', accessor: 'email' },
-    { label: 'Role', accessor: 'role' },
-    {
-      label: 'Status',
-      render: (row) => (
-        <span
-          className={`px-2 py-1 rounded text-xs font-medium ${row.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}
-        >
-          {row.is_active ? 'Active' : 'Inactive'}
-        </span>
-      ),
-    },
-    {
-      label: 'Created',
-      render: (row) => new Date(row.createdAt).toLocaleDateString(),
-    },
-    {
-      label: 'Action',
-      render: (row) => (
-        <button
-          onClick={() => navigate(`/admin/users/${row._id}`)}
-          className="text-blue-600 hover:underline text-sm"
-        >
-          View
-        </button>
-      ),
-    },
-  ];
+ const roleLabels = {
+  admin: 'Admin',
+  trainer: 'Trainer',
+  college_rep: 'College Rep',
+  candidate: 'Candidate',
+};
+
+const columns = [
+  { label: 'Name', accessor: 'name' },
+  { label: 'Email', accessor: 'email' },
+  {
+    label: 'Role',
+    render: (row) => roleLabels[row.role] || 'Unknown',
+  },
+  {
+    label: 'Status',
+    render: (row) => (
+      <span
+        className={`px-2 py-1 rounded text-xs font-medium ${
+          row.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+        }`}
+      >
+        {row.is_active ? 'Active' : 'Inactive'}
+      </span>
+    ),
+  },
+  {
+    label: 'Created',
+    render: (row) => new Date(row.createdAt).toLocaleDateString(),
+  },
+  {
+    label: 'Action',
+    render: (row) => (
+      <button
+        onClick={() => navigate(`/admin/users/${row._id}`)}
+        className="text-blue-600 hover:underline text-sm"
+      >
+        View
+      </button>
+    ),
+  },
+];
+
   if (loading) {
     return (
       <Loader/>
@@ -139,7 +151,7 @@ const AllUsers = () => {
               <option value="">All Roles</option>
               <option value="admin">Admin</option>
               <option value="trainer">Trainer</option>
-              <option value="college">College</option>
+              <option value="college_rep">College Rep</option>
               <option value="candidate">Candidate</option>
             </select>
           </div>
