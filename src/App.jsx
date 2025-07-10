@@ -45,6 +45,10 @@ import ManageGroup from './Pages/Admin/Groups/ManageGroup';
 import ViewGroup from './Pages/Admin/Groups/ViewGroup';
 import EditGroup from './Pages/Admin/Groups/EditGroup';
 
+//assessment pages
+import ManageAssesment from './Pages/Common/Assessment/ManageAssessment';
+import CreateAssesment from './Pages/Common/Assessment/CreateAssessment';
+
 
 
 
@@ -95,13 +99,13 @@ const App = () => {
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
           <Route path="/admin/users" element={<AllUsers/>} />
-           <Route path="/admin/group" element={<ManageGroup />} />
+          <Route path="/admin/groups" element={<ManageGroup />} />
           <Route path="/admin/users/create" element={<CreateUser/>} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/groups/:id" element={<ViewGroup />} />
           <Route path="/admin/groups/edit/:id" element={<EditGroup />} />
-
-
+          <Route path="/admin/assessments" element={<ManageAssesment />} />
+          <Route path="/admin/assessment/create" element={<CreateAssesment />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
           <Route path="/admin/colleges/:id" element={<ViewCollege />} />

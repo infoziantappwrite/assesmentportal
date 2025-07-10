@@ -6,7 +6,8 @@ import ViewCollege from "./Buttons/ViewCollege";
 import { useNavigate } from "react-router-dom";
 import { getAllColleges } from "../../Controllers/CollegeController";
 import Loader from "../../Components/Loader";
-import { Search } from "lucide-react";
+import { Search,School,PlusCircle,ToggleRight } from "lucide-react";
+
 
 const ManageColleges = () => {
   const [colleges, setColleges] = useState([]);
@@ -85,7 +86,7 @@ const ManageColleges = () => {
       render: (row) => (
         <button
           onClick={() => handleViewCollege(row._id)}
-          className="text-indigo-600 hover:underline text-sm font-medium"
+          className="text-blue-600 hover:underline text-sm "
         >
           View
         </button>
@@ -98,50 +99,64 @@ const ManageColleges = () => {
   };
 
   return (
-    <div className="relative min-h-screen p-6">
+    <div >
       
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-indigo-700">Manage Colleges</h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg shadow"
-          >
-            + Create College
-          </button>
-        </div>
+{/* ✅ Header with Search, Filter, and Create Button */}
 
-        {/* Search & Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {/* Search */}
-          <div className="relative col-span-2">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by college name or code..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
 
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm"
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
+
 
         {/* Table */}
         {loading ? (
           <Loader />
         ) : (
-          <Table columns={columns} data={filteredColleges} noDataText="No colleges found." />
+          < div className="relative min-h-screen p-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6 flex-wrap">
+  {/* Title */}
+  <h1 className="text-lg font-semibold flex items-center gap-2 text-blue-500">
+    <School className="w-5 h-5 text-blue-500" />
+    Manage Colleges
+  </h1>
+
+  {/* Search, Filter, and Button Row */}
+  <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto flex-wrap">
+    {/* Search */}
+    <div className="relative w-full sm:w-72">
+      <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by college name or code..."
+        className="w-full pl-10 pr-4 py-2 border border-gray-200 shadow-xl bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    {/* Status Filter */}
+    <div className="w-full sm:w-48">
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="w-full px-3 py-2 border border-gray-200 shadow-xl rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      >
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    {/* Create Button */}
+    <button
+      onClick={() => setShowCreateModal(true)}
+      className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-xl bg-green-600 text-white hover:bg-green-700 text-sm whitespace-nowrap"
+    >
+      <PlusCircle className="w-4 h-4" />
+      Create College
+    </button>
+  </div>
+</div>
+ <Table columns={columns} data={filteredColleges} noDataText="No colleges found." /></div>
+         
         )}
 
 
