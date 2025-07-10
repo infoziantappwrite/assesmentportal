@@ -5,7 +5,7 @@ import { Pencil, Trash2, User2, Check, CheckCircle, XCircle } from 'lucide-react
 import Loader from '../../../Components/Loader';
 import ResetUserPassword from './ResetuserPassword';
 import UserStatusToggle from './UserStatusToggle';
- import AssignedListCard from './AssignedListCard'; // Adjust path as needed
+import AssignedEntitiesManager from './AssignedEntitiesManager';
 
 const UserDetails = () => {
   const { id } = useParams();
@@ -20,7 +20,7 @@ const UserDetails = () => {
     try {
       const res = await getUserById(id);
       setUser(res.data.user);
-      console.log(res.data.user);
+      //console.log(res.data.user);
       setFormData(res.data.user);
     } catch (err) {
       console.error('Error fetching user:', err);
@@ -114,23 +114,22 @@ const UserDetails = () => {
         )}
 
         {/* ✅ Header + Actions */}
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
-            <User2 className="w-6 h-6 text-blue-600" />
-            User Details
-          </h2>
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col gap-4 md:gap-6 md:flex-row md:items-center md:justify-between mb-4">
+          {/* 🧑 User title + toggle in one row */}
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+              <User2 className="w-6 h-6 text-blue-600" />
+              User Details
+            </h2>
             <UserStatusToggle
               userId={user._id}
-              isActiveInitial={user.is_active}
-              onStatusChange={(newStatus) =>
-                setFormData((prev) => ({ ...prev, is_active: newStatus }))
-              }
+              isActiveInitial={formData.is_active}
+              fetchUser={fetchUser}
             />
+          </div>
 
-
-
-
+          {/* 🛠️ Action buttons */}
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={handleDelete}
               className="flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
@@ -143,6 +142,8 @@ const UserDetails = () => {
           </div>
         </div>
 
+
+
         {/* ✅ Basic Info Card */}
         <div className="rounded-xl shadow bg-white p-4 space-y-6">
           {/* Header row with title and edit/save button */}
@@ -151,16 +152,9 @@ const UserDetails = () => {
             <div className="flex flex-wrap items-center justify-between gap-4 bg-white rounded-lg  text-sm">
               {/* Active / Inactive Toggle */}
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleChange}
-                  disabled={!editMode}
-                  className="accent-blue-600 w-4 h-4"
-                />
+
                 <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${formData.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  className={`px-4 py-1 rounded-full text-md font-medium ${formData.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}
                 >
                   {formData.is_active ? 'Active' : 'Inactive'}
@@ -254,55 +248,49 @@ const UserDetails = () => {
               </div>
             ))}
           </div>
+
+          <div className="p-0">
+            <h3 className="text-lg font-semibold mb-4 text-orange-600">Permissions</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Object.entries(user.permissions || {}).map(([key]) => {
+                const label = key.replace(/_/g, ' ');
+                const isChecked = formData.permissions?.[key] || false;
+
+                return (
+                  <label
+                    key={key}
+                    className={`flex items-center gap-3 px-4 py-2 rounded-lg border text-sm shadow-sm transition-all duration-200
+            ${isChecked
+                        ? 'bg-blue-100 text-blue-800 border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border-gray-300'
+                      }
+            ${editMode ? 'cursor-pointer' : 'opacity-60'}
+          `}
+                  >
+                    <input
+                      type="checkbox"
+                      name={`permissions.${key}`}
+                      checked={isChecked}
+                      onChange={handleChange}
+                      disabled={!editMode}
+                      className="accent-blue-600 w-4 h-4"
+                    />
+                    <span className="capitalize">{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
         </div>
         {/* ✅ Permissions */}
-        <div className="rounded-xl shadow bg-white p-4">
-          <h3 className="text-lg font-semibold mb-4 text-orange-600">Permissions</h3>
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(user.permissions || {}).map(([key]) => {
-              const label = key.replace(/_/g, ' ');
-              return (
-                <label
-                  key={key}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm shadow-sm ${formData.permissions?.[key]
-                    ? 'bg-blue-100 text-blue-800 border-blue-300'
-                    : 'bg-gray-100 text-gray-600 border-gray-300'
-                    } ${editMode ? 'cursor-pointer' : 'opacity-60'}`}
-                >
-                  <input
-                    type="checkbox"
-                    name={`permissions.${key}`}
-                    checked={formData?.permissions?.[key] || false}
-                    onChange={handleChange}
-                    disabled={!editMode}
-                    className="accent-blue-600 w-4 h-4"
-                  />
-                  {label}
-                </label>
-              );
-            })}
-          </div>
-        </div>
+        <AssignedEntitiesManager userId={user._id} />
 
 
 
 
-       
 
-<div className="flex flex-wrap justify-between gap-4">
-  <AssignedListCard
-    title="Assigned Colleges"
-    items={user.assigned_colleges}
-    type="college"
-    color="green"
-  />
-  <AssignedListCard
-    title="Assigned Groups"
-    items={user.assigned_groups}
-    type="group"
-    color="pink"
-  />
-</div>
 
 
 

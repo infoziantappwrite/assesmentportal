@@ -3,7 +3,6 @@ import { createGroup } from "../../../Controllers/groupController";
 import { getAllUsers } from "../../../Controllers/userControllers";
 import { getAllColleges } from "../../../Controllers/CollegeController";
 import { X } from "lucide-react";
-import Loader from "../../../Components/Loader";
 
 const CreateGroupModal = ({ onClose, onCreated }) => {
   const [form, setForm] = useState({
@@ -15,9 +14,9 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
     studentIds: [],
   });
 
-  const [loading, setLoading] = useState(false);
   const [students, setStudents] = useState([]);
   const [colleges, setColleges] = useState([]);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,23 +51,32 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
+  
     try {
       await createGroup(form);
-      alert("Group created successfully");
-      onCreated();
-      onClose();
+      setStatus("Group created successfully!");
+      
+      setTimeout(() => {
+        setStatus('');
+      }, 2000);
+      
+       setTimeout(() => {
+        onClose();
+        onCreated();
+      }, 2000);
     } catch (err) {
-      alert("Failed to create group");
+      setStatus("Failed to create group.");
+       setTimeout(() => {
+        setStatus('');
+      }, 2000);
       console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6">
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white p-2 border border-gray-300 rounded-2xl">
+      <div className="relative w-full max-w-3xl bg-white  p-4 max-h-[85vh] overflow-y-auto ">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-red-500"
@@ -76,11 +84,12 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
           <X size={22} />
         </button>
 
-        <h2 className="text-xl font-bold text-gray-800 text-center mb-5">
-          🚀 Create New Group
+        <h2 className="text-xl font-bold text-blue-500 text-center mb-4">
+          Create New Group
         </h2>
 
-        {loading && <Loader />}
+        
+
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -94,7 +103,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
                 value={form.name}
                 onChange={handleChange}
                 placeholder="Enter group name"
-                className="mt-1 w-full px-4 py-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 w-full px-4 py-1.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -106,7 +115,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
                 name="collegeId"
                 value={form.collegeId}
                 onChange={handleChange}
-                className="mt-1 w-full px-4 py-1.5 border rounded-lg text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 w-full px-4 py-1.5 border border-gray-300 rounded-lg text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">-- Select College --</option>
                 {colleges.map((college) => (
@@ -118,7 +127,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">
                 Department
@@ -129,7 +138,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
                 value={form.department}
                 onChange={handleChange}
                 placeholder="Eg: CSE"
-                className="mt-1 w-full px-4 py-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 w-full px-4 py-1.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -143,7 +152,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
                 value={form.batchYear}
                 onChange={handleChange}
                 placeholder="Eg: 2025"
-                className="mt-1 w-full px-4 py-1.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 w-full px-4 py-1.5 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
@@ -158,7 +167,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
               onChange={handleChange}
               rows={3}
               placeholder="Brief description..."
-              className="mt-1 w-full px-4 py-1.5 border rounded-lg resize-none outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 w-full px-4 py-1.5 border border-gray-300 rounded-lg resize-none outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
@@ -166,7 +175,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
             <label className="text-sm font-medium text-gray-700">
               Assign Students
             </label>
-            <div className="mt-1 h-40 overflow-y-auto border rounded-lg p-3 bg-gray-50 space-y-2 scrollbar-thin scrollbar-thumb-gray-300">
+            <div className="mt-1 h-40 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 space-y-2 scrollbar-thin scrollbar-thumb-gray-300">
               {students.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">
                   No students available
@@ -193,8 +202,21 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 mt-6">
+        {/* Buttons */}
+        
+      </div>
+      <div className="flex justify-end gap-3 mt-2">
+        {status && (
+          <div
+            className={`text-sm text-center px-4 py-2 rounded-lg  font-medium ${
+              status.includes("success")
+                ? "bg-green-100 text-green-700 border border-green-300"
+                : "bg-red-100 text-red-700 border border-red-300"
+            }`}
+          >
+            {status}
+          </div>
+        )}
           <button
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
@@ -203,10 +225,10 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+         
             className="px-5 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
           >
-            {loading ? "Creating..." : "Create Group"}
+            confirm
           </button>
         </div>
       </div>

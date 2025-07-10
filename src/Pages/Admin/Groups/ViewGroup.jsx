@@ -24,6 +24,7 @@ const ViewGroup = () => {
     const fetchGroup = async () => {
       try {
         const res = await getGroupById(id);
+        console.log(res.data)
         setGroup(res?.data?.group || null);
       } catch (err) {
         console.error("Failed to fetch group", err);

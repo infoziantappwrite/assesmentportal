@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { activateUserById } from '../../../Controllers/userControllers';
 
-const UserStatusToggle = ({ userId, isActiveInitial, onStatusChange }) => {
+const UserStatusToggle = ({ userId, isActiveInitial, fetchUser }) => {
   const [status, setStatus] = useState(isActiveInitial);
   const [loading, setLoading] = useState(false);
+
+  // ✅ Sync with parent whenever isActiveInitial changes
+  useEffect(() => {
+    setStatus(isActiveInitial);
+  }, [isActiveInitial]);
 
   const toggleStatus = async () => {
     setLoading(true);
     try {
       const res = await activateUserById(userId, !status);
       console.log('User status updated:', res);
-      setStatus(res.isActive);
-      onStatusChange?.(res.isActive);
+      await fetchUser(); // ensures latest data is loaded
     } catch (err) {
       console.error('Failed to update user status', err);
     } finally {
