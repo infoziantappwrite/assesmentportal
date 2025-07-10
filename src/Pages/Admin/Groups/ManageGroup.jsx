@@ -5,7 +5,6 @@ import {
   Trash2,
   UserSquare,
   Search,
-  Calendar,
   ToggleRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +28,10 @@ const ManageGroup = () => {
 
   const navigate = useNavigate();
 
+  // ✅ Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const fetchGroups = async () => {
     setLoading(true);
     try {
@@ -50,14 +53,11 @@ const ManageGroup = () => {
   };
 
   const handleDelete = async (id) => {
-   
     try {
       await deleteGroupById(id);
-     
       fetchGroups();
     } catch (error) {
       console.error("Delete error:", error);
-     
     }
   };
 
@@ -87,7 +87,20 @@ const ManageGroup = () => {
     });
 
     setFilteredGroups(filtered);
+    setCurrentPage(1); // reset page when filters change
   }, [search, statusFilter, groups, colleges]);
+
+  // ✅ Pagination Logic
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedGroups = filteredGroups.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredGroups.length / itemsPerPage);
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const columns = [
     { label: "Group Name", accessor: "name" },
@@ -145,57 +158,92 @@ const ManageGroup = () => {
         <Loader />
       ) : (
         <div className="p-6">
-          {/* ✅ Header */}
-         {/* ✅ Header + Filters Row */}
-<div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-  {/* ✅ Title */}
-  <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-500">
-    <UserSquare className="w-5 h-5 text-blue-500" />
-    Manage Groups
-  </h2>
+          {/* ✅ Header + Filters Row */}
+          <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-500">
+              <UserSquare className="w-5 h-5 text-blue-500" />
+              Manage Groups
+            </h2>
 
-  {/* ✅ Search + Filter + Button Container */}
-  <div className="flex flex-wrap items-center gap-3 ml-auto">
-    {/* ✅ Search Input */}
-    <div className="relative w-full sm:w-64">
-      <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 " />
-      <input
-        type="text"
-        placeholder="Search by name, college, or batch year"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white rounded-lg shadow-md border border-gray-200"
-      />
-    </div>
+            <div className="flex flex-wrap items-center gap-3 ml-auto">
+              {/* Search */}
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4 " />
+                <input
+                  type="text"
+                  placeholder="Search by name, college, or batch year"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white rounded-lg shadow-md border border-gray-200"
+                />
+              </div>
 
-    {/* ✅ Status Filter */}
-    <div className="relative w-full sm:w-48">
-      <ToggleRight className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
-      <select
-        value={statusFilter}
-        onChange={(e) => setStatusFilter(e.target.value)}
-        className="w-full pl-9 pr-3 py-2 bg-white rounded-lg shadow-md border border-gray-200 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="all">All Status</option>
-        <option value="active">Active</option>
-        <option value="inactive">Inactive</option>
-      </select>
-    </div>
+              {/* Filter */}
+              <div className="relative w-full sm:w-48">
+                <ToggleRight className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-white rounded-lg shadow-md border border-gray-200 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
 
-    {/* ✅ Create Group Button */}
-    <button
-      onClick={() => setShowCreateModal(true)}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg shadow bg-green-600 text-white hover:bg-green-700 text-sm whitespace-nowrap"
-    >
-      <PlusCircle size={16} />
-      Create Group
-    </button>
-  </div>
-</div>
-
+              {/* Create Button */}
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg shadow bg-green-600 text-white hover:bg-green-700 text-sm whitespace-nowrap"
+              >
+                <PlusCircle size={16} />
+                Create Group
+              </button>
+            </div>
+          </div>
 
           {/* ✅ Table */}
-          <Table columns={columns} data={filteredGroups} noDataText="No groups found." />
+          <Table
+            columns={columns}
+            data={paginatedGroups}
+            noDataText="No groups found."
+          />
+
+          {/* ✅ Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex justify-center items-center gap-2 text-sm">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+              >
+                Prev
+              </button>
+
+              {[...Array(totalPages)].map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handlePageChange(idx + 1)}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === idx + 1
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 hover:bg-gray-200"
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
 
           {/* ✅ Modal */}
           {showCreateModal && (

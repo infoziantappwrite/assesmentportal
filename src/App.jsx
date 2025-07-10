@@ -39,7 +39,7 @@ import CollegeDashboard from './Pages/Common/College/CollegeDashboard';
 import CollegeAnalytics from './Pages/Common/College/CollegeAnalytics';
 import CollegeProfile from './Pages/Common/College/CollegeProfile';
 import CollegeReports from './Pages/Common/College/CollegeReports';
-import ManageColleges from './Pages/Admin/ManageColleges';
+import ManageColleges from './Pages/Admin/College/ManageColleges';
 import ViewCollege from './Pages/Admin/Buttons/ViewCollege';
 import ManageGroup from './Pages/Admin/Groups/ManageGroup';
 import ViewGroup from './Pages/Admin/Groups/ViewGroup';

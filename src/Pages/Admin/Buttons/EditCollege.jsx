@@ -37,7 +37,7 @@ const fetchCollege = async () => {
   } finally {
     setLoading(false);
   }
-};
+};        
     fetchCollege();
   }, [collegeId]);
 
