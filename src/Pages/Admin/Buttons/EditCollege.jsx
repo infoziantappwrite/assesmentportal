@@ -24,20 +24,20 @@ const EditCollege = ({ collegeId, onClose, onUpdated }) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const fetchCollege = async () => {
-      try {
-        const res = await axios.get(
-          `https://assessment-platform-jua0.onrender.com/api/v1/colleges/${collegeId}`,
-          { withCredentials: true }
-        );
-        setForm(res.data.data.college);
-      } catch (err) {
-        console.error("Failed to load college:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+const fetchCollege = async () => {
+  try {
+    const res = await axios.get(
+      `https://assessment-platform-jua0.onrender.com/api/v1/colleges/${collegeId}`,
+      { withCredentials: true }
+    );
+    console.log("College API Response:", res.data); // 🔍 Check the structure
+    setForm(res.data.data.college);
+  } catch (err) {
+    console.error("Failed to load college:", err);
+  } finally {
+    setLoading(false);
+  }
+};
     fetchCollege();
   }, [collegeId]);
 

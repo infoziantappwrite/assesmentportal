@@ -62,7 +62,7 @@ const CreateCollege = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-2xl p-6 sm:p-8 w-[95%] sm:w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl relative">
+     <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl p-6 relative text-sm sm:max-h-none sm:overflow-visible">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
           <X className="w-5 h-5" />
         </button>
