@@ -55,3 +55,4 @@ export const assignSectionsToAssessment = async (id, sectionData) => {
   });
   return response.data;
 };
+
