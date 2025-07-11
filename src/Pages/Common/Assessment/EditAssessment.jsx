@@ -252,12 +252,12 @@ const EditAssessment = () => {
           {/* ACTION BUTTONS */}
           <div className="flex items-center justify-between pt-4">
             <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="text-blue-500 hover:underline"
-            >
-              ← Go Back
-            </button>
+    type="button"
+    onClick={() => window.history.back()}
+    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
+  >
+    ← Go Back
+  </button>
 
             <div className="flex gap-3">
               <button
