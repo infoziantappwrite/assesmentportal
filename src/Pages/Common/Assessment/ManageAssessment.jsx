@@ -157,10 +157,16 @@ const ManageAssesment = () => {
     <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
       <p>Created: {new Date(item.createdAt).toLocaleDateString()}</p>
       <button
-        className="text-blue-500 hover:underline font-medium"
-        onClick={() => console.log("Navigate or action")}
+        className="text-green-600 hover:underline font-medium"
+        onClick={() => navigate(`/${role}/assessments/${item._id}`)}
       >
         View Details
+      </button>
+      <button
+        className="text-blue-500 hover:underline font-medium"
+        onClick={() => navigate(`/${role}/assessments/edit/${item._id}`)}
+      >
+        Edit Details
       </button>
     </div>
   </div>
