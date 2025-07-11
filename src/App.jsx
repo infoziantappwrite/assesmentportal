@@ -49,6 +49,8 @@ import EditGroup from './Pages/Admin/Groups/EditGroup';
 import ManageAssesment from './Pages/Common/Assessment/ManageAssessment';
 import CreateAssesment from './Pages/Common/Assessment/CreateAssessment';
 import EditCollege from './Pages/Admin/Buttons/EditCollege';
+import EditAssessment from './Pages/Common/Assessment/EditAssessment';
+import ViewAssesment from './Pages/Common/Assessment/ViewAssesment';
 
 
 
@@ -99,18 +101,21 @@ const App = () => {
           {/* Add more admin-specific routes here */}
           <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
+          <Route path="/admin/colleges/:id" element={<ViewCollege />} />
+          <Route path="/admin/colleges/edit/:id" element={<EditCollege />} />
           <Route path="/admin/users" element={<AllUsers/>} />
-          <Route path="/admin/groups" element={<ManageGroup />} />
           <Route path="/admin/users/create" element={<CreateUser/>} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
+          <Route path="/admin/groups" element={<ManageGroup />} />
           <Route path="/admin/groups/:id" element={<ViewGroup />} />
           <Route path="/admin/groups/edit/:id" element={<EditGroup />} />
-          <Route path="/admin/manage-colleges/edit/:id" element={<EditCollege />} />
           <Route path="/admin/assessments" element={<ManageAssesment />} />
-          <Route path="/admin/assessment/create" element={<CreateAssesment />} />
+          <Route path="/admin/assessments/create" element={<CreateAssesment />} />
+          <Route path="/admin/assessments/edit/:id" element={<EditAssessment />} />
+          <Route path="/admin/assessments/:id" element={<ViewAssesment />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
-          <Route path="/admin/colleges/:id" element={<ViewCollege />} />
+         
         </Route>
       </Route>
 

@@ -99,7 +99,7 @@ const UserDetails = () => {
 
   return (
     <div className="p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* ✅ Status Message */}
         {statusMessage.text && (
           <div
