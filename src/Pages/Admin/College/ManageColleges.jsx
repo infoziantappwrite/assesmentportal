@@ -112,9 +112,15 @@ const ManageColleges = () => {
   ];
 
   return (
-    <div className="relative min-h-screen p-6">
+    <div className="relative min-h-screen ">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6 flex-wrap">
+      
+
+      {/* Table */}
+      {loading ? (
+        <Loader />
+      ) : (<div className="p-6">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6 flex-wrap">
         <h1 className="text-lg font-semibold flex items-center gap-2 text-blue-500">
           <School className="w-5 h-5 text-blue-500" />
           Manage Colleges
@@ -160,16 +166,12 @@ const ManageColleges = () => {
           </button>
         </div>
       </div>
-
-      {/* Table */}
-      {loading ? (
-        <Loader />
-      ) : (
         <Table
           columns={columns}
           data={paginatedColleges}
           noDataText="No colleges found."
         />
+        </div>
       )}
 
       {/* Pagination */}
