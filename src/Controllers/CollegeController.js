@@ -22,6 +22,15 @@ export const createCollege = async (formData) => {
   });
   return res.data;
 };
+
+// CollegeController.js
+export const updateCollege = async (id, updatedData) => {
+  const res = await axiosClient.put(`/colleges/${id}`, updatedData, {
+    withCredentials: true,
+  });
+  return res.data;
+};
+
  
 export const deleteCollege = async (id) => {
   const res = await axiosClient.delete(`/colleges/${id}`, {

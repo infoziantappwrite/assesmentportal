@@ -8,6 +8,7 @@ import {
   School,
   CalendarDays,
   CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { getGroupById, updateGroupById } from "../../../Controllers/groupController";
 import Loader from "../../../Components/Loader";
@@ -27,6 +28,7 @@ const EditGroup = () => {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" }); // ✅ Status message
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,6 +47,7 @@ const EditGroup = () => {
         }
       } catch (error) {
         console.error("Error fetching group:", error);
+        setStatus({ type: "error", message: "Failed to load group data." });
       } finally {
         setLoading(false);
       }
@@ -64,13 +67,16 @@ const EditGroup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setStatus({ type: "", message: "" });
+
     try {
       await updateGroupById(id, form);
-      alert("Group updated successfully!");
-      navigate(`/admin/groups/${id}`);
+      setStatus({ type: "success", message: "Group updated successfully." });
+      setTimeout(() => setStatus({ type: "", message: "" }), 2300);
     } catch (error) {
       console.error("Failed to update group", error);
-      alert("Failed to update group.");
+      setStatus({ type: "error", message: "Failed to update group." });
+      setTimeout(() => setStatus({ type: "", message: "" }), 2300);
     } finally {
       setSubmitting(false);
     }
@@ -81,7 +87,7 @@ const EditGroup = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-6">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-6 relative">
-        {/* Cancel Button */}
+        {/* ❌ Cancel Button */}
         <button
           onClick={() => navigate(`/admin/groups/${id}`)}
           className="absolute top-5 right-5 text-gray-400 hover:text-red-600 transition"
@@ -90,7 +96,7 @@ const EditGroup = () => {
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header */}
+        {/* 📝 Header */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <PencilLine className="w-6 h-6 text-indigo-600" />
@@ -102,8 +108,27 @@ const EditGroup = () => {
           <p className="text-sm text-gray-500 mt-1">Update group information below.</p>
         </div>
 
+        {/* ✅ Status Message */}
+        {status.message && (
+          <div
+            className={`mb-4 px-4 py-2 rounded-lg text-sm flex items-center gap-2 border
+              ${status.type === "success"
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-red-50 text-red-700 border-red-200"
+              }`}
+          >
+            {status.type === "success" ? (
+              <CheckCircle className="w-4 h-4" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            {status.message}
+          </div>
+        )}
+
+        {/* 📋 Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Group Name */}
+          {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
             <div className="relative">
@@ -112,7 +137,7 @@ const EditGroup = () => {
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Enter group name"
                 required
               />
@@ -120,7 +145,7 @@ const EditGroup = () => {
             </div>
           </div>
 
-          {/* Department + Batch Year */}
+          {/* Department + Batch */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
@@ -181,7 +206,7 @@ const EditGroup = () => {
                 value={form.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-4 py-2 pl-10 border rounded-lg resize-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="Brief description..."
               />
               <FileText className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />

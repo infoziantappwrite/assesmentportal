@@ -48,6 +48,7 @@ import EditGroup from './Pages/Admin/Groups/EditGroup';
 //assessment pages
 import ManageAssesment from './Pages/Common/Assessment/ManageAssessment';
 import CreateAssesment from './Pages/Common/Assessment/CreateAssessment';
+import EditCollege from './Pages/Admin/Buttons/EditCollege';
 
 
 
@@ -104,6 +105,7 @@ const App = () => {
           <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/groups/:id" element={<ViewGroup />} />
           <Route path="/admin/groups/edit/:id" element={<EditGroup />} />
+          <Route path="/admin/manage-colleges/edit/:id" element={<EditCollege />} />
           <Route path="/admin/assessments" element={<ManageAssesment />} />
           <Route path="/admin/assessment/create" element={<CreateAssesment />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />

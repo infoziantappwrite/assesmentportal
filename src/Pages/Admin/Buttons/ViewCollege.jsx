@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   School, Mail, Phone, Globe, Users,
-  CalendarDays, MapPin, Clock4, Pencil, User2
+  CalendarDays, MapPin, Clock4, Pencil, User2,
+  CheckCircle, XCircle
 } from "lucide-react";
 import EditCollege from "./EditCollege";
 import {
@@ -16,11 +17,13 @@ import CollegeStatusToggle from "../College/CollegeStatusToggle";
 const ViewCollege = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [college, setCollege] = useState(null);
   const [representative, setRepresentative] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [statusMessage, setStatusMessage] = useState({ type: "", text: "" }); // ✅ status message state
 
   useEffect(() => {
     const fetchCollegeDetails = async () => {
@@ -29,6 +32,8 @@ const ViewCollege = () => {
         setCollege(collegeData);
       } catch (err) {
         console.error("Failed to fetch college:", err);
+        setStatusMessage({ type: "error", text: "Failed to load college data." });
+        setTimeout(() => setStatusMessage({ type: "", text: "" }), 2300);
       } finally {
         setLoading(false);
       }
@@ -56,11 +61,16 @@ const ViewCollege = () => {
   const handleDelete = async () => {
     try {
       await deleteCollege(id);
-      alert("College deactivated successfully.");
-      navigate("/admin/manage-colleges");
+       console.log("✅ Success"); // <- Debug
+      setStatusMessage({ type: "success", text: "College deactivated successfully." });
+      setTimeout(() => {
+        setStatusMessage({ type: "", text: "" });
+        navigate("/admin/manage-colleges");
+      }, 2300);
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Failed to deactivate college.");
+      setStatusMessage({ type: "error", text: "Failed to deactivate college." });
+      setTimeout(() => setStatusMessage({ type: "", text: "" }), 2300);
     }
   };
 
@@ -75,6 +85,27 @@ const ViewCollege = () => {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-indigo-50 via-slate-100 to-white p-8 font-sans text-gray-800">
       <div className="max-w-6xl mx-auto space-y-6">
+
+        {/* ✅ Status Message */}
+        {statusMessage.text && (
+  <div className="w-full">
+    <div
+      className={`mb-4 px-4 py-2 rounded-xl text-sm flex items-center gap-2 border shadow-sm transition-all duration-300 ${
+        statusMessage.type === "success"
+          ? "bg-green-50 text-green-700 border-green-200"
+          : "bg-red-50 text-red-700 border-red-200"
+      }`}
+    >
+      {statusMessage.type === "success" ? (
+        <CheckCircle className="w-4 h-4" />
+      ) : (
+        <XCircle className="w-4 h-4" />
+      )}
+      {statusMessage.text}
+    </div>
+  </div>
+)}
+
 
         {/* Header */}
         <div className="flex justify-between items-center pb-4 border-b border-gray-200">
@@ -92,11 +123,10 @@ const ViewCollege = () => {
               }}
             />
           </div>
-
           <div className="flex gap-3">
             <button
               className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-              onClick={() => setShowEdit(true)}
+              onClick={() => navigate(`/admin/manage-colleges/edit/${id}`)}
             >
               <Pencil size={16} /> Edit
             </button>
@@ -157,14 +187,8 @@ const ViewCollege = () => {
           </div>
         </div>
 
-
-{!representative && (
-  <div className="bg-white rounded-2xl p-6 text-gray-500 italic">
-    No representative assigned for this college.
-  </div>
-)}
         {/* Assigned Representative */}
-        {representative && (
+        {representative ? (
           <div className="bg-white rounded-2xl p-6">
             <h3 className="text-xl font-semibold tracking-wide mb-3 flex items-center gap-2 text-gray-800">
               <Users size={20} /> Assigned Representative
@@ -174,10 +198,14 @@ const ViewCollege = () => {
               <span className="block"><span className="font-medium">Email:</span> {representative.email}</span>
             </p>
           </div>
+        ) : (
+          <div className="bg-white rounded-2xl p-6 text-gray-500 italic">
+            No representative assigned for this college.
+          </div>
         )}
       </div>
 
-      {/* Delete Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl p-6 w-[90%] max-w-sm text-center">
@@ -203,6 +231,7 @@ const ViewCollege = () => {
         </div>
       )}
 
+      {/* Optional Inline Edit */}
       {showEdit && (
         <EditCollege
           collegeId={id}
