@@ -120,7 +120,7 @@ const ManageAssesment = () => {
 
           {/* Create Button */}
           <button
-            onClick={() => navigate(`/${role}/assessment/create`)}
+            onClick={() => navigate(`/${role}/assessments/create`)}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-xl"
           >
             + Create Assessment
