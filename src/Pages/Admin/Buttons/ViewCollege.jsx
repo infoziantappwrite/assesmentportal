@@ -55,7 +55,7 @@ const ViewCollege = () => {
       }
     };
 
-    fetchRepresentative();
+    fetchRepresentative();  
   }, [college]);
 
   const handleDelete = async () => {
