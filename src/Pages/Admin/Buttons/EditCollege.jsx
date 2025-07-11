@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { X } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import Loader from "../../../Components/Loader";
+import {
+  getCollegeById,
+  updateCollege,
+} from "../../../Controllers/CollegeController";
 
-const EditCollege = ({ collegeId, onClose, onUpdated }) => {
+const EditCollege = () => {
+  const { id: collegeId } = useParams();
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     name: "",
     code: "",
@@ -22,22 +30,20 @@ const EditCollege = ({ collegeId, onClose, onUpdated }) => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState({ type: "", message: "" });
 
   useEffect(() => {
-const fetchCollege = async () => {
-  try {
-    const res = await axios.get(
-      `https://assessment-platform-jua0.onrender.com/api/v1/colleges/${collegeId}`,
-      { withCredentials: true }
-    );
-    console.log("College API Response:", res.data); // 🔍 Check the structure
-    setForm(res.data.data.college);
-  } catch (err) {
-    console.error("Failed to load college:", err);
-  } finally {
-    setLoading(false);
-  }
-};        
+    const fetchCollege = async () => {
+      try {
+        const data = await getCollegeById(collegeId);
+        setForm(data);
+      } catch (err) {
+        console.error("Failed to load college:", err);
+        setStatus({ type: "error", message: "Failed to load college data." });
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchCollege();
   }, [collegeId]);
 
@@ -57,43 +63,36 @@ const fetchCollege = async () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setStatus({ type: "", message: "" });
+
     try {
-      await axios.put(
-        `https://assessment-platform-jua0.onrender.com/api/v1/colleges/${collegeId}`,
-        form,
-        { withCredentials: true }
-      );
-      alert("College updated successfully.");
-      onUpdated();
-      onClose();
+      await updateCollege(collegeId, form);
+      setStatus({ type: "success", message: "College updated successfully." });
+      setTimeout(() => setStatus({ type: "", message: "" }), 2300);
     } catch (err) {
       console.error("Update error:", err);
-      alert("Failed to update college.");
+      setStatus({ type: "error", message: "Failed to update college." });
+      setTimeout(() => setStatus({ type: "", message: "" }), 2300);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 text-white">
-        Loading college details...
-      </div>
-    );
-  }
+  if (loading) return <Loader />;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative p-6">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-red-600"
-        >
-          <X size={20} />
-        </button>
-        <h2 className="text-xl font-semibold text-indigo-700 mb-4">
-          Edit College Details
-        </h2>
+    <div className="min-h-screen bg-gradient-to-tr from-indigo-50 via-slate-100 to-white p-6">
+      <div className="max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl border border-gray-200">
+        {/* Header */}
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-indigo-700">Edit College Details</h2>
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600"
+          >
+            <ArrowLeft size={18} /> Back
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 text-sm text-gray-700">
           {/* Basic Info */}
@@ -104,7 +103,7 @@ const fetchCollege = async () => {
                 type="text"
                 value={form.name}
                 onChange={(e) => handleChange(e, "name")}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2"
                 required
               />
             </div>
@@ -114,7 +113,7 @@ const fetchCollege = async () => {
                 type="text"
                 value={form.code}
                 onChange={(e) => handleChange(e, "code")}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2"
                 required
               />
             </div>
@@ -131,7 +130,7 @@ const fetchCollege = async () => {
                     type="text"
                     value={form.address[field]}
                     onChange={(e) => handleChange(e, `address.${field}`)}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
                     required
                   />
                 </div>
@@ -150,7 +149,7 @@ const fetchCollege = async () => {
                     type={field === "email" ? "email" : "text"}
                     value={form.contact[field]}
                     onChange={(e) => handleChange(e, `contact.${field}`)}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
                     required
                   />
                 </div>
@@ -158,10 +157,11 @@ const fetchCollege = async () => {
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3">
+          {/* Submit Buttons */}
+          <div className="pt-4 flex flex-col sm:flex-row justify-end gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => navigate(-1)}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
             >
               Cancel
@@ -169,11 +169,29 @@ const fetchCollege = async () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
             >
               {saving ? "Saving..." : "Update College"}
             </button>
           </div>
+
+          {/* ✅ Status Message */}
+          {status.message && (
+            <div
+              className={`mt-4 px-4 py-2 rounded-lg text-sm flex items-center gap-2 border 
+              ${status.type === "success"
+                  ? "bg-green-50 text-green-700 border-green-200"
+                  : "bg-red-50 text-red-700 border-red-200"
+                }`}
+            >
+              {status.type === "success" ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              {status.message}
+            </div>
+          )}
         </form>
       </div>
     </div>
