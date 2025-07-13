@@ -27,6 +27,8 @@ export const updateAssessment = async (id, formData) => {
 // DELETE /assessments/:id - Soft delete assessment
 export const deleteAssessment = async (id) => {
   const response = await axiosClient.delete(`/assessments/${id}`, { withCredentials: true });
+  console.log(response);
+  
   return response.data;
 };
 
