@@ -23,26 +23,32 @@ const ManageAssesment = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchText, setSearchText] = useState("");
 
-  useEffect(() => {
-    const fetchAssessments = async () => {
-      try {
-        const res = await getallAssesment();
-        const all = res?.assessments || [];
-        setAssessments(all);
-        applyFilter(all, difficultyFilter, statusFilter, searchText);
-      } catch (error) {
-        console.error("Error fetching assessments:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [total, setTotal] = useState(0);
 
+  useEffect(() => {
     fetchAssessments();
-  }, []);
+  }, [page, limit]);
 
   useEffect(() => {
     applyFilter(assessments, difficultyFilter, statusFilter, searchText);
   }, [difficultyFilter, statusFilter, searchText, assessments]);
+
+  const fetchAssessments = async () => {
+    try {
+      setLoading(true);
+      const res = await getallAssesment(page, limit);
+      const all = res?.assessments || [];
+      const pagination = res?.pagination || {};
+      setAssessments(all);
+      setTotal(pagination.total || 0);
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const applyFilter = (data, level, status, search) => {
     let result = [...data];
@@ -134,13 +140,12 @@ const ManageAssesment = () => {
           No assessments found for selected filters.
         </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg::grid-cols-3 gap-6">
           {filteredAssessments.map((item) => (
             <div
               key={item._id}
               className="bg-white p-6 rounded-2xl shadow-md border border-gray-200 hover:shadow-lg transition duration-300 ease-in-out"
             >
-              {/* Title & Difficulty */}
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-bold text-gray-800">{item.title}</h2>
                 <span
@@ -155,12 +160,10 @@ const ManageAssesment = () => {
                 </span>
               </div>
 
-              {/* Description */}
               <p className="text-sm text-gray-600 mb-4 italic">
                 {item.description || "No description provided."}
               </p>
 
-              {/* Info Grid */}
               <div className="grid grid-cols-2 gap-4 text-sm text-gray-700 mb-4">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-blue-500" />
@@ -180,7 +183,6 @@ const ManageAssesment = () => {
                 </div>
               </div>
 
-              {/* Tags */}
               <div className="flex flex-wrap gap-2 text-xs mb-3">
                 {item.is_active && (
                   <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
@@ -199,7 +201,6 @@ const ManageAssesment = () => {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
                 <p>Created: {new Date(item.createdAt).toLocaleDateString()}</p>
                 <button
@@ -217,9 +218,76 @@ const ManageAssesment = () => {
               </div>
             </div>
           ))}
-
         </div>
       )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 px-2">
+
+        {/* Rows per page dropdown */}
+        <div className="flex items-center gap-2 text-sm text-gray-700">
+          <label htmlFor="rowsPerPage" className="font-medium text-gray-600">Rows per page:</label>
+          <div className="relative">
+            <select
+              id="rowsPerPage"
+              value={limit}
+              onChange={(e) => {
+                setPage(1);
+                setLimit(Number(e.target.value));
+              }}
+              className="appearance-none block w-full bg-white border border-gray-300 text-gray-700 py-1.5 pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+              <option value={40}>40</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center gap-2 text-sm text-gray-700">
+          <button
+            onClick={() => setPage(1)}
+            disabled={page === 1}
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            First
+          </button>
+          <button
+            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Previous
+          </button>
+
+          <span className="px-2 text-gray-600 font-medium">
+            Page <span className="text-blue-600">{page}</span> of{" "}
+            <span className="text-blue-600">{Math.ceil(total / limit) || 1}</span>
+          </span>
+
+          <button
+            onClick={() => setPage(prev => prev + 1)}
+            disabled={page * limit >= total}
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Next
+          </button>
+          <button
+            onClick={() => setPage(Math.ceil(total / limit))}
+            disabled={page * limit >= total}
+            className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Last
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };
