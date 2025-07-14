@@ -52,7 +52,9 @@ import EditCollege from './Pages/Admin/Buttons/EditCollege';
 import EditAssessment from './Pages/Common/Assessment/EditAssessment';
 import ViewAssesment from './Pages/Common/Assessment/ViewAssesment';
 
-
+//Assignment routes
+import ManageAssignments from './Pages/Admin/Assignments/ManageAssignments';
+import CreateAssignments from './Pages/Admin/Assignments/CreateAssignment';
 
 
 const App = () => {
@@ -115,6 +117,8 @@ const App = () => {
           <Route path="/admin/assessments/:id" element={<ViewAssesment />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
+          <Route path="/admin/assignments/create" element={<CreateAssignments />} />
+          <Route path="/admin/assignments" element={<ManageAssignments />} />
          
         </Route>
       </Route>

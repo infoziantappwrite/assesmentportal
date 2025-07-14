@@ -1,0 +1,75 @@
+import axiosClient from "../api/axiosClient";
+
+// GET /assignments - Get all assignments with pagination/filtering
+export const getAllAssignments = async (params = {}) => {
+  const response = await axiosClient.get("/assignments", {
+    params,
+    withCredentials: true,
+  });
+  console.log(response.data)
+  return response.data;
+};
+
+// POST /assignments - Create a new assignment
+export const createAssignment = async (data) => {
+  const response = await axiosClient.post("/assignments", data, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// GET /assignments/:id - Get assignment by ID
+export const getAssignmentById = async (id) => {
+  const response = await axiosClient.get(`/assignments/${id}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// PUT /assignments/:id - Update assignment
+export const updateAssignment = async (id, data) => {
+  const response = await axiosClient.put(`/assignments/${id}`, data, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// DELETE /assignments/:id - Cancel assignment
+export const cancelAssignment = async (id) => {
+  const response = await axiosClient.delete(`/assignments/${id}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// POST /assignments/:id/activate - Activate assignment
+export const activateAssignment = async (id) => {
+  const response = await axiosClient.post(`/assignments/${id}/activate`, null, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// GET /assignments/:id/eligible-students - Get eligible students
+export const getEligibleStudents = async (id) => {
+  const response = await axiosClient.get(`/assignments/${id}/eligible-students`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// GET /assignments/:id/submissions - Get all submissions
+export const getSubmissions = async (id) => {
+  const response = await axiosClient.get(`/assignments/${id}/submissions`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// POST /assignments/:id/extend-deadline - Extend deadline
+export const extendDeadline = async (id, data) => {
+  const response = await axiosClient.post(`/assignments/${id}/extend-deadline`, data, {
+    withCredentials: true,
+  });
+  return response.data;
+};
