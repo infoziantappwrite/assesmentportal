@@ -48,15 +48,21 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
   };
 
   const handleActivate = async () => {
+    if (!id || typeof id !== "string" || id.length !== 24) {
+      setError("Invalid assignment ID.");
+      return;
+    }
+
     try {
       await activateAssignment(id);
       setMessage("Assignment activated.");
-      fetchAssignment()
+      fetchAssignment();
     } catch (err) {
       console.error(err);
       setError("Failed to activate assignment.");
     }
   };
+
 
   const handleExtend = async () => {
     setError("");
