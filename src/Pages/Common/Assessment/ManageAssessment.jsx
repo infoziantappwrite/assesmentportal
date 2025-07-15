@@ -24,21 +24,33 @@ const ManageAssesment = () => {
   const [searchText, setSearchText] = useState("");
 
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(6);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchAssessments();
-  }, [page, limit]);
+  }, [difficultyFilter, statusFilter, page, limit]);
 
   useEffect(() => {
-    applyFilter(assessments, difficultyFilter, statusFilter, searchText);
-  }, [difficultyFilter, statusFilter, searchText, assessments]);
+    applySearchFilter(assessments, searchText);
+  }, [searchText, assessments]);
 
   const fetchAssessments = async () => {
     try {
       setLoading(true);
-      const res = await getallAssesment(page, limit);
+      const params = { page, limit };
+
+      if (difficultyFilter !== "all") {
+        params.difficulty = difficultyFilter;
+      }
+
+      if (statusFilter === "active") {
+        params.isActive = true;
+      } else if (statusFilter === "inactive") {
+        params.isActive = false;
+      }
+
+      const res = await getallAssesment(params);
       const all = res?.assessments || [];
       const pagination = res?.pagination || {};
       setAssessments(all);
@@ -50,26 +62,14 @@ const ManageAssesment = () => {
     }
   };
 
-  const applyFilter = (data, level, status, search) => {
+  const applySearchFilter = (data, search) => {
     let result = [...data];
-
-    if (level !== "all") {
-      result = result.filter(a => a.difficulty_level === level);
-    }
-
-    if (status === "active") {
-      result = result.filter(a => a.is_active);
-    } else if (status === "inactive") {
-      result = result.filter(a => !a.is_active);
-    }
-
     if (search.trim()) {
       const lowerSearch = search.trim().toLowerCase();
       result = result.filter(a =>
         a.title.toLowerCase().includes(lowerSearch)
       );
     }
-
     setFilteredAssessments(result);
   };
 
@@ -84,7 +84,6 @@ const ManageAssesment = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto flex-wrap">
-          {/* Search by title */}
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
@@ -96,7 +95,6 @@ const ManageAssesment = () => {
             />
           </div>
 
-          {/* Difficulty Filter */}
           <div className="w-full sm:w-32">
             <select
               value={difficultyFilter}
@@ -111,7 +109,6 @@ const ManageAssesment = () => {
             </select>
           </div>
 
-          {/* Status Filter */}
           <div className="w-full sm:w-32">
             <select
               value={statusFilter}
@@ -124,7 +121,6 @@ const ManageAssesment = () => {
             </select>
           </div>
 
-          {/* Create Button */}
           <button
             onClick={() => navigate(`/${role}/assessments/create`)}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-xl"
@@ -134,13 +130,12 @@ const ManageAssesment = () => {
         </div>
       </div>
 
-      {/* Assessment Grid */}
       {filteredAssessments.length === 0 ? (
         <p className="text-gray-500 text-sm">
           No assessments found for selected filters.
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg::grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAssessments.map((item) => (
             <div
               key={item._id}
@@ -222,8 +217,6 @@ const ManageAssesment = () => {
       )}
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 px-2">
-
-        {/* Rows per page dropdown */}
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <label htmlFor="rowsPerPage" className="font-medium text-gray-600">Rows per page:</label>
           <div className="relative">
@@ -236,10 +229,11 @@ const ManageAssesment = () => {
               }}
               className="appearance-none block w-full bg-white border border-gray-300 text-gray-700 py-1.5 pl-3 pr-8 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
+              <option value={6}>6</option>
+              <option value={12}>12</option>
+              <option value={18}>18</option>
+              <option value={24}>24</option>
               <option value={30}>30</option>
-              <option value={40}>40</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -249,7 +243,6 @@ const ManageAssesment = () => {
           </div>
         </div>
 
-        {/* Pagination Controls */}
         <div className="flex items-center gap-2 text-sm text-gray-700">
           <button
             onClick={() => setPage(1)}
@@ -287,7 +280,6 @@ const ManageAssesment = () => {
           </button>
         </div>
       </div>
-
     </div>
   );
 };
