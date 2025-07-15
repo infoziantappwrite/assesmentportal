@@ -51,6 +51,16 @@ import CreateAssesment from './Pages/Common/Assessment/CreateAssessment';
 import EditCollege from './Pages/Admin/Buttons/EditCollege';
 import EditAssessment from './Pages/Common/Assessment/EditAssessment';
 import ViewAssesment from './Pages/Common/Assessment/ViewAssesment';
+import AssessmentPreviewPage from './Pages/Common/Assessment/AssessmentPreviewPage';
+import CreateSection from './Pages/Common/Section/CreateSection';
+import ViewSections from './Pages/Common/Section/ViewSections';
+import SinglePageViewSection from './Pages/Common/Section/SinglePageViewSection';
+import AddQuestionToSection from './Pages/Common/Section/AddQuestionToSection';
+import EditSection from './Pages/Common/Section/EditSection';
+import ViewQuestionsInSection from './Pages/Common/Section/ViewQuestionsInSection';
+import ViewSingleQuestion from './Pages/Common/Section/ViewSingleQuestion';
+
+
 
 
 
@@ -61,15 +71,15 @@ const App = () => {
       <Route path="/" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
-       <Route element={<PrivateRoute />}>
-    <Route path="/my-profile" element={<Profile />} />
-  </Route>
+      <Route element={<PrivateRoute />}>
+        <Route path="/my-profile" element={<Profile />} />
+      </Route>
 
 
 
       {/* Private Student Routes */}
       <Route element={<PrivateRoute allowedRoles={['candidate']} />}>
-        
+
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assesment" element={<Assesment />} />
         <Route path="/report" element={<Report />} />
@@ -103,8 +113,8 @@ const App = () => {
           <Route path="/admin/colleges" element={<ManageColleges />} />
           <Route path="/admin/colleges/:id" element={<ViewCollege />} />
           <Route path="/admin/colleges/edit/:id" element={<EditCollege />} />
-          <Route path="/admin/users" element={<AllUsers/>} />
-          <Route path="/admin/users/create" element={<CreateUser/>} />
+          <Route path="/admin/users" element={<AllUsers />} />
+          <Route path="/admin/users/create" element={<CreateUser />} />
           <Route path="/admin/users/:id" element={<UserDetails />} />
           <Route path="/admin/groups" element={<ManageGroup />} />
           <Route path="/admin/groups/:id" element={<ViewGroup />} />
@@ -113,9 +123,17 @@ const App = () => {
           <Route path="/admin/assessments/create" element={<CreateAssesment />} />
           <Route path="/admin/assessments/edit/:id" element={<EditAssessment />} />
           <Route path="/admin/assessments/:id" element={<ViewAssesment />} />
+          <Route path="/preview/assessment/:id" element={<AssessmentPreviewPage />} />
+          <Route path="/admin/assessments/:id/create-section" element={<CreateSection />} />
+          <Route path="/admin/assessments/:id/sections" element={<ViewSections />} />
+          <Route path="/admin/sections/:id" element={<SinglePageViewSection />} />
+          <Route path="/admin/sections/edit/:id" element={<EditSection />} />
+          <Route path="/admin/sections/:id/add-question" element={<AddQuestionToSection />} />
+          <Route path="/admin/sections/:id/questions" element={<ViewQuestionsInSection />} />
+          <Route path="/admin/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
-         
+
         </Route>
       </Route>
 

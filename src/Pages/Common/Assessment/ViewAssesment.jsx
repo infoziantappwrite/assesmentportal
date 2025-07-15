@@ -62,22 +62,18 @@ const ViewAssessment = () => {
 
   const handleToggleStatus = async () => {
     try {
-      await toggleAssessmentStatus(id);
-      setAssessment(prev => ({ ...prev, is_active: !prev.is_active }));
+      const newStatus = !assessment.is_active;
+      await toggleAssessmentStatus(id, newStatus);
+      setAssessment(prev => ({ ...prev, is_active: newStatus }));
     } catch (err) {
       alert("Failed to toggle status.");
       console.error(err);
     }
   };
 
-  const handlePreview = async () => {
-    try {
-      const res = await previewAssessment(id);
-      window.open(res?.data?.preview_url, "_blank");
-    } catch (err) {
-      alert("Failed to preview assessment.");
-      console.error(err);
-    }
+  const handlePreview = () => {
+    previewAssessment(id); // optional, for triggering backend logs or updates
+    window.open(`/preview/assessment/${id}`, "_blank");
   };
 
   if (loading) return <Loader />;
@@ -102,9 +98,14 @@ const ViewAssessment = () => {
               {title}
             </h1>
             <div className="flex flex-wrap gap-2 mt-2">
-              {is_active && (
-                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">Active</span>
-              )}
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                  }`}
+              >
+                {is_active ? "Active" : "Inactive"}
+              </span>
+
+
               {is_template && (
                 <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">Template</span>
               )}
@@ -116,6 +117,17 @@ const ViewAssessment = () => {
 
           {/* Action Buttons (Keep as is) */}
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={handleToggleStatus}
+              className={`relative w-16 h-8 flex items-center rounded-full transition-colors duration-300 ${is_active ? "bg-green-500" : "bg-gray-400"
+                }`}
+            >
+              <span
+                className={`absolute left-1 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${is_active ? "translate-x-8" : "translate-x-0"
+                  }`}
+              ></span>
+            </button>
+
             <button onClick={() => navigate(`/admin/assessments/edit/${id}`)}
               className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm shadow">
               <Pencil className="w-4 h-4" /> Edit
@@ -128,11 +140,7 @@ const ViewAssessment = () => {
               className="flex items-center gap-2 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm shadow">
               <Copy className="w-4 h-4" /> Clone
             </button>
-            <button onClick={handleToggleStatus}
-              className={`flex items-center gap-2 px-3 py-2 ${is_active ? "bg-gray-600 hover:bg-gray-700" : "bg-green-600 hover:bg-green-700"} text-white rounded-lg text-sm shadow`}>
-              {is_active ? <ToggleLeft className="w-4 h-4" /> : <ToggleRight className="w-4 h-4" />}
-              {is_active ? "Deactivate" : "Activate"}
-            </button>
+
             <button onClick={handlePreview}
               className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm shadow">
               <ExternalLink className="w-4 h-4" /> Preview
@@ -207,6 +215,21 @@ const ViewAssessment = () => {
           <p><strong>Last Updated:</strong> {new Date(updatedAt).toLocaleString()}</p>
           <p><strong>Sections:</strong> {sections?.length || 0}</p>
         </div>
+
+        <button
+          onClick={() => navigate(`/admin/assessments/${id}/create-section`)}
+          className="mt-2 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow"
+        >
+          + Create Section
+        </button>
+
+        <button
+          onClick={() => navigate(`/admin/assessments/${id}/sections`)}
+          className="mt-2 ml-2 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow"
+        >
+          📄 View Sections
+        </button>
+
       </div>
     </div>
   );
