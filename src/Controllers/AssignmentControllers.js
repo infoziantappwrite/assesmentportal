@@ -46,7 +46,7 @@ export const cancelAssignment = async (id) => {
 
 // POST /assignments/:id/activate - Activate assignment
 export const activateAssignment = async (id) => {
-  const response = await axiosClient.post(`/assignments/${id}/activate`, null, {
+  const response = await axiosClient.post(`/assignments/${id}/activate`, {}, {
     withCredentials: true,
   });
   return response.data;
