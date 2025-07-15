@@ -1,6 +1,5 @@
-// Components/Admin/College/CollegeStatusToggle.jsx
 import React, { useEffect, useState } from 'react';
-import { deleteCollege } from '../../../Controllers/CollegeController';
+import { updateCollegeStatus } from '../../../Controllers/CollegeController';
 
 const CollegeStatusToggle = ({ collegeId, isActiveInitial, fetchCollege }) => {
   const [status, setStatus] = useState(isActiveInitial);
@@ -13,10 +12,12 @@ const CollegeStatusToggle = ({ collegeId, isActiveInitial, fetchCollege }) => {
   const toggleStatus = async () => {
     setLoading(true);
     try {
-      await deleteCollege(collegeId, !status);
-      await fetchCollege();
+      const newStatus = !status;
+      await updateCollegeStatus(collegeId, newStatus);
+      setStatus(newStatus);
+      await fetchCollege(); // refresh state in parent
     } catch (err) {
-      console.error('Failed to toggle college status', err);
+      console.error('Failed to toggle college status:', err);
     } finally {
       setLoading(false);
     }

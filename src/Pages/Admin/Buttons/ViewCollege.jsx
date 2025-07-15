@@ -126,7 +126,7 @@ const ViewCollege = () => {
           <div className="flex gap-3">
             <button
               className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-              onClick={() => navigate(`/admin/manage-colleges/edit/${id}`)}
+              onClick={() => navigate(`/admin/colleges/edit/${id}`)}
             >
               <Pencil size={16} /> Edit
             </button>
