@@ -45,14 +45,20 @@ export const cloneAssessment = async (id) => {
 };
 
 // PUT /assessments/:id/activate - Toggle assessment active status
-export const toggleAssessmentStatus = async (id) => {
-  const response = await axiosClient.put(`/assessments/${id}/activate`, {}, { withCredentials: true });
+export const toggleAssessmentStatus = async (id, isActive) => {
+  const response = await axiosClient.put(
+    `/assessments/${id}/activate`,
+    { isActive }, // ✅ correct body
+    { withCredentials: true }
+  );
   return response.data;
 };
 
 // GET /assessments/:id/preview - Preview assessment
 export const previewAssessment = async (id) => {
   const response = await axiosClient.get(`/assessments/${id}/preview`, { withCredentials: true });
+  console.log(response);
+  
   return response.data;
 };
 
