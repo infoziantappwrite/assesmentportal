@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { getAssignmentById } from '../../../Controllers/AssignmentControllers';
 import Loader from '../../../Components/Loader';
 import { ArrowLeft, Pencil } from 'lucide-react';
+import AssignmentActions from './AssignmentActions';
+import EligibleStudents from './EligibleStudents';
+import Submissions from './Submissions';
 
 const ViewAssignment = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
+  const fetchAssignment = async () => {
+    try {
+      const response = await getAssignmentById(id);
+      setAssignment(response.message.assignment);
+    } catch (error) {
+      console.error('Failed to fetch assignment:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchAssignment = async () => {
-      try {
-        const response = await getAssignmentById(id);
-        setAssignment(response.message.assignment);
-      } catch (error) {
-        console.error('Failed to fetch assignment:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+
 
     fetchAssignment();
   }, [id]);
@@ -46,22 +50,7 @@ const ViewAssignment = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center text-blue-600 hover:underline text-sm"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back
-        </button>
-        <button
-          onClick={() => navigate(`/admin/assignments/edit/${id}`)}
-          className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm"
-        >
-          <Pencil className="w-4 h-4" />
-          Edit
-        </button>
-      </div>
+      <AssignmentActions id={assignment._id} role="admin" fetchAssignment={fetchAssignment} />
 
       {/* Title Card */}
       <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-200 space-y-2">
@@ -73,13 +62,6 @@ const ViewAssignment = () => {
         </div>
         <p className="text-gray-700">{description}</p>
       </div>
-
-      {/* Sections */}
-      <Section title="Assessment Info" color="blue">
-        <Info label="Assessment" value={`${assessment_id?.title} – ${assessment_id?.description}`} />
-        <Info label="Assigned By" value={`${assigned_by?.name} (${assigned_by?.email})`} />
-      </Section>
-
       <Section title="Schedule" color="purple">
         <Grid>
           <Info label="Start Time" value={new Date(schedule?.start_time).toLocaleString()} />
@@ -88,7 +70,6 @@ const ViewAssignment = () => {
           <Info label="Grace Period" value={`${schedule?.grace_period_minutes} minutes`} />
         </Grid>
       </Section>
-
       <Section title="Assignment Settings" color="green">
         <Grid>
           <Info label="Allow Retake" value={settings?.allow_retake ? 'Yes' : 'No'} />
@@ -100,22 +81,36 @@ const ViewAssignment = () => {
         </Grid>
       </Section>
 
-      <Section title="Notification Status" color="indigo">
-        <Grid>
-          <Info label="Email Sent" value={notification?.email_sent ? 'Yes' : 'No'} />
-          <Info label="SMS Sent" value={notification?.sms_sent ? 'Yes' : 'No'} />
-        </Grid>
-      </Section>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Group 1: Schedule + Settings */}
 
-      <Section title="Performance Stats" color="orange">
-        <Grid cols={3}>
-          <Info label="Total Eligible" value={stats?.total_eligible} />
-          <Info label="Started" value={stats?.started_count} />
-          <Info label="Completed" value={stats?.completed_count} />
-          <Info label="Average Score" value={stats?.average_score} />
-          <Info label="Highest Score" value={stats?.highest_score} />
-          <Info label="Lowest Score" value={stats?.lowest_score} />
-        </Grid>
+
+
+
+        {/* Group 2: Notification + Performance */}
+        <Section title="Notification Status" color="indigo">
+          <Grid>
+            <Info label="Email Sent" value={notification?.email_sent ? 'Yes' : 'No'} />
+            <Info label="SMS Sent" value={notification?.sms_sent ? 'Yes' : 'No'} />
+          </Grid>
+        </Section>
+
+        <Section title="Performance Stats" color="orange">
+          <Grid cols={3}>
+            <Info label="Total Eligible" value={stats?.total_eligible} />
+            <Info label="Started" value={stats?.started_count} />
+            <Info label="Completed" value={stats?.completed_count} />
+            <Info label="Average Score" value={stats?.average_score} />
+            <Info label="Highest Score" value={stats?.highest_score} />
+            <Info label="Lowest Score" value={stats?.lowest_score} />
+          </Grid>
+        </Section>
+      </div>
+
+      {/* These can stay full-width */}
+      <Section title="Assessment Info" color="blue">
+        <Info label="Assessment" value={`${assessment_id?.title} – ${assessment_id?.description}`} />
+        <Info label="Assigned By" value={`${assigned_by?.name} (${assigned_by?.email})`} />
       </Section>
 
       <Section title="Target Info" color="pink">
@@ -124,6 +119,9 @@ const ViewAssignment = () => {
         <Info label="College IDs" value={target?.college_ids.join(', ') || 'None'} />
         <Info label="Student IDs" value={target?.student_ids.join(', ') || 'None'} />
       </Section>
+      <EligibleStudents id={assignment._id}/>
+      <Submissions id={assignment._id}/>
+
     </div>
   );
 };

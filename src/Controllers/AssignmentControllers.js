@@ -2,6 +2,7 @@ import axiosClient from "../api/axiosClient";
 
 // GET /assignments - Get all assignments with pagination/filtering
 export const getAllAssignments = async (params = {}) => {
+  console.log(params)
   const response = await axiosClient.get("/assignments", {
     params,
     withCredentials: true,
@@ -12,6 +13,7 @@ export const getAllAssignments = async (params = {}) => {
 
 // POST /assignments - Create a new assignment
 export const createAssignment = async (data) => {
+  console.log(data)
   const response = await axiosClient.post("/assignments", data, {
     withCredentials: true,
   });
