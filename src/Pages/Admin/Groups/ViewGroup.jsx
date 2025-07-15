@@ -43,7 +43,7 @@ const GroupStatusToggle = ({ groupId, isActiveInitial, onStatusChange }) => {
 
   return (
     <div className="flex items-center justify-between gap-4 py-4 px-2">
-      <span className="text-sm font-medium text-gray-700">Group Status</span>
+      <span className="text-sm font-medium text-gray-700">Status</span>
       <button
         onClick={toggleStatus}
         disabled={loading}
