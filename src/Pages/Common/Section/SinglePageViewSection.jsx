@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSectionById } from '../../../Controllers/SectionController';
+import { bulkImportQuestions } from '../../../Controllers/QuestionController'; // or correct path
+import { UploadCloud } from "lucide-react";
 import {
   ArrowLeft, FileText, Clock, List, Settings2,
   ShieldCheck, LayoutList, PlusCircle, Pencil
@@ -10,7 +12,12 @@ const SinglePageViewSection = () => {
   const { id } = useParams(); // section ID from URL
   const navigate = useNavigate();
   const [section, setSection] = useState(null);
+  console.log(section);
+  
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSummary, setUploadSummary] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
 
   useEffect(() => {
     const fetchSection = async () => {
@@ -26,6 +33,29 @@ const SinglePageViewSection = () => {
 
     fetchSection();
   }, [id]);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    setUploadSummary(null);
+    setUploadError(null);
+
+    try {
+      await bulkImportQuestions(formData).then((res) => {
+        setUploadSummary(res?.data || {});
+      });
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setUploadError(err?.response?.data?.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (loading) return <div className="p-6">Loading section details...</div>;
   if (!section) return <div className="p-6 text-red-600">Section not found.</div>;
@@ -82,6 +112,19 @@ const SinglePageViewSection = () => {
               <PlusCircle className="w-4 h-4 inline-block mr-1" />
               Add Questions
             </button>
+            <label className="relative inline-flex items-center px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow cursor-pointer">
+              <UploadCloud className="w-4 h-4 mr-1" />
+              {uploading ? "Uploading..." : "Bulk Upload"}
+              <input
+                type="file"
+                accept=".csv"  // not .xlsx
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+
+            </label>
+
           </div>
         </div>
 
@@ -144,6 +187,28 @@ const SinglePageViewSection = () => {
             </button>
           </div>
         )}
+
+        {/* bulk upload */}
+        {uploadSummary && (
+          <div className="mt-6 bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg text-sm space-y-1">
+            <p className="font-semibold">✅ Upload Summary</p>
+            <ul className="list-disc ml-6">
+              <li>Total: {uploadSummary.summary?.total}</li>
+              <li>Imported: {uploadSummary.summary?.imported}</li>
+              <li>Failed: {uploadSummary.summary?.failed}</li>
+            </ul>
+            {uploadSummary.failed?.length > 0 && (
+              <div className="text-red-600 mt-2">⚠️ Some questions failed to import.</div>
+            )}
+          </div>
+        )}
+
+        {uploadError && (
+          <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded">
+            ❌ {uploadError}
+          </div>
+        )}
+
 
         {/* Meta Info */}
         <div className="text-sm text-gray-600 border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
