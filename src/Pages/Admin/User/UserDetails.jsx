@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUserById, updateUserById, deleteUserById } from '../../../Controllers/userControllers';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Pencil, Trash2, User2, Check, CheckCircle, XCircle } from 'lucide-react';
+import { Pencil, ArrowLeft, User2, Check, CheckCircle, XCircle } from 'lucide-react';
 import Loader from '../../../Components/Loader';
 import ResetUserPassword from './ResetuserPassword';
 import UserStatusToggle from './UserStatusToggle';
@@ -131,11 +131,10 @@ const UserDetails = () => {
           {/* 🛠️ Action buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 px-4 py-1.5 bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
+              className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
+              onClick={() => navigate(-1)}
             >
-              <Trash2 className="w-4 h-4" />
-              Deactivate
+              <ArrowLeft size={16} /> Back
             </button>
 
             <ResetUserPassword userId={id} />
