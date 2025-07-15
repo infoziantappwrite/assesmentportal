@@ -131,8 +131,8 @@ const UserDetails = () => {
           {/* 🛠️ Action buttons */}
           <div className="flex flex-wrap items-center gap-3">
             <button
-              className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-              onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
+              onClick={() => navigate('/admin/users')}
             >
               <ArrowLeft size={16} /> Back
             </button>
