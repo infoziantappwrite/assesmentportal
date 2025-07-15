@@ -6,7 +6,7 @@ import ViewCollege from "../Buttons/ViewCollege";
 import { useNavigate } from "react-router-dom";
 import { getAllColleges } from "../../../Controllers/CollegeController";
 import Loader from "../../../Components/Loader";
-import { Search, School, PlusCircle } from "lucide-react";
+import { Search, School, PlusCircle, ChevronDown, ToggleRight } from "lucide-react";
 
 const ManageColleges = () => {
   const [colleges, setColleges] = useState([]);
@@ -142,13 +142,16 @@ const ManageColleges = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="w-full sm:w-48">
+          <div className="relative w-full sm:w-48">
+            <ToggleRight className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <ChevronDown className="absolute right-3 top-2.5 text-gray-400 w-4 h-4 pointer-events-none" />
+
             <select
               value={filters.status}
               onChange={(e) =>
                 setFilters((prev) => ({ ...prev, status: e.target.value }))
               }
-              className="w-full px-3 py-2 border border-gray-200 shadow-xl rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full pl-9 pr-10 py-2 bg-white rounded-lg shadow-md border border-gray-200 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>

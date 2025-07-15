@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Table from '../../../Components/Table';
 import Loader from '../../../Components/Loader';
 
-import { Search, ShieldPlus, UserPlus, Users } from 'lucide-react';
+import { ChevronDown, Search, ShieldPlus, UserPlus, Users } from 'lucide-react';
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
@@ -143,6 +143,7 @@ const columns = [
           {/* Role Dropdown */}
           <div className="relative w-full sm:w-40">
             <ShieldPlus className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <ChevronDown className="absolute right-3 top-2.5 text-gray-400 w-4 h-4 pointer-events-none" />
             <select
               value={filters.role}
               onChange={(e) => setFilters({ ...filters, role: e.target.value })}
