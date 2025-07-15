@@ -1,13 +1,15 @@
 import axiosClient from "../api/axiosClient";
 
 // GET /assessments - Get all assessments
-export const getallAssesment = async (page = 1, limit = 10) => {
-  const response = await axiosClient.get(`/assessments?page=${page}&limit=${limit}`, {
+export const getallAssesment = async (params = {}) => {
+  const response = await axiosClient.get(`/assessments`, {
+    params, // send query as object
     withCredentials: true,
   });
-  console.log(response.data)
+  console.log(response.data);
   return response.data;
 };
+
 
 
 // POST /assessments - Create a new assessment

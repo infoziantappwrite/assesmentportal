@@ -62,7 +62,11 @@ import ViewSingleQuestion from './Pages/Common/Section/ViewSingleQuestion';
 
 
 
-
+//Assignment routes
+import ManageAssignments from './Pages/Admin/Assignments/ManageAssignments';
+import CreateAssignments from './Pages/Admin/Assignments/CreateAssignment';
+import ViewAssignment from './Pages/Admin/Assignments/ViewAssignment';
+import EditAssignment from './Pages/Admin/Assignments/EditAssignment';
 
 
 const App = () => {
@@ -133,6 +137,11 @@ const App = () => {
           <Route path="/admin/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
+          <Route path="/admin/assignments/create" element={<CreateAssignments />} />
+          <Route path="/admin/assignments" element={<ManageAssignments />} />
+          <Route path="/admin/assignments/:id" element={<ViewAssignment />} />
+          <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
+
 
         </Route>
       </Route>
