@@ -4,7 +4,7 @@ import {
   getGroupById,
   removeStudentsFromGroup,
   removeStudentFromGroup,
-  updateGroupById,       // You will need to add this in your groupController if not present
+  updateGroupById,       
 } from "../../../Controllers/groupController";
 import {
   Users,
@@ -17,8 +17,6 @@ import {
   Building2,
   Pencil,
   ArrowLeft,
-  ToggleRight,
-  ToggleLeft,
 } from "lucide-react";
 import dayjs from "dayjs";
 import AddStudentsToGroup from "./AddStudentsToGroup";
@@ -130,10 +128,10 @@ return (
     {/* Header */}
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
       <div className="flex items-center flex-wrap gap-4">
-        <h2 className="text-3xl font-bold text-indigo-700 flex items-center gap-2">
-          <User className="w-6 h-6 text-indigo-600 font-bold" />
-          Group Details
-        </h2>
+          <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+            <User className="w-6 h-6 text-blue-600" />
+            Group Details
+          </h2>
         <GroupStatusToggle
           groupId={group._id}
           isActiveInitial={group.is_active}
@@ -273,6 +271,7 @@ return (
             student_count: prev.student_count + newIds.length,
           }));
           setShowAddModal(false);
+          fetchGroup();
         }}
       />
     )}
