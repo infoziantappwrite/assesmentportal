@@ -21,7 +21,6 @@ export const getSectionById = async (id) => {
   const res = await axiosClient.get(`/sections/${id}`, {
     withCredentials: true,
   });
-  console.log(res.data);
   
   return res.data;
 };

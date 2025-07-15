@@ -78,9 +78,6 @@ const CreateSection = () => {
       is_active: true,
     };
 
-    console.log("Sending data to backend:", cleanData);
-
-
     try {
       await createSection(id, cleanData);
       setStatusMessage("✅ Section created successfully!");
