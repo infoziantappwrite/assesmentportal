@@ -48,3 +48,9 @@ export const assignCollegeRepresentative = async (collegeId, representativeID) =
   return res.data;
 };
 
+export const updateCollegeStatus = async (collegeId, isActive) => {
+  return await axiosClient.put(`/colleges/${collegeId}`, {
+    is_active: isActive,
+  });
+};
+

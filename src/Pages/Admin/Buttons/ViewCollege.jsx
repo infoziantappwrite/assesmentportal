@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   School, Mail, Phone, Globe, Users,
   CalendarDays, MapPin, Clock4, Pencil, User2,
-  CheckCircle, XCircle
+  CheckCircle, XCircle, ArrowLeft
 } from "lucide-react";
 import EditCollege from "./EditCollege";
 import {
@@ -125,8 +125,14 @@ const ViewCollege = () => {
           </div>
           <div className="flex gap-3">
             <button
+              className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
+              onClick={() => navigate('/admin/colleges')}
+            >
+              <ArrowLeft size={16} /> Back
+            </button>
+            <button
               className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-              onClick={() => navigate(`/admin/manage-colleges/edit/${id}`)}
+              onClick={() => navigate(`/admin/colleges/edit/${id}`)}
             >
               <Pencil size={16} /> Edit
             </button>
@@ -135,7 +141,7 @@ const ViewCollege = () => {
 
         {/* Info Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-2xl p-6 transition">
+          <div className="bg-white rounded-2xl p-6 transition shadow-xl">
             <div className="flex items-center gap-2 mb-4 text-indigo-600">
               <School size={22} />
               <h2 className="text-2xl font-semibold tracking-wide">Basic Info</h2>
@@ -152,7 +158,7 @@ const ViewCollege = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-6">
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
             <div className="flex items-center gap-2 mb-4 text-rose-500">
               <MapPin size={22} />
               <h2 className="text-2xl font-semibold tracking-wide">Address & Contact</h2>
@@ -189,8 +195,8 @@ const ViewCollege = () => {
 
         {/* Assigned Representative */}
         {representative ? (
-          <div className="bg-white rounded-2xl p-6">
-            <h3 className="text-xl font-semibold tracking-wide mb-3 flex items-center gap-2 text-gray-800">
+          <div className="bg-white rounded-2xl p-6 shadow-xl">
+            <h3 className="text-xl font-semibold tracking-wide mb-3 flex items-center gap-2 text-teal-500">
               <Users size={20} /> Assigned Representative
             </h3>
             <p className="text-sm text-slate-700 space-y-1">

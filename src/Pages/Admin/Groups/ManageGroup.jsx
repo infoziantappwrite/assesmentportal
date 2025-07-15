@@ -6,6 +6,7 @@ import {
   UserSquare,
   Search,
   ToggleRight,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -181,6 +182,7 @@ const ManageGroup = () => {
               {/* Filter */}
               <div className="relative w-full sm:w-48">
                 <ToggleRight className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+                <ChevronDown className="absolute right-3 top-2.5 text-gray-400 w-4 h-4 pointer-events-none" />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
