@@ -55,6 +55,8 @@ import ViewAssesment from './Pages/Common/Assessment/ViewAssesment';
 //Assignment routes
 import ManageAssignments from './Pages/Admin/Assignments/ManageAssignments';
 import CreateAssignments from './Pages/Admin/Assignments/CreateAssignment';
+import ViewAssignment from './Pages/Admin/Assignments/ViewAssignment';
+import EditAssignment from './Pages/Admin/Assignments/EditAssignment';
 
 
 const App = () => {
@@ -119,7 +121,9 @@ const App = () => {
           <Route path="/admin/settings" element={<div>Settings</div>} />
           <Route path="/admin/assignments/create" element={<CreateAssignments />} />
           <Route path="/admin/assignments" element={<ManageAssignments />} />
-         
+          <Route path="/admin/assignments/:id" element={<ViewAssignment />} />
+          <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
+
         </Route>
       </Route>
 
