@@ -45,7 +45,17 @@ const ViewAssignment = () => {
     target,
   } = assignment;
 
-  const statusColor = status === 'draft' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700';
+const statusColorMap = {
+  draft: 'bg-yellow-100 text-yellow-700',
+  scheduled: 'bg-blue-100 text-blue-700',
+  active: 'bg-green-100 text-green-700',
+  completed: 'bg-gray-100 text-gray-700',
+  expired: 'bg-red-100 text-red-700',
+  cancelled: 'bg-pink-100 text-pink-700',
+};
+
+const statusColor = statusColorMap[status] || 'bg-gray-100 text-gray-700'; // fallback
+
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
