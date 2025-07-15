@@ -4,9 +4,11 @@ import {
   getGroupById,
   removeStudentsFromGroup,
   removeStudentFromGroup,
+  updateGroupById,       // You will need to add this in your groupController if not present
 } from "../../../Controllers/groupController";
 import {
   Users,
+  User,
   School,
   BadgeCheck,
   CalendarDays,
@@ -14,12 +16,54 @@ import {
   Info,
   Building2,
   Pencil,
+  ArrowLeft,
   ToggleRight,
   ToggleLeft,
 } from "lucide-react";
 import dayjs from "dayjs";
 import AddStudentsToGroup from "./AddStudentsToGroup";
 import Loader from "../../../Components/Loader";
+
+const GroupStatusToggle = ({ groupId, isActiveInitial, onStatusChange }) => {
+  const [status, setStatus] = useState(isActiveInitial);
+  const [loading, setLoading] = useState(false);
+
+  const toggleStatus = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await updateGroupById(groupId, { is_active: !status });
+      setStatus(!status);
+      if (onStatusChange) onStatusChange(!status);
+    } catch (error) {
+      alert("Failed to update group status.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-4 py-4 px-2">
+      <span className="text-sm font-medium text-gray-700">Group Status</span>
+      <button
+        onClick={toggleStatus}
+        disabled={loading}
+        aria-label="Toggle group status"
+        className={`relative w-12 h-6 rounded-full transition-colors duration-300 focus:outline-none ${
+          status ? 'bg-green-500' : 'bg-gray-300'
+        } ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+            status ? 'translate-x-6' : ''
+          }`}
+        />
+      </button>
+    </div>
+  );
+};
+
 
 const ViewGroup = () => {
   const { id } = useParams();
@@ -28,17 +72,19 @@ const ViewGroup = () => {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  const fetchGroup = async () => {
+    setLoading(true);
+    try {
+      const res = await getGroupById(id);
+      setGroup(res?.data?.group || null);
+    } catch (err) {
+      console.error("Failed to fetch group", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchGroup = async () => {
-      try {
-        const res = await getGroupById(id);
-        setGroup(res?.data?.group || null);
-      } catch (err) {
-        console.error("Failed to fetch group", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchGroup();
   }, [id]);
 
@@ -75,13 +121,6 @@ const ViewGroup = () => {
     }
   };
 
-  const toggleStatus = () => {
-    setGroup((prev) => ({
-      ...prev,
-      is_active: !prev.is_active,
-    }));
-  };
-
   if (loading) return <Loader />;
   if (!group)
     return <div className="p-6 text-center text-red-500">Group not found</div>;
@@ -89,20 +128,29 @@ const ViewGroup = () => {
   return (
     <div className="p-6">
       {/* Title + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h2 className="text-2xl font-bold text-indigo-700">Group Details</h2>
-        <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        {/* Title + Status Toggle in one row */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <h2 className="text-2xl font-bold text-indigo-700 flex items-center gap-2">
+            <User className="w-6 h-6 text-indigo-600" />
+            Group Details
+          </h2>
+          <GroupStatusToggle
+            groupId={group._id}
+            isActiveInitial={group.is_active}
+            onStatusChange={fetchGroup}
+          />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3 items-center">
           <button
-            onClick={toggleStatus}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow text-sm font-medium 
-              ${group.is_active
-                ? "bg-green-100 text-green-700 hover:bg-green-200"
-                : "bg-red-100 text-red-700 hover:bg-red-200"
-              }`}
+            className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
+            onClick={() => navigate(-1)}
           >
-            {group.is_active ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-            {group.is_active ? "Active" : "Inactive"}
+            <ArrowLeft size={16} /> Back
           </button>
+
           <button
             onClick={() => navigate(`/admin/groups/edit/${group._id}`)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg shadow bg-indigo-600 text-white hover:bg-indigo-700 text-sm"
@@ -118,6 +166,7 @@ const ViewGroup = () => {
           </button>
         </div>
       </div>
+
 
       {/* Group Info Card */}
       <div className="bg-white rounded-xl border border-gray-200 shadow p-6 space-y-6">
