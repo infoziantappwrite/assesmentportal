@@ -13,7 +13,7 @@ const SinglePageViewSection = () => {
   const navigate = useNavigate();
   const [section, setSection] = useState(null);
   console.log(section);
-  
+
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadSummary, setUploadSummary] = useState(null);
@@ -106,12 +106,19 @@ const SinglePageViewSection = () => {
               Edit Section
             </button>
             <button
-              onClick={() => navigate(`/admin/sections/${id}/add-question`)}
+              onClick={() =>
+                navigate(
+                  section.type === "code"
+                    ? `/admin/sections/${id}/add-question-code`
+                    : `/admin/sections/${id}/add-question`
+                )
+              }
               className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
             >
               <PlusCircle className="w-4 h-4 inline-block mr-1" />
               Add Questions
             </button>
+
             <label className="relative inline-flex items-center px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow cursor-pointer">
               <UploadCloud className="w-4 h-4 mr-1" />
               {uploading ? "Uploading..." : "Bulk Upload"}
