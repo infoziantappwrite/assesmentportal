@@ -2,12 +2,12 @@ import axiosClient from "../api/axiosClient";
 
 // GET /assignments - Get all assignments with pagination/filtering
 export const getAllAssignments = async (params = {}) => {
-  console.log(params)
+  //console.log(params)
   const response = await axiosClient.get("/assignments", {
     params,
     withCredentials: true,
   });
-  console.log(response.data)
+  //console.log(response.data)
   return response.data;
 };
 

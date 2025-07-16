@@ -50,9 +50,10 @@ const [assignedByUsers, setAssignedByUsers] = useState([]);
 useEffect(() => {
   getAllAssignments(filters)
     .then((res) => {
-      const fetchedAssignments = res.message.assignments || [];
+      const fetchedAssignments = res.data.assignments;
       setAssignments(fetchedAssignments);
-      setPagination(res.message.pagination || {});
+      //console.log(fetchedAssignments)
+      setPagination(res.data.pagination || {});
       setError("");
 
       // 🔹 Extract unique assigned_by users
@@ -63,7 +64,7 @@ useEffect(() => {
             .map((a) => [a.assigned_by._id, a.assigned_by])
         ).values()
       );
-      console.log(uniqueAssignedBy)
+      //console.log(uniqueAssignedBy)
       setAssignedByUsers(uniqueAssignedBy); // 👈 add this state
 
       setLoading(false);
