@@ -105,6 +105,8 @@ const AddQuestionToSectionCode = () => {
         }
       };
 
+      console.log(submissionData);
+      
       const res = await createQuestionInSection(sectionID, submissionData);
       const questionId = res?.question?._id;
       if (questionId) {
