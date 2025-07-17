@@ -1,99 +1,114 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Header from './Header';
-import AssessmentInstructions from './Steps/AssessmentInstructions';
-import AssessmentQuestions from './Steps/AssessmentQuestions';
-import ThankYou from "./ThankYou"
+import { Info } from 'lucide-react';
+import QuizQuestion from './QuestionTypes/QuizQuestion';
+import CodingQuestion from './QuestionTypes/CodingQuestion';
 
-const Assesment = () => {
+const Assessment = () => {
   const { state } = useLocation();
-  const test = state?.test;
-  const [step, setStep] = useState(0); // 0 = instructions, 1 = questions
-  const [completed, setCompleted] = useState(false);
-  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
+  const sections = state?.sections || [];
 
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+  const [showConfig, setShowConfig] = useState(false);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
 
-  useEffect(() => {
-    if (!test) return;
-    const started = localStorage.getItem('assessment_start_time');
-    if (started) setStep(0); // If already started, skip instructions
-  }, [test]);
+  const activeSection = sections[activeSectionIndex];
 
-  useEffect(() => {
-  const checkFullscreenExit = () => {
-    const isFullscreen = document.fullscreenElement !== null;
-    if (!isFullscreen && step === 1 && !completed) {
-      setShowFullscreenWarning(true);
-    }
-  };
-
-  document.addEventListener('fullscreenchange', checkFullscreenExit);
-  document.addEventListener('webkitfullscreenchange', checkFullscreenExit); // Safari
-  document.addEventListener('mozfullscreenchange', checkFullscreenExit); // Firefox
-  document.addEventListener('MSFullscreenChange', checkFullscreenExit); // IE
-
-  return () => {
-    document.removeEventListener('fullscreenchange', checkFullscreenExit);
-    document.removeEventListener('webkitfullscreenchange', checkFullscreenExit);
-    document.removeEventListener('mozfullscreenchange', checkFullscreenExit);
-    document.removeEventListener('MSFullscreenChange', checkFullscreenExit);
-  };
-}, [step, completed]);
-
-
-  const startTest = () => {
-    const now = new Date();
-    const end = new Date(now.getTime() + test.duration * 60 * 1000);
-    localStorage.setItem('assessment_start_time', now.toISOString());
-    localStorage.setItem('assessment_end_time', end.toISOString());
-    setStep(1);
-  };
-
-  const endTest = () => {
-    localStorage.removeItem('assessment_start_time');
-    localStorage.removeItem('assessment_end_time');
-    setCompleted(true);
-    // you can use this for ThankYou screen
-  };
-  if (completed) {
-    return <ThankYou />;
+  if (!sections.length) {
+    return <div className="p-10 text-center text-red-600">No assessment data found.</div>;
   }
 
-  if (!test) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500 font-semibold">No test data available.</div>;
-  }
+  const toggleConfig = () => setShowConfig(!showConfig);
+  const handleJump = (index) => setActiveQuestionIndex(index);
 
   return (
-    <div className="min-h-screen bg-white text-gray-800">
-      <Header onEndTest={endTest} start={step === 1} />
-      {step === 0 ? (
-        <AssessmentInstructions test={test} onStartTest={startTest} />
-      ) : (
-        <AssessmentQuestions test={test} />
-      )}
-      {showFullscreenWarning && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className="bg-white rounded-lg p-6 max-w-sm w-full text-center space-y-4 shadow-xl">
-      <h2 className="text-lg font-semibold text-red-600">Fullscreen Exited</h2>
-      <p className="text-sm text-gray-600">
-        You exited fullscreen mode. Please return to fullscreen to continue the test.
-      </p>
-      <button
-        onClick={async () => {
-          await document.documentElement.requestFullscreen();
-          setShowFullscreenWarning(false);
-        }}
-        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-      >
-        Go Fullscreen
-      </button>
-    </div>
-  </div>
-)}
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <Header />
 
+      {/* Section Selector */}
+      <div className="max-w-5xl mx-auto pt-6 px-4 flex items-center justify-between">
+        <div className="flex gap-3 overflow-x-auto">
+          {sections.map((section, idx) => (
+            <button
+              key={section._id}
+              onClick={() => {
+                setActiveSectionIndex(idx);
+                setActiveQuestionIndex(0);
+                setShowConfig(false);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium border ${
+                idx === activeSectionIndex
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border-gray-300 text-gray-700'
+              }`}
+            >
+              {section.title}
+            </button>
+          ))}
+        </div>
 
+        {/* Info Toggle */}
+        <button
+          onClick={toggleConfig}
+          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+        >
+          <Info className="w-4 h-4" />
+          {showConfig ? 'Hide Info' : 'Show Info'}
+        </button>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 pt-4 space-y-6">
+        {/* Section Configuration */}
+        {showConfig && (
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-sm text-gray-700">
+            <h3 className="font-semibold text-gray-800 mb-2">Section Configuration</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <ul>
+                <li>Duration: {activeSection.configuration?.duration_minutes ?? 0} mins</li>
+                <li>Questions: {activeSection.configuration?.question_count ?? 0}</li>
+                <li>Allow Skip: {activeSection.configuration?.allow_skip ? 'Yes' : 'No'}</li>
+              </ul>
+              <ul>
+                <li>Shuffle: {activeSection.configuration?.shuffle_questions ? 'Yes' : 'No'}</li>
+                <li>Show Palette: {activeSection.configuration?.show_question_palette ? 'Yes' : 'No'}</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Question Palette */}
+        <div className="flex justify-end gap-2 flex-wrap">
+          {activeSection.questions.map((q, idx) => (
+            <button
+              key={q._id}
+              onClick={() => handleJump(idx)}
+              className={`w-8 h-8 rounded-full text-sm font-medium border ${
+                idx === activeQuestionIndex
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-800 border-gray-300'
+              }`}
+            >
+              {idx + 1}
+            </button>
+          ))}
+        </div>
+
+        {/* Active Question Display */}
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <p className="text-sm text-gray-600 mb-2 font-semibold">
+            Question {activeQuestionIndex + 1} of {activeSection.questions.length}
+          </p>
+
+          {activeSection.questions[activeQuestionIndex].type === 'single_correct' ? (
+            <QuizQuestion question={activeSection.questions[activeQuestionIndex]} />
+          ) : (
+            <CodingQuestion question={activeSection.questions[activeQuestionIndex]} />
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Assesment;
+export default Assessment;
