@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { createAssesment } from "../../../Controllers/AssesmentController";
 import { ClipboardList, Settings, BarChart2, SlidersHorizontal } from "lucide-react"
+import { useNavigate } from "react-router-dom";
+
 const CreateAssessment = () => {
+   const navigate = useNavigate(); // Add this
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -63,26 +66,30 @@ const CreateAssessment = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage("");
     try {
-      await createAssesment(formData);
+      const result = await createAssesment(formData);
+      const newId = result?.data?._id || result?.id; // Adjust based on your API's response
+
       setMessage("Assessment created successfully!");
-      setTimeout(() => {
-        setMessage('')
-      }, 3000);
-      //console.log(result);
+      setTimeout(() => setMessage(""), 3000);
+
+      // Navigate to the new assessment's view page
+      if (newId) {
+        navigate(`/admin/assessments/${newId}`);
+      }
+
     } catch (err) {
       setMessage("Failed to create assessment.");
-      setTimeout(() => {
-        setMessage('')
-      }, 3000);
-      console.error(err.data);
+      setTimeout(() => setMessage(""), 3000);
+      console.error(err);
     }
     setLoading(false);
   };
+
 
   return (
 

@@ -37,26 +37,41 @@ const CreateSection = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name.includes("configuration.") || name.includes("scoring.")) {
-      const [parent, key] = name.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [key]: type === "checkbox" ? checked : Number(value),
-        },
-      }));
-    } else if (name === "sequence_order") {
-      setFormData((prev) => ({
-        ...prev,
-        sequence_order: Number(value),
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
+    setFormData((prev) => {
+      // Handle nested objects (configuration and scoring)
+      if (name.startsWith("configuration.") || name.startsWith("scoring.")) {
+        const [parent, key] = name.split(".");
+        const newValue = type === "checkbox" ? checked : Number(value);
+
+        const updated = {
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [key]: newValue,
+          },
+        };
+
+        // Recalculate total marks whenever question_count or marks_per_question changes
+        if (key === "question_count" || key === "marks_per_question") {
+          updated.scoring.total_marks = 
+            updated.configuration.question_count * updated.scoring.marks_per_question;
+        }
+
+        return updated;
+      } 
+      else if (name === "sequence_order") {
+        return {
+          ...prev,
+          sequence_order: Number(value),
+        };
+      } 
+      else {
+        return {
+          ...prev,
+          [name]: value,
+        };
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -74,7 +89,7 @@ const CreateSection = () => {
       sequence_order: Number(formData.sequence_order),
       configuration: formData.configuration,
       scoring: formData.scoring,
-      questions: [], // ✅ required by backend
+      questions: [],
       is_active: true,
     };
 
@@ -263,6 +278,9 @@ const CreateSection = () => {
               />
               <label className="text-sm text-gray-700">Negative Marking</label>
             </div>
+          </div>
+          <div className="mt-2 text-sm text-gray-500">
+            Calculation: {formData.configuration.question_count} questions × {formData.scoring.marks_per_question} marks = {formData.scoring.total_marks} total marks
           </div>
         </div>
 
