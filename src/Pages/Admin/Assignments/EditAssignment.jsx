@@ -154,7 +154,7 @@ const EditAssignment = () => {
 
         try {
             await updateAssignment(id, payload);
-            setMessage("Assignment updated successfully!");
+            setMessage("Assignment updated successfully!.. Redirecting...");
             setTimeout(() => {
                 setMessage("");
                 navigate(`/admin/assignments/${id}`);
