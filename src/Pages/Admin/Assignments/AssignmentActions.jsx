@@ -12,10 +12,12 @@ import {
   cancelAssignment,
   activateAssignment,
   extendDeadline,
+  getAssignmentById,  
 } from "../../../Controllers/AssignmentControllers";
 
-const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
+const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
   const navigate = useNavigate();
+  const [assignment, setAssignment] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [extendData, setExtendData] = useState({
@@ -24,7 +26,23 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
   });
   const [showExtendModal, setShowExtendModal] = useState(false);
 
-  // Auto-clear messages
+  // Fetch assignment details on mount or when id changes
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await getAssignmentById(id);
+        const assignmentData = res.message.assignment;
+        setAssignment(assignmentData);
+      } catch (err) {
+        setError("Failed to fetch assignment details.");
+      }
+    }
+    fetchData();
+  }, [id]);
+
+
+  const normalizedStatus = assignment?.status?.trim().toLowerCase() || "";
+
   useEffect(() => {
     if (message || error) {
       const timeout = setTimeout(() => {
@@ -35,34 +53,25 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
     }
   }, [message, error]);
 
-  const handleCancel = async () => {
-    
+  const handleToggleStatus = async () => {
+    setError("");
     try {
-      await cancelAssignment(id);
-      setMessage("Assignment cancelled.");
-      fetchAssignment()
+      if (normalizedStatus === "active") {
+        await cancelAssignment(id);
+        setMessage("Assignment cancelled.");
+      } else {
+        await activateAssignment(id);
+        setMessage("Assignment activated.");
+      }
+      // Re-fetch after update
+      const res = await getAssignmentById(id);
+      setAssignment(res.message.assignment);
+      fetchAssignment?.(); 
     } catch (err) {
       console.error(err);
-      setError("Failed to cancel assignment.");
+      setError("Action failed. Please try again.");
     }
   };
-
-  const handleActivate = async () => {
-    if (!id || typeof id !== "string" || id.length !== 24) {
-      setError("Invalid assignment ID.");
-      return;
-    }
-
-    try {
-      await activateAssignment(id);
-      setMessage("Assignment activated.");
-      fetchAssignment();
-    } catch (err) {
-      console.error(err);
-      setError("Failed to activate assignment.");
-    }
-  };
-
 
   const handleExtend = async () => {
     setError("");
@@ -72,6 +81,9 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
       await extendDeadline(id, extendData);
       setMessage("Deadline extended successfully.");
       closeExtendModal();
+      // Re-fetch after update
+      const res = await getAssignmentById(id);
+      setAssignment(res.assignment);
     } catch (err) {
       console.error(err);
       setError("Failed to extend deadline.");
@@ -89,6 +101,14 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
     setError("");
   };
 
+  if (!assignment) {
+    return (
+      <div className="p-4 text-center text-gray-600">
+        Loading assignment details...
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
       {/* Left Title */}
@@ -99,14 +119,12 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
 
       {/* Right Buttons */}
       <div className="flex gap-2 flex-wrap">
-
         <button
-            className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-            onClick={() => navigate('/admin/assignments')}
+          className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
+          onClick={() => navigate("/admin/assignments")}
         >
-            <ArrowLeft size={16} /> Back
+          <ArrowLeft size={16} /> Back
         </button>
-        
 
         <button
           onClick={() => navigate(`/${role}/assignments/edit/${id}`)}
@@ -116,20 +134,26 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
           Edit
         </button>
 
+        {/* Toggle Cancel/Activate button */}
         <button
-          onClick={handleCancel}
-          className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm"
+          onClick={handleToggleStatus}
+          className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm ${
+            normalizedStatus === "active"
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
         >
-          <XCircle className="w-4 h-4" />
-          Cancel
-        </button>
-
-        <button
-          onClick={handleActivate}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm"
-        >
-          <CheckCircle className="w-4 h-4" />
-          Activate
+          {normalizedStatus === "active" ? (
+            <>
+              <XCircle className="w-4 h-4" />
+              Cancel
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-4 h-4" />
+              Activate
+            </>
+          )}
         </button>
 
         <button
@@ -188,9 +212,7 @@ const AssignmentActions = ({ id, role = "admin",fetchAssignment }) => {
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
 
-              {error && (
-                <p className="text-sm text-red-600">{error}</p>
-              )}
+              {error && <p className="text-sm text-red-600">{error}</p>}
 
               <div className="flex justify-end gap-3 mt-4">
                 <button
