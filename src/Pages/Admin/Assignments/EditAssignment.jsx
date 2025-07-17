@@ -22,6 +22,7 @@ const EditAssignment = () => {
         title: "",
         description: "",
         targetType: "",
+        status: "",
         assignedColleges: [],
         assignedGroups: [],
         assignedStudents: [],
@@ -56,15 +57,19 @@ const EditAssignment = () => {
                     assessmentId: assignment.assessment_id?._id || "",
                     title: assignment.title,
                     description: assignment.description,
-                    targetType: assignment.target?.type || "",
+                    targetType: assignment.target?.type === "individuals" ? "students" : assignment.target?.type || "",
+                    status: assignment.status || "",  // also fill status here
                     assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
                     assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
                     assignedStudents: (assignment.target?.student_ids || []).map((id) => ({ id, name: id })),
                     schedule: {
                         ...assignment.schedule,
+                        start_time: formatForDatetimeLocal(assignment.schedule.start_time),
+                        end_time: formatForDatetimeLocal(assignment.schedule.end_time),
                     },
                     settings: {
                         ...assignment.settings,
+                         results_release_time: formatForDatetimeLocal(assignment.settings.results_release_time), // format here
                     },
                 });
             } catch (err) {
@@ -77,18 +82,52 @@ const EditAssignment = () => {
         fetchAssignment();
     }, [id]);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (name.includes("schedule.")) {
-            const key = name.split(".")[1];
-            setFormData((prev) => ({
-                ...prev,
-                schedule: { ...prev.schedule, [key]: value },
-            }));
-        } else {
-            setFormData((prev) => ({ ...prev, [name]: value }));
-        }
+    const formatForDatetimeLocal = (isoString) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const pad = (num) => num.toString().padStart(2, "0");
+
+    const year = date.getUTCFullYear();
+    const month = pad(date.getUTCMonth() + 1);
+    const day = pad(date.getUTCDate());
+    const hours = pad(date.getUTCHours());
+    const minutes = pad(date.getUTCMinutes());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
+
+
+    const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name.includes("schedule.")) {
+        const key = name.split(".")[1];
+        setFormData((prev) => {
+            let updatedSchedule = { ...prev.schedule, [key]: value };
+
+            if (key === "start_time") {
+                // If end_time is before new start_time, set end_time = start_time
+                if (new Date(updatedSchedule.end_time) < new Date(value)) {
+                    updatedSchedule.end_time = value;
+                }
+            }
+
+            if (key === "end_time") {
+                // If end_time < start_time, reset end_time to start_time
+                if (new Date(value) < new Date(updatedSchedule.start_time)) {
+                    updatedSchedule.end_time = updatedSchedule.start_time;
+                }
+            }
+
+            return {
+                ...prev,
+                schedule: updatedSchedule,
+            };
+        });
+    } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+};
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -115,7 +154,7 @@ const EditAssignment = () => {
 
         try {
             await updateAssignment(id, payload);
-            setMessage("Assignment updated successfully!");
+            setMessage("Assignment updated successfully!.. Redirecting...");
             setTimeout(() => {
                 setMessage("");
                 navigate(`/admin/assignments/${id}`);
@@ -139,6 +178,17 @@ const EditAssignment = () => {
 
 
                 <form onSubmit={handleSubmit} className="space-y-8">
+
+                    {message && (
+                        <p
+                        className={`text-sm text-center ${
+                            message.includes("success") ? "text-green-600" : "text-red-600"
+                        }`}
+                        >
+                        {message}
+                        </p>
+                    )}
+
                     {/* Assignment Info */}
                     <div>
                         <h2 className="text-xl font-semibold mb-4 flex gap-2 text-blue-600">
@@ -289,7 +339,7 @@ const EditAssignment = () => {
                             </>
                         )}
                     </div>
-                    {/* Assignment Settings */}
+
                     {/* Assignment Settings */}
                     <div>
                         <h2 className="text-xl font-semibold mb-4 text-indigo-600 flex items-center gap-2">
@@ -432,6 +482,7 @@ const EditAssignment = () => {
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-2 rounded-lg"
                             required
+                            min={formData.schedule.start_time}
                         />
                     </div>
 
@@ -456,14 +507,6 @@ const EditAssignment = () => {
 
                         </div>
                     </div>
-
-                    {message && (
-                        <p
-                            className={`mt-4 text-sm text-center ${message.includes("success") ? "text-green-600" : "text-red-600"}`}
-                        >
-                            {message}
-                        </p>
-                    )}
                 </form>
             </div>
 

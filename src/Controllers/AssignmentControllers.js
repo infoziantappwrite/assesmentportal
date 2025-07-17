@@ -75,3 +75,11 @@ export const extendDeadline = async (id, data) => {
   });
   return response.data;
 };
+
+export const changeAssignmentStatus = async (id, status) => {
+  const response = await axiosClient.post(`/assignments/${id}/update-status`, { status }, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
