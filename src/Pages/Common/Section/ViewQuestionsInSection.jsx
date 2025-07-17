@@ -8,6 +8,7 @@ const ViewQuestionsInSection = () => {
   const { id } = useParams(); // Section ID
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
