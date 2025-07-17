@@ -178,6 +178,17 @@ const EditAssignment = () => {
 
 
                 <form onSubmit={handleSubmit} className="space-y-8">
+
+                    {message && (
+                        <p
+                        className={`text-sm text-center ${
+                            message.includes("success") ? "text-green-600" : "text-red-600"
+                        }`}
+                        >
+                        {message}
+                        </p>
+                    )}
+
                     {/* Assignment Info */}
                     <div>
                         <h2 className="text-xl font-semibold mb-4 flex gap-2 text-blue-600">
@@ -496,14 +507,6 @@ const EditAssignment = () => {
 
                         </div>
                     </div>
-
-                    {message && (
-                        <p
-                            className={`mt-4 text-sm text-center ${message.includes("success") ? "text-green-600" : "text-red-600"}`}
-                        >
-                            {message}
-                        </p>
-                    )}
                 </form>
             </div>
 
