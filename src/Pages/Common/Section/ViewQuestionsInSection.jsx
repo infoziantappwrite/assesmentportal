@@ -44,17 +44,24 @@ const ViewQuestionsInSection = () => {
       render: (row) => <span className="text-gray-700">{row.marks || '-'}</span>,
     },
     {
-      label: 'Actions',
-      render: (row) => (
-        <button
-          onClick={() => navigate(`/admin/sections/question/${row._id}`)}
-          className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-        >
-          <Eye size={16} />
-          View
-        </button>
-      ),
-    },
+  label: 'Actions',
+  render: (row) => (
+    <button
+      onClick={() =>
+        navigate(
+          row.type === "coding"
+            ? `/admin/sections/question/coding/${row._id}`
+            : `/admin/sections/question/${row._id}`
+        )
+      }
+      className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+    >
+      <Eye size={16} />
+      View
+    </button>
+  ),
+}
+
   ];
 
   if (loading) {

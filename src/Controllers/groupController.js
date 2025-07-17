@@ -4,7 +4,7 @@ import axiosClient from "../api/axiosClient";
 export const getAllGroups = async (params = {}) => {
   try {
     const response = await axiosClient.get("/groups", { params });
-    console.log(response);
+    //console.log(response);
     
     return response.data;
   } catch (error) {

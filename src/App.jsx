@@ -67,6 +67,10 @@ import ManageAssignments from './Pages/Admin/Assignments/ManageAssignments';
 import CreateAssignments from './Pages/Admin/Assignments/CreateAssignment';
 import ViewAssignment from './Pages/Admin/Assignments/ViewAssignment';
 import EditAssignment from './Pages/Admin/Assignments/EditAssignment';
+import AddQuestionToSectionCode from './Pages/Common/Section/AddQuestionToSectionCode';
+import ViewCodingQuestionsInSection from './Pages/Common/Section/ViewCodingQuestionsInSection';
+// import AddQuestionToSectionAssignment from "./Pages/Common/Section/AddQuestionToSectionAssignment"
+// import AddQuestionToSectionSurvey from './Pages/Common/Section/AddQuestionToSectionSurvey';
 
 
 const App = () => {
@@ -133,7 +137,11 @@ const App = () => {
           <Route path="/admin/sections/:id" element={<SinglePageViewSection />} />
           <Route path="/admin/sections/edit/:id" element={<EditSection />} />
           <Route path="/admin/sections/:id/add-question" element={<AddQuestionToSection />} />
+          <Route path="/admin/sections/:id/add-question-code" element={<AddQuestionToSectionCode />} />
+          {/* <Route path="/admin/sections/:id/add-question-assignment" element={<AddQuestionToSectionAssignment />} />
+          <Route path="/admin/sections/:id/add-question-survey" element={<AddQuestionToSectionSurvey />} /> */}
           <Route path="/admin/sections/:id/questions" element={<ViewQuestionsInSection />} />
+          <Route path="/admin/sections/question/coding/:id" element={<ViewCodingQuestionsInSection />} />
           <Route path="/admin/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/admin/reports" element={<div>Reports</div>} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
