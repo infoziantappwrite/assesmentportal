@@ -22,6 +22,7 @@ const EditAssignment = () => {
         title: "",
         description: "",
         targetType: "",
+        status: "",
         assignedColleges: [],
         assignedGroups: [],
         assignedStudents: [],
@@ -56,15 +57,19 @@ const EditAssignment = () => {
                     assessmentId: assignment.assessment_id?._id || "",
                     title: assignment.title,
                     description: assignment.description,
-                    targetType: assignment.target?.type || "",
+                    targetType: assignment.target?.type === "individuals" ? "students" : assignment.target?.type || "",
+                    status: assignment.status || "",  // also fill status here
                     assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
                     assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
                     assignedStudents: (assignment.target?.student_ids || []).map((id) => ({ id, name: id })),
                     schedule: {
                         ...assignment.schedule,
+                        start_time: formatForDatetimeLocal(assignment.schedule.start_time),
+                        end_time: formatForDatetimeLocal(assignment.schedule.end_time),
                     },
                     settings: {
                         ...assignment.settings,
+                         results_release_time: formatForDatetimeLocal(assignment.settings.results_release_time), // format here
                     },
                 });
             } catch (err) {
@@ -76,6 +81,21 @@ const EditAssignment = () => {
 
         fetchAssignment();
     }, [id]);
+
+    const formatForDatetimeLocal = (isoString) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const pad = (num) => num.toString().padStart(2, "0");
+
+    const year = date.getUTCFullYear();
+    const month = pad(date.getUTCMonth() + 1);
+    const day = pad(date.getUTCDate());
+    const hours = pad(date.getUTCHours());
+    const minutes = pad(date.getUTCMinutes());
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
 
     const handleChange = (e) => {
     const { name, value } = e.target;
@@ -308,7 +328,7 @@ const EditAssignment = () => {
                             </>
                         )}
                     </div>
-                    {/* Assignment Settings */}
+
                     {/* Assignment Settings */}
                     <div>
                         <h2 className="text-xl font-semibold mb-4 text-indigo-600 flex items-center gap-2">
