@@ -78,17 +78,36 @@ const EditAssignment = () => {
     }, [id]);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (name.includes("schedule.")) {
-            const key = name.split(".")[1];
-            setFormData((prev) => ({
+    const { name, value } = e.target;
+    if (name.includes("schedule.")) {
+        const key = name.split(".")[1];
+        setFormData((prev) => {
+            let updatedSchedule = { ...prev.schedule, [key]: value };
+
+            if (key === "start_time") {
+                // If end_time is before new start_time, set end_time = start_time
+                if (new Date(updatedSchedule.end_time) < new Date(value)) {
+                    updatedSchedule.end_time = value;
+                }
+            }
+
+            if (key === "end_time") {
+                // If end_time < start_time, reset end_time to start_time
+                if (new Date(value) < new Date(updatedSchedule.start_time)) {
+                    updatedSchedule.end_time = updatedSchedule.start_time;
+                }
+            }
+
+            return {
                 ...prev,
-                schedule: { ...prev.schedule, [key]: value },
-            }));
-        } else {
-            setFormData((prev) => ({ ...prev, [name]: value }));
-        }
-    };
+                schedule: updatedSchedule,
+            };
+        });
+    } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+};
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -432,6 +451,7 @@ const EditAssignment = () => {
                             onChange={handleChange}
                             className="w-full border border-gray-300 p-2 rounded-lg"
                             required
+                            min={formData.schedule.start_time}
                         />
                     </div>
 
