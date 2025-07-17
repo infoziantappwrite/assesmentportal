@@ -68,6 +68,8 @@ const AddQuestionToSectionCode = () => {
 
   const [activeSection, setActiveSection] = useState("basic");
   const [successMessage, setSuccessMessage] = useState("");
+  const [tagInput, setTagInput] = useState("");
+
 
   const handleChange = (e, path = []) => {
     const { name, value } = e.target;
@@ -106,7 +108,7 @@ const AddQuestionToSectionCode = () => {
       };
 
       console.log(submissionData);
-      
+
       const res = await createQuestionInSection(sectionID, submissionData);
       const questionId = res?.question?._id;
       if (questionId) {
@@ -177,8 +179,8 @@ const AddQuestionToSectionCode = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <button 
-          onClick={() => navigate(-1)} 
+        <button
+          onClick={() => navigate(-1)}
           className="flex items-center text-indigo-600 hover:text-indigo-800 transition-colors"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -231,25 +233,25 @@ const AddQuestionToSectionCode = () => {
                   <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Star className="w-4 h-4 text-indigo-500" /> Marks
                   </label>
-                  <input 
-                    type="number" 
-                    name="marks" 
+                  <input
+                    type="number"
+                    name="marks"
                     value={formData.marks}
-                    onChange={handleChange} 
+                    onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
                     min="1"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
                     <ListOrdered className="w-4 h-4 text-indigo-500" /> Sequence Order
                   </label>
-                  <input 
-                    type="number" 
-                    name="sequence_order" 
+                  <input
+                    type="number"
+                    name="sequence_order"
                     value={formData.sequence_order}
-                    onChange={handleChange} 
+                    onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
                     min="1"
                   />
@@ -260,10 +262,10 @@ const AddQuestionToSectionCode = () => {
                     <Hash className="w-4 h-4 text-indigo-500" /> Difficulty
                   </label>
                   <div className="relative">
-                    <select 
-                      name="difficulty_level" 
+                    <select
+                      name="difficulty_level"
                       value={formData.coding_details.difficulty_level}
-                      onChange={(e) => handleChange(e, ["coding_details"])} 
+                      onChange={(e) => handleChange(e, ["coding_details"])}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition appearance-none"
                     >
                       <option value="easy">Easy</option>
@@ -274,13 +276,13 @@ const AddQuestionToSectionCode = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Question Text</label>
-                <textarea 
-                  name="question_text" 
+                <textarea
+                  name="question_text"
                   value={formData.content.question_text}
-                  onChange={(e) => handleChange(e, ["content"])} 
+                  onChange={(e) => handleChange(e, ["content"])}
                   rows="3"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
                   placeholder="Enter the question text that will be displayed to students..."
@@ -300,8 +302,8 @@ const AddQuestionToSectionCode = () => {
                   <label className="block text-sm font-medium text-gray-700 capitalize">
                     {field.replace(/_/g, " ")}
                   </label>
-                  <textarea 
-                    name={field} 
+                  <textarea
+                    name={field}
                     value={formData.coding_details[field]}
                     onChange={(e) => handleChange(e, ["coding_details"])}
                     rows={field.includes('statement') || field.includes('description') ? 4 : 2}
@@ -309,7 +311,7 @@ const AddQuestionToSectionCode = () => {
                   />
                 </div>
               ))}
-              
+
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Algorithm Tags</label>
                 <div className="flex flex-wrap gap-2">
@@ -339,22 +341,27 @@ const AddQuestionToSectionCode = () => {
                     ))}
                   <input
                     type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
                     className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
                     placeholder="Add tag (press enter)"
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.target.value.trim()) {
+                      if (e.key === 'Enter' && tagInput.trim()) {
                         e.preventDefault();
                         setFormData(prev => ({
                           ...prev,
                           coding_details: {
                             ...prev.coding_details,
-                            algorithm_tags: [...prev.coding_details.algorithm_tags, e.target.value.trim()]
+                            algorithm_tags: prev.coding_details.algorithm_tags.includes(tagInput.trim())
+                              ? prev.coding_details.algorithm_tags
+                              : [...prev.coding_details.algorithm_tags, tagInput.trim()]
                           }
                         }));
-                        e.target.value = '';
+                        setTagInput(""); // clear input after adding
                       }
                     }}
                   />
+
                 </div>
               </div>
             </div>
@@ -378,7 +385,7 @@ const AddQuestionToSectionCode = () => {
                     <PlusCircle className="w-4 h-4" /> Add Case
                   </button>
                 </div>
-                
+
                 {formData.coding_details.sample_test_cases.map((testCase, index) => (
                   <div key={index} className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
                     <div className="flex justify-between items-center">
@@ -428,7 +435,7 @@ const AddQuestionToSectionCode = () => {
                     <PlusCircle className="w-4 h-4" /> Add Case
                   </button>
                 </div>
-                
+
                 {formData.coding_details.hidden_test_cases.map((testCase, index) => (
                   <div key={index} className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
                     <div className="flex justify-between items-center">
@@ -484,7 +491,7 @@ const AddQuestionToSectionCode = () => {
                     <ChevronDown className="w-4 h-4 absolute right-3 top-3 text-gray-400" />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Starter Code</label>
                   <div className="border border-gray-300 rounded-lg overflow-hidden">
