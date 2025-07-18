@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MinusCircle, ArrowLeft } from 'lucide-react';
 import Header from '../../../Components/Header/Header';
@@ -15,7 +15,6 @@ import {
   PlayCircle,
   XCircle,
 } from 'lucide-react';
-
 
 const statusStyles = {
   correct: {
@@ -56,6 +55,9 @@ const ReportAndSubmissions = () => {
   const [expandedSections, setExpandedSections] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isReportLoaded, setIsReportLoaded] = useState(false); // To track if the report is loaded
+
+  const reportSectionRef = useRef(null); // Ref for scrolling to report section
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -82,6 +84,12 @@ const ReportAndSubmissions = () => {
       setReportData(reportRes.data);
       setSectionWiseStatus(statusRes);
       setExpandedSections({}); // Reset expanded sections
+      setIsReportLoaded(true); // Report is loaded
+
+      // Scroll to the report section after the report data is loaded
+      if (isReportLoaded && reportSectionRef.current) {
+        reportSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } catch (error) {
       setError('Error fetching report or section-wise status.');
     } finally {
@@ -105,67 +113,56 @@ const ReportAndSubmissions = () => {
         <h1 className="text-3xl font-bold text-blue-700 mb-6">My Submissions</h1>
 
         {/* Submissions List */}
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  {submissions.map((submission) => (
-    <div
-      key={submission._id}
-      className="p-4 rounded-xl shadow-sm border bg-white space-y-3 hover:shadow-md transition cursor-pointer"
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-gray-800">
-          {submission.assignment_id?.title || 'Assignment Title'}
-        </h3>
-        <CheckCircle className="w-4 h-4 text-blue-600" />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {submissions.map((submission) => (
+            <div
+              key={submission._id}
+              className="p-4 rounded-xl shadow-sm border bg-white space-y-3 hover:shadow-md transition cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-800">
+                  {submission.assignment_id?.title || 'Assignment Title'}
+                </h3>
+                <CheckCircle className="w-4 h-4 text-blue-600" />
+              </div>
 
-      <p className="text-sm text-gray-700">
-        {submission.assignment_id?.description || 'No description available'}
-      </p>
+              <p className="text-sm text-gray-700">
+                {submission.assignment_id?.description || 'No description available'}
+              </p>
 
-      <div className="text-sm flex flex-col gap-1 text-gray-800">
-        <div className="flex items-center gap-1">
-          <Calendar className="w-4 h-4" />
-          {new Date(submission.timing.started_at).toLocaleDateString()}
+              <div className="text-sm flex flex-col gap-1 text-gray-800">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  {new Date(submission.timing.started_at).toLocaleDateString()}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  Attempt: {submission.attempt_number}
+                </div>
+
+                <div className="flex items-center gap-1 text-green-700">
+                  <PlayCircle className="w-4 h-4" />
+                  Started:{' '}
+                  {new Date(submission.timing.started_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>              </div>
+
+              <button
+                onClick={() => fetchReportData(submission._id)}
+                className="mt-2 inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white px-4 py-2 rounded text-sm hover:from-blue-700 hover:to-teal-600 transition"
+              >
+                <CheckCircle className="w-4 h-4" />
+                View Report
+              </button>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-1">
-          <Clock className="w-4 h-4" />
-          Attempt: {submission.attempt_number}
-        </div>
-
-        <div className="flex items-center gap-1 text-green-700">
-          <PlayCircle className="w-4 h-4" />
-          Started:{' '}
-          {new Date(submission.timing.started_at).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </div>
-
-        <div className="flex items-center gap-1 text-red-700">
-          <XCircle className="w-4 h-4" />
-          Last Activity:{' '}
-          {new Date(submission.timing.last_activity_at).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </div>
-      </div>
-
-      <button
-        onClick={() => fetchReportData(submission._id)}
-        className="mt-2 inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white px-4 py-2 rounded text-sm hover:from-blue-700 hover:to-teal-600 transition"
-      >
-        <CheckCircle className="w-4 h-4" />
-        View Report
-      </button>
-    </div>
-  ))}
-</div>
-
 
         {/* Report View */}
         {reportData && (
-          <div className="mt-10">
+          <div ref={reportSectionRef} className="mt-10">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-3xl font-bold text-blue-700">Test Report</h1>
               <button
@@ -184,19 +181,18 @@ const ReportAndSubmissions = () => {
                 <p className="text-lg"><strong>Percentage:</strong> {reportData.percentage}%</p>
               </div>
               <span
-                className={`px-4 py-2 rounded text-white text-sm font-semibold ${performanceBadge[
-                  reportData.obtained_marks >= reportData.total_marks * 0.75
+                className={`px-4 py-2 rounded text-white text-sm font-semibold ${performanceBadge[reportData.obtained_marks >= reportData.total_marks * 0.75
                     ? 'Excellent'
                     : reportData.obtained_marks >= reportData.total_marks * 0.5
                     ? 'Good'
                     : 'Poor'
-                ]}`}
+                  ]}`}
               >
                 {reportData.obtained_marks >= reportData.total_marks * 0.75
                   ? 'Excellent'
                   : reportData.obtained_marks >= reportData.total_marks * 0.5
-                  ? 'Good'
-                  : 'Poor'}
+                    ? 'Good'
+                    : 'Poor'}
               </span>
             </div>
 
