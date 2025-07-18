@@ -14,6 +14,7 @@ import Profile from './Pages/Common/Profile/Profile';
 import Dashboard from "./Pages/Students/Dashboard/Dashboard";
 import Assesment from "./Pages/Students/Assesment/Assesment";
 import Instruction from './Pages/Students/Assesment/Instruction';
+import ThankYou from "./Pages/Students/Assesment/ThankYou";
 
 
 //import Trainer routes
@@ -87,10 +88,11 @@ const App = () => {
 
       {/* Private Student Routes */}
       <Route element={<PrivateRoute allowedRoles={['candidate']} />}>
-
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assesment" element={<Assesment />} />
         <Route path="/instructions" element={<Instruction />} />
+        <Route path="/thank-you" element={<ThankYou/>} />
+
       </Route>
 
 

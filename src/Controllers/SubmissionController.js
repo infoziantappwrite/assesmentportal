@@ -6,7 +6,7 @@ export const getMyAssignments = async () => {
   const response = await axiosClient.get(`/submissions/my-assignments`, {
     withCredentials: true,
   });
-  //console.log(response.data);
+  console.log(response.data);
   return response.data;
 };
 

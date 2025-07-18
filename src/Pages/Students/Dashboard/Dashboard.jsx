@@ -85,8 +85,8 @@ const Dashboard = () => {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`capitalize pb-2 px-4 text-sm font-semibold border-b-2 transition ${activeTab === tab
-                                    ? 'border-blue-600 text-blue-700'
-                                    : 'border-transparent text-gray-500 hover:text-blue-600'
+                                ? 'border-blue-600 text-blue-700'
+                                : 'border-transparent text-gray-500 hover:text-blue-600'
                                 }`}
                         >
                             {tab}
@@ -130,10 +130,11 @@ const Dashboard = () => {
                                         <div className="flex items-center gap-1 text-green-700">
                                             <PlayCircle className="w-4 h-4" />
                                             Starts:{' '}
-                                            {new Date(test.schedule.start_time).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
+                                            <span>
+                                                {new Date(test.schedule.start_time).getUTCHours().toString().padStart(2, '0')}:
+                                                {new Date(test.schedule.start_time).getUTCMinutes().toString().padStart(2, '0')} UTC
+                                            </span>
+
                                         </div>
                                     )}
 
@@ -141,10 +142,11 @@ const Dashboard = () => {
                                         <div className="flex items-center gap-1 text-red-700">
                                             <XCircle className="w-4 h-4" />
                                             Ends:{' '}
-                                            {new Date(test.schedule.end_time).toLocaleTimeString([], {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                            })}
+                                            <span>
+                                                {new Date(test.schedule.end_time).getUTCHours().toString().padStart(2, '0')}:
+                                                {new Date(test.schedule.end_time).getUTCMinutes().toString().padStart(2, '0')} UTC
+                                            </span>
+
                                         </div>
                                     )}
                                 </div>
@@ -167,7 +169,7 @@ const Dashboard = () => {
                                         className="mt-2 inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded text-sm hover:from-purple-600 hover:to-indigo-600 transition"
                                     >
                                         <CheckCircle className="w-4 h-4" />
-                                        View Report
+                                        View Submissions
                                     </button>
                                 )}
                             </div>
