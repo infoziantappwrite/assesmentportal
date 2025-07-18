@@ -1,33 +1,43 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { PlayCircle } from 'lucide-react';
-import Header from './Header';
+import { PlayCircle, AlarmClock } from 'lucide-react';
 
 const Instruction = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  const [buttonEnabled, setButtonEnabled] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [buttonEnabled, setButtonEnabled] = useState(false);
 
   const submission = state?.submission;
   const assessment = state?.assessment;
   const sections = state?.sections;
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setButtonEnabled(true);
-          return 0;
-        }
-        return prev - 1;
-      });
+    if (!submission || !assessment || !sections) return;
+
+    const savedStartTime = localStorage.getItem('instruction_timer_start');
+    let startTime = savedStartTime ? new Date(savedStartTime) : new Date();
+
+    if (!savedStartTime) {
+      localStorage.setItem('instruction_timer_start', startTime.toISOString());
+    }
+
+    const interval = setInterval(() => {
+      const now = new Date();
+      const elapsed = Math.floor((now - new Date(startTime)) / 1000);
+      const remaining = Math.max(0, 60 - elapsed);
+      setCountdown(remaining);
+
+      if (remaining <= 0) {
+        setButtonEnabled(true);
+        localStorage.removeItem('instruction_timer_start');
+        clearInterval(interval);
+      }
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(interval);
+  }, [submission, assessment, sections]);
 
   if (!submission || !assessment || !sections) {
     return (
@@ -53,8 +63,32 @@ const Instruction = () => {
 
   return (
     <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white py-12 px-4">
+      {/* Fixed Header with Countdown and Start Button */}
+      <header className="w-full bg-white border-b border-gray-200 shadow-sm py-3 px-6 flex items-center justify-between fixed top-0 left-0 z-40">
+        <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm px-4 py-2 rounded border border-blue-200 bg-blue-50 text-blue-700 font-semibold">
+            <AlarmClock className="w-4 h-4" />
+            {buttonEnabled ? 'Ready to Start' : `Start in ${countdown}s`}
+          </div>
+          <button
+            onClick={handleProceed}
+            disabled={!buttonEnabled}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded shadow transition
+              ${
+                buttonEnabled
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              }`}
+          >
+            <PlayCircle className="w-4 h-4" />
+            Start Test
+          </button>
+        </div>
+      </header>
+
+      {/* Instruction Content */}
+      <div className="pt-24 min-h-screen bg-gradient-to-br from-blue-50 to-white py-12 px-4">
         <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-8 border border-gray-200">
           {/* Title & Description */}
           <div className="space-y-2">
@@ -100,23 +134,6 @@ const Instruction = () => {
                 <div><strong>Deduct per Wrong:</strong> {scoring.negative_marks_per_wrong || 0}</div>
               </div>
             </div>
-          </div>
-
-          {/* Proceed Button */}
-          <div className="text-right">
-            <button
-              onClick={handleProceed}
-              disabled={!buttonEnabled}
-              className={`inline-flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium shadow transition 
-              ${
-                buttonEnabled
-                  ? 'bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600'
-                  : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-              }`}
-            >
-              <PlayCircle className="w-5 h-5" />
-              {buttonEnabled ? 'Proceed to Test' : `Start in ${countdown}s`}
-            </button>
           </div>
         </div>
       </div>

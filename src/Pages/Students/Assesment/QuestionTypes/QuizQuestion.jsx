@@ -1,42 +1,42 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const QuizQuestion = ({ question }) => {
-  const [selectedOption, setSelectedOption] = useState('');
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    if (selectedOption) {
-      // You can save answer to localStorage or backend
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+const QuizQuestion = ({ question, answer, onAnswerChange }) => {
+  const handleOptionClick = (optionId) => {
+    if (question.type === 'single_correct') {
+      onAnswerChange(question._id, optionId);
+    } else {
+      const existing = answer || [];
+      const updated = existing.includes(optionId)
+        ? existing.filter((opt) => opt !== optionId)
+        : [...existing, optionId];
+      onAnswerChange(question._id, updated);
     }
   };
 
   return (
     <div>
-      <p className="text-gray-800 font-medium mb-4">{question.content?.question_text}</p>
+      <p className="mb-4 font-medium text-gray-800">{question.content.question_text}</p>
       <div className="space-y-2">
-        {question.options.map((opt) => (
-          <label key={opt.option_id} className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="radio"
-              name={question._id}
-              value={opt.option_id}
-              checked={selectedOption === opt.option_id}
-              onChange={() => setSelectedOption(opt.option_id)}
-              className="accent-blue-600"
-            />
-            {opt.text}
-          </label>
-        ))}
+        {question.options.map((opt) => {
+          const selected =
+            question.type === 'single_correct'
+              ? answer === opt.option_id
+              : (answer || []).includes(opt.option_id);
+          return (
+            <button
+              key={opt.option_id}
+              onClick={() => handleOptionClick(opt.option_id)}
+              className={`block w-full text-left px-4 py-2 rounded-md border text-sm ${
+                selected
+                  ? 'bg-green-100 border-green-500 text-green-800'
+                  : 'bg-white border-gray-300 text-gray-700'
+              }`}
+            >
+              {opt.text}
+            </button>
+          );
+        })}
       </div>
-      <button
-        onClick={handleSave}
-        disabled={!selectedOption}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-      >
-        {saved ? 'Saved' : 'Save Answer'}
-      </button>
     </div>
   );
 };
