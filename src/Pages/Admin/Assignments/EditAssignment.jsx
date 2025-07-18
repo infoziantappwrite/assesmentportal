@@ -57,7 +57,12 @@ const EditAssignment = () => {
                     assessmentId: assignment.assessment_id?._id || "",
                     title: assignment.title,
                     description: assignment.description,
-                    targetType: assignment.target?.type === "individuals" ? "students" : assignment.target?.type || "",
+                    targetType:
+                    assignment.target?.type === "colleges"
+                    ? "colleges"
+                    : assignment.target?.type === "groups"
+                    ? "groups"
+                    : "students", // 'individuals' is mapped to 'students'
                     status: assignment.status || "",  // also fill status here
                     assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
                     assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
@@ -134,12 +139,18 @@ const EditAssignment = () => {
         setMessage("");
         setLoading(true);
 
-        const target = { type: formData.targetType };
+        const target = {
+        type:
+            formData.targetType === "students"
+            ? "individuals"
+            : formData.targetType,
+        };
         if (formData.targetType === "colleges") {
             target.college_ids = formData.assignedColleges.map((c) => c.id);
         } else if (formData.targetType === "groups") {
             target.group_ids = formData.assignedGroups.map((g) => g.id);
         } else if (formData.targetType === "students") {
+            target.type = "individuals"; // Important
             target.student_ids = formData.assignedStudents.map((s) => s.id);
         }
 
@@ -152,7 +163,10 @@ const EditAssignment = () => {
             settings: formData.settings,
         };
 
+        console.log("Sending payload:", { ...payload, target });
+
         try {
+
             await updateAssignment(id, payload);
             setMessage("Assignment updated successfully!.. Redirecting...");
             setTimeout(() => {
@@ -166,6 +180,8 @@ const EditAssignment = () => {
             setLoading(false);
         }
     };
+
+    
 
     if (loading) return <div className="p-4">Loading...</div>;
 
@@ -230,115 +246,115 @@ const EditAssignment = () => {
 
                     {/* Target Section */}
                     <div>
-                        <h2 className="text-xl font-semibold mb-4 flex gap-2 text-pink-600">
-                            <Users className="w-5 h-5 mt-1" /> Target
-                        </h2>
+                    <h2 className="text-xl font-semibold mb-4 flex gap-2 text-pink-600">
+                        <Users className="w-5 h-5 mt-1" /> Target
+                    </h2>
 
-                        <label className="block mb-1">Target Type</label>
-                        <select
-                            name="targetType"
-                            value={formData.targetType}
-                            onChange={handleChange}
-                            className="w-full mb-4 border border-gray-300 p-3 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                            required
+                    <label className="block mb-1">Target Type</label>
+                    <select
+                        name="targetType"
+                        value={formData.targetType}
+                        onChange={handleChange}
+                        className="w-full mb-4 border border-gray-300 p-3 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                        required
+                    >
+                        <option value="">-- Select Target Type --</option>
+                        <option value="colleges">Colleges</option>
+                        <option value="groups">Groups</option>
+                        <option value="students">Students</option>
+                    </select>
+
+                    {formData.targetType === "colleges" && (
+                        <>
+                        <button
+                            type="button"
+                            onClick={() => setShowCollegeModal(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
-                            <option value="">-- Select Target Type --</option>
-                            <option value="colleges" className="text-blue-600 font-semibold"> Colleges</option>
-                            <option value="groups" className="text-pink-600 font-semibold"> Groups</option>
-                            <option value="students" className="text-green-600 font-semibold"> Students</option>
-                        </select>
-
-
-                        {formData.targetType === "colleges" && (
-                            <>
+                            Select Colleges
+                        </button>
+                        <ul className="mt-2 space-y-1 text-sm">
+                            {formData.assignedColleges.map((c, i) => (
+                            <li key={c.id} className="bg-blue-50 p-2 rounded flex justify-between">
+                                {c.name}
                                 <button
-                                    type="button"
-                                    onClick={() => setShowCollegeModal(true)}
-                                    className="px-4  py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                onClick={() =>
+                                    setFormData((prev) => ({
+                                    ...prev,
+                                    assignedColleges: prev.assignedColleges.filter((_, idx) => idx !== i),
+                                    }))
+                                }
+                                className="text-red-500 text-xs"
                                 >
-                                    Select Colleges
+                                ✕
                                 </button>
-                                <ul className="mt-2 space-y-1 text-sm">
-                                    {formData.assignedColleges.map((c, i) => (
-                                        <li key={c.id} className="bg-blue-50 p-2 rounded flex justify-between">
-                                            {c.name}
-                                            <button
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        assignedColleges: prev.assignedColleges.filter((_, idx) => idx !== i),
-                                                    }))
-                                                }
-                                                className="text-red-500 text-xs"
-                                            >
-                                                ✕
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </>
-                        )}
+                            </li>
+                            ))}
+                        </ul>
+                        </>
+                    )}
 
-                        {formData.targetType === "groups" && (
-                            <>
+                    {formData.targetType === "groups" && (
+                        <>
+                        <button
+                            type="button"
+                            onClick={() => setShowGroupModal(true)}
+                            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                        >
+                            Select Groups
+                        </button>
+                        <ul className="mt-2 space-y-1 text-sm">
+                            {formData.assignedGroups.map((g, i) => (
+                            <li key={g.id} className="bg-pink-50 p-2 rounded flex justify-between">
+                                {g.name}
                                 <button
-                                    type="button"
-                                    onClick={() => setShowGroupModal(true)}
-                                    className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                                onClick={() =>
+                                    setFormData((prev) => ({
+                                    ...prev,
+                                    assignedGroups: prev.assignedGroups.filter((_, idx) => idx !== i),
+                                    }))
+                                }
+                                className="text-red-500 text-xs"
                                 >
-                                    Select Groups
+                                ✕
                                 </button>
-                                <ul className="mt-2 space-y-1 text-sm">
-                                    {formData.assignedGroups.map((g, i) => (
-                                        <li key={g.id} className="bg-pink-50 p-2 rounded flex justify-between">
-                                            {g.name}
-                                            <button
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        assignedGroups: prev.assignedGroups.filter((_, idx) => idx !== i),
-                                                    }))
-                                                }
-                                                className="text-red-500 text-xs"
-                                            >
-                                                ✕
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </>
-                        )}
+                            </li>
+                            ))}
+                        </ul>
+                        </>
+                    )}
 
-                        {formData.targetType === "students" && (
-                            <>
+                    {formData.targetType === "students" && (
+                        <>
+                        <button
+                            type="button"
+                            onClick={() => setShowStudentModal(true)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        >
+                            Select Students
+                        </button>
+                        <ul className="mt-2 space-y-1 text-sm">
+                            {formData.assignedStudents.map((s, i) => (
+                            <li key={s.id} className="bg-green-50 p-2 rounded flex justify-between">
+                                {s.name}
                                 <button
-                                    type="button"
-                                    onClick={() => setShowStudentModal(true)}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                onClick={() =>
+                                    setFormData((prev) => ({
+                                    ...prev,
+                                    assignedStudents: prev.assignedStudents.filter((_, idx) => idx !== i),
+                                    }))
+                                }
+                                className="text-red-500 text-xs"
                                 >
-                                    Select Students
+                                ✕
                                 </button>
-                                <ul className="mt-2 space-y-1 text-sm">
-                                    {formData.assignedStudents.map((s, i) => (
-                                        <li key={s.id} className="bg-green-50 p-2 rounded flex justify-between">
-                                            {s.name}
-                                            <button
-                                                onClick={() =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        assignedStudents: prev.assignedStudents.filter((_, idx) => idx !== i),
-                                                    }))
-                                                }
-                                                className="text-red-500 text-xs"
-                                            >
-                                                ✕
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </>
-                        )}
+                            </li>
+                            ))}
+                        </ul>
+                        </>
+                    )}
                     </div>
+
 
                     {/* Assignment Settings */}
                     <div>
