@@ -29,11 +29,34 @@ export const startSubmission = async (assignmentId) => {
 
 
 export const resumeSubmission = async (submissionId) => {
-  console.log(submissionId)
+  //console.log(submissionId)
   const response = await axiosClient.put(`/submissions/resume/${submissionId}`, {
     withCredentials: true,
   });
   console.log(response.data);
+  return response.data;
+};
+
+export const saveAnswer = async (submissionId, payload) => {
+  const response = await axiosClient.put(`/submissions/${submissionId}/save-answer`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+export const getAnsweredStatus = async (submissionId, questionId) => {
+  const response = await axiosClient.get(`/submissions/answered-status/${submissionId}`, {
+    params: { questionId },
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+
+export const submitSubmission = async (submissionId) => {
+  const response = await axiosClient.post(`/submissions/${submissionId}/submit`, {}, {
+    withCredentials: true,
+  });
   return response.data;
 };
 
