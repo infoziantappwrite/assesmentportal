@@ -46,15 +46,24 @@ const Header = () => {
   };
 
   const handleSubmit = async () => {
-    try {
-      const submissionId = localStorage.getItem('submission_id');
-      await submitSubmission(submissionId);
-      localStorage.clear();
+  try {
+    const submissionId = localStorage.getItem('submission_id');
+    const showResults = JSON.parse(localStorage.getItem('show_results_immediately'));
+
+    const response = await submitSubmission(submissionId);
+    localStorage.clear();
+
+    if (showResults) {
+      const resultData = response?.data?.result || {}; 
+      navigate('/result', { state: { result: resultData } });
+    } else {
       navigate('/thank-you');
-    } catch (err) {
-      console.error('Submission failed:', err);
     }
-  };
+  } catch (err) {
+    console.error('Submission failed:', err);
+  }
+};
+
 
   return (
     <>
@@ -62,7 +71,7 @@ const Header = () => {
         <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
 
         {timeLeft !== null && (
-          <div className="flex items-center gap-2 border border-blue-200 rounded px-4 py-2 bg-blue-50 text-blue-700 font-semibold text-sm">
+          <div className="flex items-center gap-2 border border-blue-200 rounded-lg px-4 py-2 bg-blue-50 text-blue-700 font-semibold text-sm">
             <AlarmClock className="w-5 h-5 text-blue-600" />
             <span>Time Left: {formatTime(timeLeft)}</span>
           </div>
@@ -70,7 +79,7 @@ const Header = () => {
 
         <button
           onClick={() => setShowConfirm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded shadow transition"
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg shadow transition"
         >
           <Power className="w-4 h-4" />
           End Test
@@ -79,7 +88,7 @@ const Header = () => {
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-lg border relative">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-lg border border-gray-300 relative">
             <button
               onClick={() => setShowConfirm(false)}
               className="absolute top-3 right-3 text-gray-400 hover:text-red-500"
@@ -98,13 +107,13 @@ const Header = () => {
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm"
               >
                 End Test
               </button>

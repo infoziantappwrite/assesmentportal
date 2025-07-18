@@ -57,6 +57,7 @@ export const submitSubmission = async (submissionId) => {
   const response = await axiosClient.post(`/submissions/${submissionId}/submit`, {}, {
     withCredentials: true,
   });
+  console.log(response.data);
   return response.data;
 };
 
