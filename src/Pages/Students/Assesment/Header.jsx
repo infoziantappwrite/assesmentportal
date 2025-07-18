@@ -3,21 +3,31 @@ import { AlarmClock, Power, X, AlertTriangle } from 'lucide-react';
 import { submitSubmission } from '../../../Controllers/SubmissionController';
 import { useNavigate } from 'react-router-dom';
 
-const Header = ({ submissionId, duration }) => {
+const Header = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!duration) return;
+    const submissionId = localStorage.getItem('submission_id');
+    if (!submissionId) {
+      localStorage.clear();
+      navigate('/dashboard');
+      return;
+    }
 
-    const now = new Date();
-    const end = new Date(now.getTime() + duration * 60 * 1000);
-    localStorage.setItem('assessment_end_time', end.toISOString());
+    const endTimeStr = localStorage.getItem('assessment_end_time');
+    if (!endTimeStr) {
+      localStorage.clear();
+      navigate('/dashboard');
+      return;
+    }
+
+    const endTime = new Date(endTimeStr);
 
     const timer = setInterval(() => {
       const now = new Date();
-      const diff = Math.max(0, Math.floor((end - now) / 1000));
+      const diff = Math.max(0, Math.floor((endTime - now) / 1000));
       setTimeLeft(diff);
 
       if (diff <= 0) {
@@ -27,18 +37,19 @@ const Header = ({ submissionId, duration }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [duration]);
+  }, []);
 
   const formatTime = (seconds) => {
-    const m = Math.floor((seconds % 3600) / 60);
+    const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const handleSubmit = async () => {
     try {
+      const submissionId = localStorage.getItem('submission_id');
       await submitSubmission(submissionId);
-      localStorage.removeItem('assessment_end_time');
+      localStorage.clear();
       navigate('/thank-you');
     } catch (err) {
       console.error('Submission failed:', err);

@@ -4,12 +4,12 @@ import Header from './Header';
 import QuizQuestion from './QuestionTypes/QuizQuestion';
 import CodingQuestion from './QuestionTypes/CodingQuestion';
 import DescriptiveQuestion from './QuestionTypes/DescriptiveQuestion';
-import { saveAnswer, getAnsweredStatus } from '../../../Controllers/SubmissionController';
+import { getAnsweredStatus } from '../../../Controllers/SubmissionController';
 
 const Assessment = () => {
   const { state } = useLocation();
-  const { submissionId, sections } = state;
-
+  const { sections } = state;
+  const submissionId = localStorage.getItem('submission_id');
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -28,30 +28,8 @@ const Assessment = () => {
       .catch(console.error);
   }, [submissionId, question._id]);
 
-  // Save answer when changed
-  const handleAnswerChange = (qid, value) => {
-    setAnswers((prev) => ({ ...prev, [qid]: value }));
-
-    const payload = {
-      sectionId: activeSection._id,
-      questionId: qid,
-      type: question.type,
-    };
-
-    if (question.type === 'single_correct' || question.type === 'multi_correct') {
-      payload.selectedOptions = value;
-    } else if (question.type === 'coding') {
-      payload.codeSolution = value;
-      payload.programmingLanguage = 'javascript';
-    } else if (question.type === 'descriptive') {
-      payload.textAnswer = value;
-    }
-
-    saveAnswer(submissionId, payload).catch(console.error);
-  };
-
   const renderQuestion = () => {
-    const props = { question, answer: answers[question._id], onAnswerChange: handleAnswerChange };
+    const props = { question, answer: answers[question._id] };
     switch (question.type) {
       case 'single_correct':
       case 'multi_correct':
@@ -67,11 +45,7 @@ const Assessment = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ✅ Header with timer */}
-      <Header
-        submissionId={submissionId}
-        duration={activeSection.configuration?.duration_minutes}
-      />
+      <Header />
 
       {/* Section Tabs */}
       <div className="flex gap-2 p-4 overflow-x-auto">
@@ -104,6 +78,13 @@ const Assessment = () => {
             {idx + 1}
           </button>
         ))}
+      </div>
+
+      {/* Section Timer and Configuration */}
+      <div className="px-4 text-sm text-gray-500 mb-2">
+        <p>
+          Section Duration: {activeSection.configuration?.duration_minutes} mins
+        </p>
       </div>
 
       {/* Question Display */}

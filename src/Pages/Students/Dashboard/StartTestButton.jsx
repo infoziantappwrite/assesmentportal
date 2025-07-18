@@ -19,56 +19,50 @@ const StartTestButton = ({ test, label }) => {
     try {
       setShowConfirm(false);
 
-      // Fullscreen for immersive experience
       if (document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
       }
 
       let submissionData;
-
       if (label === 'Resume Test') {
-        // Resume using submission_id
         submissionData = await resumeSubmission(test.submission_id);
-
-        const submissionId = submissionData?.data?.submission?._id;
-
-        if (submissionId) {
-          localStorage.setItem('submission_id', submissionId);
-
-          // Navigate directly to assessment page
-          navigate('/assesment', {
-            state: {
-              submission: submissionData.data.submission,
-              assessment: submissionData.data.assessment,
-              sections: submissionData.data.test
-            }
-          });
-        }
       } else {
-        // Start new submission using assignment ID
         submissionData = await startSubmission(test._id);
-
-        const submissionId = submissionData?.data?.submission?._id;
-
-        if (submissionId) {
-          localStorage.setItem('submission_id', submissionId);
-
-          // Go to Instructions page first
-          navigate('/instructions', {
-            state: {
-              submission: submissionData.data.submission,
-              assessment: submissionData.data.assessment,
-              sections: submissionData.data.test,
-              
-            }
-          });
-        }
       }
-    } catch (error) {
-      console.error(`Error ${label === 'Resume Test' ? 'resuming' : 'starting'} submission:`, error);
 
-      const errorMsg = error?.response?.data?.message || 'Unexpected error occurred';
-      alert(`Cannot ${label.toLowerCase()}: ${errorMsg}`);
+      const submission = submissionData?.data?.submission;
+      const assessment = submissionData?.data?.assessment;
+      const sections = submissionData?.data?.test;
+      const submissionId = submission?._id;
+
+      if (!submissionId) return;
+
+      localStorage.setItem('submission_id', submissionId);
+
+      const totalDuration = sections.reduce(
+        (sum, sec) => sum + (sec.configuration?.duration_minutes || 0),
+        0
+      );
+
+      localStorage.setItem('assessment_duration', totalDuration);
+
+      let startTime = label === 'Resume Test'
+        ? new Date(submission.timing?.started_at)
+        : new Date();
+
+      const endTime = new Date(startTime.getTime() + totalDuration * 60000);
+      localStorage.setItem('assessment_end_time', endTime.toISOString());
+
+      navigate(label === 'Resume Test' ? '/assesment' : '/instructions', {
+        state: {
+          submission,
+          assessment,
+          sections
+        }
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Something went wrong while starting/resuming the test.');
     }
   };
 
