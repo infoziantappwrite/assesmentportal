@@ -8,12 +8,15 @@ const ViewQuestionsInSection = () => {
   const { id } = useParams(); // Section ID
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
         const res = await getQuestionsBySection(id);
+        console.log(res);
+
         setQuestions(res?.data?.questions || []);
       } catch (error) {
         console.error('Error fetching questions:', error);
@@ -30,7 +33,10 @@ const ViewQuestionsInSection = () => {
       label: '#',
       render: (_, i) => <span className="font-medium text-gray-800">{i + 1}</span>,
     },
-    { label: 'Title', accessor: 'title' },
+    {
+      label: 'Title',
+      render: (row) => <span>{row.content?.question_text || '-'}</span>
+    },
     {
       label: 'Type',
       render: (row) => <span className="capitalize text-gray-600">{row.type || '-'}</span>,
@@ -44,23 +50,23 @@ const ViewQuestionsInSection = () => {
       render: (row) => <span className="text-gray-700">{row.marks || '-'}</span>,
     },
     {
-  label: 'Actions',
-  render: (row) => (
-    <button
-      onClick={() =>
-        navigate(
-          row.type === "coding"
-            ? `/admin/sections/question/coding/${row._id}`
-            : `/admin/sections/question/${row._id}`
-        )
-      }
-      className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-    >
-      <Eye size={16} />
-      View
-    </button>
-  ),
-}
+      label: 'Actions',
+      render: (row) => (
+        <button
+          onClick={() =>
+            navigate(
+              row.type === "coding"
+                ? `/admin/sections/question/coding/${row._id}`
+                : `/admin/sections/question/${row._id}`
+            )
+          }
+          className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+        >
+          <Eye size={16} />
+          View
+        </button>
+      ),
+    }
 
   ];
 

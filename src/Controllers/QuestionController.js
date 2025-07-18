@@ -70,3 +70,28 @@ export const reorderQuestion = async (questionId, newOrderData) => {
   );
   return response.data;
 };
+
+
+// 🔹 GET coding question by ID
+export const getCodingQuestionById = async (id) => {
+  const response = await axiosClient.get(`/questions/coding/${id}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// 🔹 PUT update coding question by ID
+export const updateCodingQuestion = async (id, updatedData) => {
+  const response = await axiosClient.put(`/questions/coding/${id}`, updatedData, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// 🔹 DELETE coding question by ID
+export const deleteCodingQuestion = async (id) => {
+  const response = await axiosClient.delete(`/questions/coding/${id}`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
