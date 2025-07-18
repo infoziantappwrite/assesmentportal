@@ -165,7 +165,7 @@ const Dashboard = () => {
 
                                 {test.display_status === 'completed' && (
                                     <button
-                                        onClick={() => navigate('/report', { state: { test } })}
+                                        onClick={() => navigate('/submissions', { state: { test } })}
                                         className="mt-2 inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded text-sm hover:from-purple-600 hover:to-indigo-600 transition"
                                     >
                                         <CheckCircle className="w-4 h-4" />

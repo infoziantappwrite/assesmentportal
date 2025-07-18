@@ -60,3 +60,46 @@ export const submitSubmission = async (submissionId) => {
   return response.data;
 };
 
+// GET /submissions/my-submissions
+export const getSubmissions = async () => {
+  try {
+    const response = await axiosClient.get('/submissions/my-submissions', {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    throw new Error(error.response?.data?.message || 'Something went wrong while fetching submissions.');
+  }
+};
+
+// GET /submissions/section-scores/{submissionID}
+export const getSubmissionReport = async (submissionID) => {
+  try {
+    const response = await axiosClient.get(`/submissions/section-scores/${submissionID}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching submission report:", error);
+    throw new Error(error.response?.data?.message || 'Failed to fetch submission report');
+  }
+};
+
+export const getSectionWiseStatus = async (submissionID) => {
+  try {
+    const response = await axiosClient.get(`/submissions/section-wise-status/${submissionID}`, {
+      withCredentials: true,
+    });
+
+    if (response.data.success) {
+      return response.data.data; // Keyed by section_id: answers[]
+    } else {
+      throw new Error(response.data.message || 'Failed to fetch section-wise status');
+    }
+  } catch (error) {
+    console.error('Error fetching section-wise answer status:', error);
+    throw new Error(error.response?.data?.message || 'Something went wrong while fetching section answers.');
+  }
+};
+
