@@ -54,7 +54,8 @@ const Header = () => {
     localStorage.clear();
 
     if (showResults) {
-      const resultData = response?.data?.result || {}; 
+      const resultData = response.data.results ; 
+      //console.log(resultData)
       navigate('/result', { state: { result: resultData } });
     } else {
       navigate('/thank-you');

@@ -16,7 +16,7 @@ import Assesment from "./Pages/Students/Assesment/Assesment";
 import Instruction from './Pages/Students/Assesment/Instruction';
 import ThankYou from "./Pages/Students/Assesment/ThankYou";
 import SubmissionList from './Pages/Students/Dashboard/SubmissionList';
-
+import Result from './Pages/Students/Assesment/Result';
 
 //import Trainer routes
 import TrainerDashboard from "./Pages/Trainer/Dashboard"
@@ -93,7 +93,9 @@ const App = () => {
         <Route path="/assesment" element={<Assesment />} />
         <Route path="/instructions" element={<Instruction />} />
         <Route path="/thank-you" element={<ThankYou/>} />
-        <Route path="/submissions" element={<SubmissionList />} />
+        <Route path="/result" element={<Result />} />
+        
+
 
       </Route>
 
