@@ -117,7 +117,7 @@ const ReportAndSubmissions = () => {
           {submissions.map((submission) => (
             <div
               key={submission._id}
-              className="p-4 rounded-xl shadow-sm border bg-white space-y-3 hover:shadow-md transition cursor-pointer"
+              className="p-4 rounded-xl shadow-sm border border-gray-300 bg-white space-y-3 hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-gray-800">
