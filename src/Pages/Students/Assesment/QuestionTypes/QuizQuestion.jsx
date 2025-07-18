@@ -9,11 +9,9 @@ const QuizQuestion = ({ question, answer }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
-  // ✅ Load answer from props on first mount or when question changes
   useEffect(() => {
     if (answer) {
       setSelectedOptions(answer);
-      // You can also use: setIsMarkedForReview(answer.flags?.is_marked_for_review ?? false);
     } else {
       setSelectedOptions([]);
       setIsMarkedForReview(false);
@@ -49,10 +47,10 @@ const QuizQuestion = ({ question, answer }) => {
     try {
       setIsSaving(true);
       await saveAnswer(submissionId, payload);
-      setSaveMessage('Answer saved successfully.');
+      setSaveMessage('Answer saved successfully');
     } catch (err) {
       console.error('Error saving answer:', err);
-      setSaveMessage('Error saving answer.');
+      setSaveMessage('Error saving answer');
     } finally {
       setIsSaving(false);
       setTimeout(() => setSaveMessage(''), 3000);
@@ -60,21 +58,19 @@ const QuizQuestion = ({ question, answer }) => {
   };
 
   return (
-    <div className="border p-4 rounded-lg mb-6 shadow-sm bg-white">
-      <p className="mb-4 font-medium text-gray-800">{question.content.question_text}</p>
+    <div>
 
-      <div className="space-y-2 mb-4">
+      <div className="space-y-3 mb-6">
         {question.options.map((opt) => {
           const selected = selectedOptions.includes(opt.option_id);
           return (
             <button
               key={opt.option_id}
               onClick={() => handleOptionClick(opt.option_id)}
-              className={`block w-full text-left px-4 py-2 rounded-md border text-sm transition ${
-                selected
-                  ? 'bg-green-100 border-green-500 text-green-800'
+              className={`block w-full text-left px-4 py-2 rounded-md border text-sm transition font-medium ${selected
+                  ? 'bg-green-100 border-green-500 text-green-700'
                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               {opt.text}
             </button>
@@ -82,28 +78,45 @@ const QuizQuestion = ({ question, answer }) => {
         })}
       </div>
 
-      {/* ✅ Mark for Review */}
-      <label className="inline-flex items-center text-sm text-gray-700 mb-3">
-        <input
-          type="checkbox"
-          className="mr-2"
-          checked={isMarkedForReview}
-          onChange={(e) => setIsMarkedForReview(e.target.checked)}
-        />
-        Mark for Review
-      </label>
+      <div className="flex items-center justify-between mb-4">
+        <label className="flex items-center text-sm text-gray-700">
+          <input
+            type="checkbox"
+            className="mr-2"
+            checked={isMarkedForReview}
+            onChange={(e) => setIsMarkedForReview(e.target.checked)}
+          />
+          Mark for Review
+        </label>
 
-      <div>
-        <button
-          onClick={handleSaveAnswer}
-          disabled={isSaving}
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isSaving ? 'Saving...' : 'Save Answer'}
-        </button>
+        {isMarkedForReview && (
+          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
+            🟣 Marked for Review
+          </span>
+        )}
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveAnswer}
+            disabled={isSaving}
+            className="px-5 py-2 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : 'Save Answer'}
+          </button>
+        </div>
       </div>
 
-      {saveMessage && <p className="text-xs mt-2 text-gray-600">{saveMessage}</p>}
+
+
+      {saveMessage && (
+        <div className={`fixed top-3.5 right-4 z-50 px-4 py-2 rounded-lg shadow-md text-sm duration-500 transition-opacity ${saveMessage.includes('success')
+            ? 'bg-green-100 text-green-700 border border-green-400'
+            : 'bg-red-100 text-red-700 border border-red-400'
+          } opacity-100`}
+        >
+          {saveMessage}
+        </div>
+      )}
+
     </div>
   );
 };

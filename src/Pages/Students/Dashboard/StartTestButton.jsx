@@ -29,7 +29,11 @@ const StartTestButton = ({ test, label }) => {
       } else {
         submissionData = await startSubmission(test._id);
       }
-
+      
+        localStorage.setItem(
+  'show_results_immediately',
+  JSON.stringify(submissionData.data.assessment.configuration.show_results_immediately)
+);
       const submission = submissionData?.data?.submission;
       const assessment = submissionData?.data?.assessment;
       const sections = submissionData?.data?.test;
