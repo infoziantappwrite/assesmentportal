@@ -22,7 +22,14 @@ const EditAssessment = () => {
     const fetchData = async () => {
       try {
         const res = await getAssessmentById(id);
-        setFormData(res?.data?.assessment || {});
+        const assessment = res?.data?.assessment || {};
+
+        // Ensure nested objects exist to avoid errors in inputs
+        setFormData({
+          ...assessment,
+          configuration: assessment.configuration || {},
+          scoring: assessment.scoring || {},
+        });
       } catch {
         setMessage("Error fetching assessment.");
       } finally {
@@ -31,6 +38,53 @@ const EditAssessment = () => {
     };
     fetchData();
   }, [id]);
+
+  const sanitizeFormData = (data) => {
+  // Deep clone the object so we don't mutate state directly
+  const cleaned = JSON.parse(JSON.stringify(data));
+
+  // Convert configuration numeric fields
+  if (cleaned.configuration) {
+    cleaned.configuration.total_duration_minutes = cleaned.configuration.total_duration_minutes
+      ? Number(cleaned.configuration.total_duration_minutes)
+      : null;
+
+    cleaned.configuration.grace_period_minutes = cleaned.configuration.grace_period_minutes
+      ? Number(cleaned.configuration.grace_period_minutes)
+      : null;
+
+    cleaned.configuration.max_attempts = cleaned.configuration.max_attempts
+      ? Number(cleaned.configuration.max_attempts)
+      : null;
+
+    // Booleans are fine as you handle them in the checkbox change
+  }
+
+  // Convert scoring numeric fields
+  if (cleaned.scoring) {
+    cleaned.scoring.total_marks = cleaned.scoring.total_marks
+      ? Number(cleaned.scoring.total_marks)
+      : null;
+
+    cleaned.scoring.passing_marks = cleaned.scoring.passing_marks
+      ? Number(cleaned.scoring.passing_marks)
+      : null;
+
+    cleaned.scoring.negative_marking = !!cleaned.scoring.negative_marking;
+
+    cleaned.scoring.negative_marks_per_wrong = cleaned.scoring.negative_marks_per_wrong
+      ? Number(cleaned.scoring.negative_marks_per_wrong)
+      : null;
+  }
+
+  // Convert top-level booleans if needed
+  cleaned.is_active = !!cleaned.is_active;
+  cleaned.is_template = !!cleaned.is_template;
+  cleaned.is_shareable = !!cleaned.is_shareable;
+
+  return cleaned;
+};
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -52,19 +106,49 @@ const EditAssessment = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await updateAssessment(id, formData);
-      setMessage("Assessment updated successfully.");
-      setTimeout(() => navigate(-1), 2000);
-    } catch {
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setSubmitting(true);
+
+  try {
+    // Map sections array to array of strings (IDs)
+    const cleanSections = Array.isArray(formData.sections)
+      ? formData.sections.map(section => {
+          // if section is string (already ID), keep it
+          if (typeof section === "string") return section;
+          // otherwise, get the id field, or fallback to empty string (or throw)
+          return section.id || "";
+        }).filter(id => id !== "")  // remove empty strings if any
+      : [];
+
+    const cleanNegativeMarks = formData.scoring?.negative_marks_per_wrong ?? 0;
+
+    const dataToSend = {
+      ...formData,
+      sections: cleanSections,
+      scoring: {
+        ...formData.scoring,
+        negative_marks_per_wrong: cleanNegativeMarks,
+      },
+    };
+
+    console.log("Data sent to backend:", JSON.stringify(dataToSend, null, 2));
+    await updateAssessment(id, dataToSend);
+    setMessage("Assessment updated successfully.");
+    setTimeout(() => navigate(-1), 2000);
+  } catch (error) {
+    if (error.response && error.response.data) {
+      console.error("Backend response error data:", error.response.data);
+      setMessage(`Failed to update: ${JSON.stringify(error.response.data)}`);
+    } else {
+      console.error("Update error:", error);
       setMessage("Failed to update assessment.");
-    } finally {
-      setSubmitting(false);
     }
-  };
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   if (loading || !formData) return <Loader />;
 
@@ -84,7 +168,7 @@ const EditAssessment = () => {
             <input
               type="text"
               name="title"
-              value={formData.title}
+              value={formData.title || ""}
               onChange={handleChange}
               className="w-full border border-gray-300 p-2 rounded-lg mb-4"
               required
@@ -93,7 +177,7 @@ const EditAssessment = () => {
             <label className="block mb-1 font-medium">Description</label>
             <textarea
               name="description"
-              value={formData.description}
+              value={formData.description || ""}
               onChange={handleChange}
               className="w-full border border-gray-300 p-2 rounded-lg"
             />
@@ -111,7 +195,7 @@ const EditAssessment = () => {
                 <input
                   type="number"
                   name="configuration.total_duration_minutes"
-                  value={formData.configuration.total_duration_minutes}
+                  value={formData.configuration.total_duration_minutes || ""}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-2 rounded-lg"
                 />
@@ -122,7 +206,7 @@ const EditAssessment = () => {
                 <input
                   type="number"
                   name="configuration.grace_period_minutes"
-                  value={formData.configuration.grace_period_minutes}
+                  value={formData.configuration.grace_period_minutes || ""}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-2 rounded-lg"
                 />
@@ -133,7 +217,7 @@ const EditAssessment = () => {
                 <input
                   type="number"
                   name="configuration.max_attempts"
-                  value={formData.configuration.max_attempts}
+                  value={formData.configuration.max_attempts || ""}
                   onChange={handleChange}
                   className="w-full border border-gray-300 p-2 rounded-lg"
                 />
@@ -151,7 +235,7 @@ const EditAssessment = () => {
                   <input
                     type="checkbox"
                     name={`configuration.${name}`}
-                    checked={formData.configuration[name]}
+                    checked={!!formData.configuration[name]}
                     onChange={handleChange}
                   />
                   {label}
@@ -172,7 +256,7 @@ const EditAssessment = () => {
               <input
                 type="number"
                 name="scoring.total_marks"
-                value={formData.scoring.total_marks}
+                value={formData.scoring.total_marks || ""}
                 onChange={handleChange}
                 className="w-full border border-gray-300 p-2 rounded-lg mb-3"
               />
@@ -181,7 +265,7 @@ const EditAssessment = () => {
               <input
                 type="number"
                 name="scoring.passing_marks"
-                value={formData.scoring.passing_marks}
+                value={formData.scoring.passing_marks || ""}
                 onChange={handleChange}
                 className="w-full border border-gray-300 p-2 rounded-lg mb-3"
               />
@@ -190,7 +274,7 @@ const EditAssessment = () => {
                 <input
                   type="checkbox"
                   name="scoring.negative_marking"
-                  checked={formData.scoring.negative_marking}
+                  checked={!!formData.scoring.negative_marking}
                   onChange={handleChange}
                 />
                 Enable Negative Marking
@@ -202,7 +286,7 @@ const EditAssessment = () => {
                   <input
                     type="number"
                     name="scoring.negative_marks_per_wrong"
-                    value={formData.scoring.negative_marks_per_wrong}
+                    value={formData.scoring.negative_marks_per_wrong || ""}
                     onChange={handleChange}
                     className="w-full border border-gray-300 p-2 rounded-lg"
                   />
@@ -219,7 +303,7 @@ const EditAssessment = () => {
               <label className="block font-medium mb-1">Difficulty Level</label>
               <select
                 name="difficulty_level"
-                value={formData.difficulty_level}
+                value={formData.difficulty_level || "easy"}
                 onChange={handleChange}
                 className="w-full border border-gray-300 p-2 rounded-lg mb-4"
               >
@@ -239,7 +323,7 @@ const EditAssessment = () => {
                     <input
                       type="checkbox"
                       name={name}
-                      checked={formData[name]}
+                      checked={!!formData[name]}
                       onChange={handleChange}
                     />
                     {label}
@@ -252,12 +336,12 @@ const EditAssessment = () => {
           {/* ACTION BUTTONS */}
           <div className="flex items-center justify-between pt-4">
             <button
-    type="button"
-    onClick={() => window.history.back()}
-    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
-  >
-    ← Go Back
-  </button>
+              type="button"
+              onClick={() => window.history.back()}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
+            >
+              ← Go Back
+            </button>
 
             <div className="flex gap-3">
               <button
