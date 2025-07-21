@@ -104,3 +104,28 @@ export const getSectionWiseStatus = async (submissionID) => {
   }
 };
 
+//Coding part 
+
+// Save coding answer (draft, not final)
+export const saveCodingAnswer = async (submissionId, payload) => {
+  const response = await axiosClient.put(`/submissions/${submissionId}/save-answer`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Run sample test cases before final submission
+export const runSampleTestCases = async (questionId, payload) => {
+  const response = await axiosClient.post(`/submissions/test-cases/${questionId}`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Submit final code (runs hidden test cases, locks submission)
+export const submitCodeForEvaluation = async (submissionId, payload) => {
+  const response = await axiosClient.post(`/submissions/${submissionId}/submitCode`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};

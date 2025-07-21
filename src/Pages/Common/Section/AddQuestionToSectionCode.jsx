@@ -66,6 +66,7 @@ const AddQuestionToSectionCode = () => {
     },
   });
 
+
   const [activeSection, setActiveSection] = useState("basic");
   const [successMessage, setSuccessMessage] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -93,6 +94,7 @@ const AddQuestionToSectionCode = () => {
 
       const submissionData = {
         ...formData,
+         marks: Number(formData.marks),
         coding_details: {
           ...formData.coding_details,
           algorithm_tags: formData.coding_details.algorithm_tags
