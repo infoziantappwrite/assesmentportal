@@ -4,34 +4,36 @@ import {
   getAnsweredStatus
 } from '../../../../Controllers/SubmissionController';
 
-const QuizQuestion = ({ question }) => {
+const QuizQuestion = ({ question, refreshSectionStatus }) => {
   const submissionId = localStorage.getItem('submission_id');
-  console.log(question)
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [isMarkedForReview, setIsMarkedForReview] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState('');
+  const [isSkipped, setIsSkipped] = useState(true);
   const [startTime, setStartTime] = useState(Date.now());
 
+  // Fetch saved answer when component mounts
   useEffect(() => {
-    const fetchAnswer = async () => {
+    const fetchAnswer = async () => { 
       setSelectedOptions([]);
       setIsMarkedForReview(false);
-
+      setIsSkipped(true);
       setStartTime(Date.now());
 
       try {
         const response = await getAnsweredStatus(submissionId, question._id);
         const answer = response.data;
-        console.log(answer);
+       // console.log(answer)
 
         if (answer?.selected_options) {
           setSelectedOptions(answer.selected_options);
-          setIsMarkedForReview(answer.flags?.is_marked_for_review || false);
+          setIsSkipped(answer.selected_options.length === 0);
+        }
+
+        if (answer?.flags?.is_marked_for_review) {
+          setIsMarkedForReview(true);
         }
       } catch (error) {
         console.error("Error fetching saved answer:", error);
-        // Optional: toast or silent fail
       }
     };
 
@@ -40,53 +42,92 @@ const QuizQuestion = ({ question }) => {
     }
   }, [submissionId, question._id]);
 
-  const handleOptionClick = (optionId) => {
-    if (question.type === 'single_correct') {
-      setSelectedOptions([optionId]);
-    } else {
-      setSelectedOptions((prev) =>
-        prev.includes(optionId)
-          ? prev.filter((opt) => opt !== optionId)
-          : [...prev, optionId]
-      );
+  useEffect(() => {
+  const fetchAnswer = async () => {
+    setSelectedOptions([]);
+    setIsMarkedForReview(false);
+    setIsSkipped(true);
+    setStartTime(Date.now());
+
+    try {
+      const response = await getAnsweredStatus(submissionId, question._id);
+      const answer = response.data;
+
+      let hasAnswer = false;
+
+      if (answer?.selected_options?.length > 0) {
+        setSelectedOptions(answer.selected_options);
+        setIsSkipped(false);
+        hasAnswer = true;
+      }
+
+      if (answer?.flags?.is_marked_for_review) {
+        setIsMarkedForReview(true);
+      }
+
+      // 🟡 Mark as visited but unanswered if nothing was saved earlier
+      if (!hasAnswer) {
+        await handleSaveAnswer([], false, true); // isSkipped = true
+      }
+
+    } catch (error) {
+      console.error("Error fetching saved answer:", error);
     }
   };
 
-  const handleSaveAnswer = async () => {
-    if (selectedOptions.length === 0) {
-      alert('Please select at least one option before saving.');
-      return;
-    }
+  if (submissionId && question?._id) {
+    fetchAnswer();
+  }
+}, [submissionId, question._id]);
 
+
+  // Save Answer
+  const handleSaveAnswer = async (opts = selectedOptions, marked = isMarkedForReview, skip = isSkipped) => {
     const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
-
     const payload = {
       sectionId: question.section_id,
       questionId: question._id,
       type: question.type,
-      selectedOptions,
-      isMarkedForReview,
-      timeTakenSeconds
+      selectedOptions: opts,
+      isMarkedForReview: marked,
+      timeTakenSeconds,
+      isSkipped: skip
     };
 
     try {
-      setIsSaving(true);
       await saveAnswer(submissionId, payload);
-      setSaveMessage('✅ Answer saved successfully');
+      if (typeof refreshSectionStatus === 'function') refreshSectionStatus();
     } catch (err) {
       console.error('Error saving answer:', err);
-      setSaveMessage('❌ Error saving answer');
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setSaveMessage(''), 3000);
     }
   };
 
+  // When option is selected
+  const handleOptionClick = async (optionId) => {
+    let updatedOptions;
+    if (question.type === 'single_correct') {
+      updatedOptions = [optionId];
+    } else {
+      updatedOptions = selectedOptions.includes(optionId)
+        ? selectedOptions.filter((opt) => opt !== optionId)
+        : [...selectedOptions, optionId];
+    }
+
+    setSelectedOptions(updatedOptions);
+    setIsSkipped(updatedOptions.length === 0);
+    await handleSaveAnswer(updatedOptions, isMarkedForReview, updatedOptions.length === 0);
+  };
+
+  // When Mark for Review is toggled
+  const handleMarkForReview = async (e) => {
+    const checked = e.target.checked;
+    setIsMarkedForReview(checked);
+    await handleSaveAnswer(selectedOptions, checked, isSkipped);
+  };
+
   return (
-    <div className="p-4 bg-white rounded-xl shadow-md mb-6">
-      <h2 className="text-lg font-semibold mb-4 text-gray-800">
-        {question.content?.question_text || 'Untitled Question'}
-      </h2>
+    <div>
+      
 
       {question.content?.images?.length > 0 && (
         <div className="mb-4 space-x-2">
@@ -120,13 +161,13 @@ const QuizQuestion = ({ question }) => {
         })}
       </div>
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between">
         <label className="flex items-center text-sm text-gray-700">
           <input
             type="checkbox"
             className="mr-2"
             checked={isMarkedForReview}
-            onChange={(e) => setIsMarkedForReview(e.target.checked)}
+            onChange={handleMarkForReview}
           />
           Mark for Review
         </label>
@@ -136,29 +177,7 @@ const QuizQuestion = ({ question }) => {
             🟣 Marked for Review
           </span>
         )}
-
-        <div className="flex justify-end">
-          <button
-            onClick={handleSaveAnswer}
-            disabled={isSaving}
-            className="px-5 py-2 rounded-lg text-sm bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-50"
-          >
-            {isSaving ? 'Saving...' : 'Save Answer'}
-          </button>
-        </div>
       </div>
-
-      {saveMessage && (
-        <div
-          className={`fixed top-3.5 right-4 z-50 px-4 py-2 rounded-lg shadow-md text-sm duration-500 transition-opacity ${
-            saveMessage.includes('success')
-              ? 'bg-green-100 text-green-700 border border-green-400'
-              : 'bg-red-100 text-red-700 border border-red-400'
-          } opacity-100`}
-        >
-          {saveMessage}
-        </div>
-      )}
     </div>
   );
 };
