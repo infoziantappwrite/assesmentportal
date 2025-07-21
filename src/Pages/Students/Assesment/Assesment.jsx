@@ -5,17 +5,16 @@ import Header from './Header';
 import QuizQuestion from './QuestionTypes/QuizQuestion';
 import CodingQuestion from './QuestionTypes/CodingQuestion';
 import DescriptiveQuestion from './QuestionTypes/DescriptiveQuestion';
-import { getAnsweredStatus } from '../../../Controllers/SubmissionController';
 
 const Assessment = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { sections } = state;
-  const submissionId = localStorage.getItem('submission_id');
+ 
 
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
+ 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const activeSection = sections[sectionIndex];
@@ -36,16 +35,6 @@ const Assessment = () => {
 }, []);
 
 
-  useEffect(() => {
-    getAnsweredStatus(submissionId, question._id)
-      .then(({ data }) => {
-        if (data.answered) {
-          const val = data.selected_options ?? data.code_solution ?? data.text_answer;
-          setAnswers((prev) => ({ ...prev, [question._id]: val }));
-        }
-      })
-      .catch(console.error);
-  }, [submissionId, question._id]);
 
   useEffect(() => {
     const checkFullScreen = () => {
@@ -86,7 +75,7 @@ const Assessment = () => {
   };
 
   const renderQuestion = () => {
-    const props = { question, answer: answers[question._id] };
+    const props = { question };
     switch (question.type) {
       case 'single_correct':
       case 'multi_correct':
@@ -102,10 +91,10 @@ const Assessment = () => {
 
   const getQuestionStatusClass = (qid, idx) => {
     const isCurrent = idx === questionIndex;
-    const isAnswered = answers[qid];
+    
 
     if (isCurrent) return 'bg-blue-600 text-white';
-    if (isAnswered) return 'border-2 border-green-500 border-dotted text-green-600 bg-green-50';
+    
     return 'bg-gray-200 text-gray-700';
   };
 
@@ -158,7 +147,7 @@ const Assessment = () => {
                 q._id,
                 idx
               )}`}
-              title={answers[q._id] ? 'Answered' : 'Not Answered'}
+              
             >
               {idx + 1}
             </button>
