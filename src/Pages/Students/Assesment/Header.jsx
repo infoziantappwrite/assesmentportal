@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 const Header = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,8 +47,9 @@ const Header = () => {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleSubmit = async () => {
+ const handleSubmit = async () => {
   try {
+    setIsSubmitting(true); // 🔁 Show loader
     const submissionId = localStorage.getItem('submission_id');
     const showResults = JSON.parse(localStorage.getItem('show_results_immediately'));
 
@@ -54,16 +57,18 @@ const Header = () => {
     localStorage.clear();
 
     if (showResults) {
-      const resultData = response.data.results ; 
-      //console.log(resultData)
+      const resultData = response.data.results;
       navigate('/result', { state: { result: resultData } });
     } else {
       navigate('/thank-you');
     }
   } catch (err) {
     console.error('Submission failed:', err);
+  } finally {
+    setIsSubmitting(false); // 🛑 Hide loader
   }
 };
+
 
 
   return (
@@ -122,6 +127,15 @@ const Header = () => {
           </div>
         </div>
       )}
+      {isSubmitting && (
+  <div className="fixed inset-0 bg-white/100 z-50 flex items-center justify-center">
+    <div className="text-center">
+      <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+      <p className="text-blue-700 font-medium text-sm">Submitting your test, please wait...</p>
+    </div>
+  </div>
+)}
+
     </>
   );
 };
