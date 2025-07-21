@@ -154,10 +154,10 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
   return (
     <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
       {/* Left Title */}
-      <div className="flex items-center gap-2 text-xl text-green-700 font-semibold">
-        <ClipboardList className="w-6 h-6" />
+      <h2 className="text-2xl font-bold text-blue-700 flex items-center gap-2">
+        <ClipboardList className="w-6 h-6 text-blue-600" />
         Assignment Details
-      </div>
+      </h2>
 
       {/* Right Buttons */}
       <div className="flex gap-2 flex-wrap items-center">
@@ -187,10 +187,17 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
         {/* Toggle Cancel/Activate button */}
         <button
           onClick={handleToggleStatus}
+          disabled={
+            normalizedStatus !== "active" && !(normalizedStatus === "draft" || normalizedStatus === "cancelled")
+          }
           className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm ${
             normalizedStatus === "active"
               ? "bg-red-500 hover:bg-red-600"
               : "bg-green-600 hover:bg-green-700"
+          } ${
+            normalizedStatus !== "active" && !(normalizedStatus === "draft" || normalizedStatus === "cancelled")
+              ? "opacity-20 cursor-not-allowed"
+              : ""
           }`}
         >
           {normalizedStatus === "active" ? (
