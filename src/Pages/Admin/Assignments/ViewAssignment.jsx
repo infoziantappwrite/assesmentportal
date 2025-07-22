@@ -12,16 +12,17 @@ const ViewAssignment = () => {
 
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const fetchAssignment = async () => {
-    try {
-      const response = await getAssignmentById(id);
-      setAssignment(response.message.assignment);
-    } catch (error) {
-      console.error('Failed to fetch assignment:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchAssignment = async () => {
+  try {
+    const response = await getAssignmentById(id);
+    console.log('API Response:', JSON.stringify(response, null, 2)); // <--- Log the JSON response here
+    setAssignment(response.data.assignment);
+  } catch (error) {
+    console.error('Failed to fetch assignment:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchAssignment();
@@ -135,10 +136,33 @@ const ViewAssignment = () => {
 
       <Section title="Target Info" color="pink">
         <Info label="Target Type" value={target?.type} />
-        <Info label="Group IDs" value={target?.group_ids.join(', ') || 'None'} />
-        <Info label="College IDs" value={target?.college_ids.join(', ') || 'None'} />
-        <Info label="Student IDs" value={target?.student_ids.join(', ') || 'None'} />
+        
+        {/* Render only if group_ids array is not empty */}
+        {target?.group_ids?.length > 0 && (
+          <Info label="Group IDs" value={target.group_ids.join(', ')} />
+        )}
+
+        {/* Render only if college_ids array is not empty */}
+        {target?.college_ids?.length > 0 && (
+          <Info label="College IDs" value={target.college_ids.join(', ')} />
+        )}
+
+        <div>
+          <h4 className="font-medium text-gray-600 mb-1">Students:</h4>
+          {target?.student_ids && target.student_ids.length > 0 ? (
+            <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
+              {target.student_ids.map((student) => (
+                <li key={student._id} className="text-sm text-gray-800">
+                  {student.name} ({student.email})
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <span>None</span>
+          )}
+        </div>
       </Section>
+
 
       <EligibleStudents id={assignment._id} />
       <Submissions id={assignment._id} />

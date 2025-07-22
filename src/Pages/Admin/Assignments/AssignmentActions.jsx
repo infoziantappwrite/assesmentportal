@@ -46,7 +46,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
     async function fetchData() {
       try {
         const res = await getAssignmentById(id);
-        const assignmentData = res.message.assignment;
+        const assignmentData = res.data.assignment;
         setAssignment(assignmentData);
         setTempStatus(assignmentData.status || AssignmentStatus.DRAFT);
       } catch (err) {
@@ -80,7 +80,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
         setMessage("Assignment activated.");
       }
       const res = await getAssignmentById(id);
-      setAssignment(res.message.assignment);
+      setAssignment(res.data.assignment);
       fetchAssignment?.();
     } catch (err) {
       console.error(err);
