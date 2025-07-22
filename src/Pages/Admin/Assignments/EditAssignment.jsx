@@ -47,45 +47,46 @@ const EditAssignment = () => {
             .catch((err) => console.error("Failed to fetch assessments", err));
     }, []);
 
-    useEffect(() => {
-        const fetchAssignment = async () => {
-            try {
-                const res = await getAssignmentById(id);
-                const assignment = res.message.assignment;
+useEffect(() => {
+  const fetchAssignment = async () => {
+    try {
+      const res = await getAssignmentById(id);
+      const assignment = res.data.assignment;  // changed from res.message.assignment
 
-                setFormData({
-                    assessmentId: assignment.assessment_id?._id || "",
-                    title: assignment.title,
-                    description: assignment.description,
-                    targetType:
-                    assignment.target?.type === "colleges"
-                    ? "colleges"
-                    : assignment.target?.type === "groups"
-                    ? "groups"
-                    : "students", // 'individuals' is mapped to 'students'
-                    status: assignment.status || "",  // also fill status here
-                    assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
-                    assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
-                    assignedStudents: (assignment.target?.student_ids || []).map((id) => ({ id, name: id })),
-                    schedule: {
-                        ...assignment.schedule,
-                        start_time: formatForDatetimeLocal(assignment.schedule.start_time),
-                        end_time: formatForDatetimeLocal(assignment.schedule.end_time),
-                    },
-                    settings: {
-                        ...assignment.settings,
-                         results_release_time: formatForDatetimeLocal(assignment.settings.results_release_time), // format here
-                    },
-                });
-            } catch (err) {
-                console.error("Failed to load assignment", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+      setFormData({
+        assessmentId: assignment.assessment_id?._id || "",
+        title: assignment.title,
+        description: assignment.description,
+        targetType:
+          assignment.target?.type === "colleges"
+            ? "colleges"
+            : assignment.target?.type === "groups"
+            ? "groups"
+            : "students", // 'individuals' is mapped to 'students'
+        status: assignment.status || "", // also fill status here
+        assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
+        assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
+        assignedStudents: (assignment.target?.student_ids || []).map((id) => ({ id, name: id })),
+        schedule: {
+          ...assignment.schedule,
+          start_time: formatForDatetimeLocal(assignment.schedule.start_time),
+          end_time: formatForDatetimeLocal(assignment.schedule.end_time),
+        },
+        settings: {
+          ...assignment.settings,
+          results_release_time: formatForDatetimeLocal(assignment.settings.results_release_time), // format here
+        },
+      });
+    } catch (err) {
+      console.error("Failed to load assignment", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        fetchAssignment();
-    }, [id]);
+  fetchAssignment();
+}, [id]);
+
 
     const formatForDatetimeLocal = (isoString) => {
     if (!isoString) return "";
@@ -275,8 +276,13 @@ const EditAssignment = () => {
                         </button>
                         <ul className="mt-2 space-y-1 text-sm">
                             {formData.assignedColleges.map((c, i) => (
-                            <li key={c.id} className="bg-blue-50 p-2 rounded flex justify-between">
-                                {c.name}
+                            <li
+                                key={typeof c.id === "string" || typeof c.id === "number" ? c.id : i}
+                                className="bg-blue-50 p-2 rounded flex justify-between"
+                            >
+                                {typeof c.name === "object"
+                                ? `${c.name.name} (${c.name.email})`
+                                : c.name}
                                 <button
                                 onClick={() =>
                                     setFormData((prev) => ({
@@ -305,8 +311,13 @@ const EditAssignment = () => {
                         </button>
                         <ul className="mt-2 space-y-1 text-sm">
                             {formData.assignedGroups.map((g, i) => (
-                            <li key={g.id} className="bg-pink-50 p-2 rounded flex justify-between">
-                                {g.name}
+                            <li
+                                key={typeof g.id === "string" || typeof g.id === "number" ? g.id : i}
+                                className="bg-pink-50 p-2 rounded flex justify-between"
+                            >
+                                {typeof g.name === "object"
+                                ? `${g.name.name} (${g.name.email})`
+                                : g.name}
                                 <button
                                 onClick={() =>
                                     setFormData((prev) => ({
@@ -335,8 +346,13 @@ const EditAssignment = () => {
                         </button>
                         <ul className="mt-2 space-y-1 text-sm">
                             {formData.assignedStudents.map((s, i) => (
-                            <li key={s.id} className="bg-green-50 p-2 rounded flex justify-between">
-                                {s.name}
+                            <li
+                                key={typeof s.id === "string" || typeof s.id === "number" ? s.id : i}
+                                className="bg-green-50 p-2 rounded flex justify-between"
+                            >
+                                {typeof s.name === "object"
+                                ? `${s.name.name} (${s.name.email})`
+                                : s.name}
                                 <button
                                 onClick={() =>
                                     setFormData((prev) => ({
@@ -354,7 +370,6 @@ const EditAssignment = () => {
                         </>
                     )}
                     </div>
-
 
                     {/* Assignment Settings */}
                     <div>
