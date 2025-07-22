@@ -28,14 +28,14 @@ import {
   submitCodeForEvaluation
 } from '../../../../Controllers/SubmissionController';
 import SolutionSection from './SolutionSection';
+import ErrorBoundary from '../../../../Components/ErrorBoundary';
 
 const CodingQuestion = ({
   question,
-  answer = '',
-  onAnswerChange,
-  submissionId,
-  onSubmissionComplete
+  refreshSectionStatus
 }) => {
+  const submissionId = localStorage.getItem('submission_id');
+  const [answer, setAnswer] = useState('');
   const [fullDetails, setFullDetails] = useState(null);
   const [activeSection, setActiveSection] = useState('problem');
   const [expandedTestCases, setExpandedTestCases] = useState({
@@ -47,6 +47,30 @@ const CodingQuestion = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null);
+  
+  // Safety check for required props
+  if (!question) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-600 font-semibold">Error: CodingQuestion component missing required props</p>
+        <p className="text-red-600 text-sm mt-1">Missing: question</p>
+      </div>
+    );
+  }
+
+  // Function to handle answer changes
+  const handleAnswerChange = (questionId, newAnswer) => {
+    setAnswer(newAnswer);
+  };
+
+  // Function to handle submission completion
+  const handleSubmissionComplete = (response) => {
+    console.log('Submission completed:', response);
+    if (refreshSectionStatus) {
+      refreshSectionStatus();
+    }
+  };
+
   useEffect(() => {
     const fetchDetails = async () => {
       try {
@@ -63,6 +87,22 @@ const CodingQuestion = ({
 
     fetchDetails();
   }, [question._id]);
+
+  // Load existing answer if any
+  useEffect(() => {
+    const loadExistingAnswer = async () => {
+      try {
+        // You would need to implement getAnsweredStatus for coding questions
+        // or use a similar API to load existing code answers
+        // For now, we'll start with an empty answer
+        setAnswer('');
+      } catch (error) {
+        console.error('Failed to load existing answer:', error);
+      }
+    };
+
+    loadExistingAnswer();
+  }, [question._id, submissionId]);
   const toggleTestCase = (type) => {
     setExpandedTestCases(prev => ({
       ...prev,
@@ -143,9 +183,7 @@ const CodingQuestion = ({
         answer_id: question.answer_id // This should be passed from parent if exists
       });
 
-      if (onSubmissionComplete) {
-        onSubmissionComplete(response);
-      }
+      handleSubmissionComplete(response);
     } catch (error) {
       console.error('Failed to submit code:', error);
       alert(error.message || 'Failed to submit code');
@@ -169,7 +207,7 @@ const CodingQuestion = ({
 
   const resetCode = () => {
     if (window.confirm('Are you sure you want to reset your code?')) {
-      onAnswerChange(question._id, '');
+      setAnswer('');
     }
   };
 
@@ -453,22 +491,24 @@ const CodingQuestion = ({
 
       {/* Solution Section */}
       {activeSection === 'solution' && (
-        <SolutionSection
-          question={question}
-          answer={answer}
-          onAnswerChange={onAnswerChange}
-          selectedLanguage={selectedLanguage}
-          setSelectedLanguage={setSelectedLanguage}
-          fullDetails={fullDetails}
-          testResults={testResults}
-          isRunningTests={isRunningTests}
-          isSubmitting={isSubmitting}
-          saveStatus={saveStatus}
-          handleSaveAnswer={handleSaveAnswer}
-          resetCode={resetCode}
-          handleRunTestCases={handleRunTestCases}
-          handleSubmitCode={handleSubmitCode}
-        />
+        <ErrorBoundary>
+          <SolutionSection
+            question={question}
+            answer={answer}
+            onAnswerChange={handleAnswerChange}
+            selectedLanguage={selectedLanguage}
+            setSelectedLanguage={setSelectedLanguage}
+            fullDetails={fullDetails}
+            testResults={testResults}
+            isRunningTests={isRunningTests}
+            isSubmitting={isSubmitting}
+            saveStatus={saveStatus}
+            handleSaveAnswer={handleSaveAnswer}
+            resetCode={resetCode}
+            handleRunTestCases={handleRunTestCases}
+            handleSubmitCode={handleSubmitCode}
+          />
+        </ErrorBoundary>
       )}
     </div>
   );
