@@ -65,29 +65,37 @@ const SolutionSection = ({
   // Handle Judge0 iframe messages
   useEffect(() => {
     const handleMessage = (e) => {
-      if (!e.data) return;
+      // Only handle messages from the Judge0 iframe
+      if (!e.data || e.origin !== 'https://ide.judge0.com') return;
+      
+      console.log('Judge0 message received:', e.data);
       
       if (e.data.event === 'initialised') {
         setJudge0Initialized(true);
         console.log('Judge0 iframe initialized');
-        // Set initial language only, no code prefilling
-        if (iframeRef.current) {
+        // Set initial configuration
+        if (iframeRef.current && JUDGE0_API_KEY) {
           setTimeout(() => {
-            iframeRef.current.contentWindow.postMessage({
-              action: 'set',
-              api_key: JUDGE0_API_KEY,
-              language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
-              flavor: 'CE',
-              stdin: '',
-              stdout: '',
-              compiler_options: '',
-              command_line_arguments: '',
-            }, '*');
-          }, 500);
+            try {
+              iframeRef.current.contentWindow.postMessage({
+                action: 'set',
+                api_key: JUDGE0_API_KEY,
+                language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
+                source_code: answer || '', // Set current code
+                stdin: customInput || '',
+                flavor: 'CE',
+              }, 'https://ide.judge0.com');
+            } catch (error) {
+              console.error('Error setting initial Judge0 config:', error);
+            }
+          }, 1000);
+        } else {
+          console.warn('Judge0 API key not found or iframe not ready');
         }
       }
       
       if (e.data.event === 'run-completed') {
+        console.log('Judge0 execution completed:', e.data.data);
         setJudge0Results(e.data.data);
       }
 
@@ -96,6 +104,14 @@ const SolutionSection = ({
         if (e.data.data && e.data.data.source_code) {
           onAnswerChange(question._id, e.data.data.source_code);
         }
+      }
+
+      if (e.data.event === 'error') {
+        console.error('Judge0 iframe error:', e.data);
+        setJudge0Results({
+          status: { description: 'Error' },
+          stderr: e.data.message || 'Unknown error occurred in Judge0 IDE'
+        });
       }
     };
 
@@ -106,33 +122,66 @@ const SolutionSection = ({
   // Update Judge0 IDE when language changes
   useEffect(() => {
     if (judge0Initialized && iframeRef.current && editorMode === 'judge0') {
-      iframeRef.current.contentWindow.postMessage({
-        action: 'set',
-        language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 63,
-      }, '*');
+      try {
+        iframeRef.current.contentWindow.postMessage({
+          action: 'set',
+          language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
+          source_code: answer || '', // Preserve current code
+        }, 'https://ide.judge0.com');
+      } catch (error) {
+        console.error('Error updating Judge0 language:', error);
+      }
     }
-  }, [selectedLanguage, judge0Initialized, editorMode]);
+  }, [selectedLanguage, judge0Initialized, editorMode, answer]);
 
   const handleRunInJudge0 = () => {
-    if (iframeRef.current) {
-      iframeRef.current.contentWindow.postMessage({ action: 'run' }, '*');
+    if (iframeRef.current && judge0Initialized) {
+      try {
+        // First, get the current code from the iframe
+        iframeRef.current.contentWindow.postMessage({ action: 'get' }, 'https://ide.judge0.com');
+        
+        // Then run after a short delay to ensure code is synced
+        setTimeout(() => {
+          iframeRef.current.contentWindow.postMessage({ action: 'run' }, 'https://ide.judge0.com');
+        }, 100);
+      } catch (error) {
+        console.error('Error running Judge0:', error);
+        setJudge0Results({
+          status: { description: 'Error' },
+          stderr: 'Failed to communicate with Judge0 IDE. Please try refreshing the page.'
+        });
+      }
+    } else {
+      console.warn('Judge0 iframe not initialized yet');
+      setJudge0Results({
+        status: { description: 'Error' },
+        stderr: 'Judge0 IDE is not ready yet. Please wait a moment and try again.'
+      });
     }
   };
 
   const handleGetCodeFromJudge0 = () => {
-    if (iframeRef.current) {
-      iframeRef.current.contentWindow.postMessage({ action: 'get' }, '*');
+    if (iframeRef.current && judge0Initialized) {
+      try {
+        iframeRef.current.contentWindow.postMessage({ action: 'get' }, 'https://ide.judge0.com');
+      } catch (error) {
+        console.error('Error getting code from Judge0:', error);
+      }
     }
   };
 
   const syncCodeToJudge0 = () => {
     if (iframeRef.current && judge0Initialized) {
-      iframeRef.current.contentWindow.postMessage({
-        action: 'set',
-        source_code: answer,
-        language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 63,
-        stdin: customInput,
-      }, '*');
+      try {
+        iframeRef.current.contentWindow.postMessage({
+          action: 'set',
+          source_code: answer || '',
+          language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
+          stdin: customInput || '',
+        }, 'https://ide.judge0.com');
+      } catch (error) {
+        console.error('Error syncing code to Judge0:', error);
+      }
     }
   };
 
@@ -184,6 +233,17 @@ const SolutionSection = ({
         
         {/* Editor Mode Toggle */}
         <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setEditorMode('monaco')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              editorMode === 'monaco'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <FileCode className="w-4 h-4 inline mr-1" />
+            Code Editor
+          </button>
           <button
             onClick={() => setEditorMode('judge0')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -257,12 +317,36 @@ const SolutionSection = ({
           </div>
         ) : (
           <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            {!judge0Initialized && (
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Settings className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-blue-700">
+                      Initializing Judge0 IDE... Please wait.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <iframe
               ref={iframeRef}
-              src={`https://ide.judge0.com?judge0.style=minimal&judge0.theme=dark&judge0.styleOptions.showNavigation=false&judge0.styleOptions.showFooter=false`}
+              src={`https://ide.judge0.com?judge0.style=minimal&judge0.theme=dark&judge0.styleOptions.showNavigation=false&judge0.styleOptions.showFooter=false&judge0.api_key=${JUDGE0_API_KEY}`}
               frameBorder="0"
               className="w-full h-[500px]"
               title="Judge0 IDE"
+              onLoad={() => console.log('Judge0 iframe loaded')}
+              onError={(e) => {
+                console.error('Judge0 iframe error:', e);
+                setJudge0Results({
+                  status: { description: 'Error' },
+                  stderr: 'Failed to load Judge0 IDE. Please check your internet connection and try again.'
+                });
+              }}
+              sandbox="allow-scripts allow-same-origin allow-forms"
             />
           </div>
         )}
