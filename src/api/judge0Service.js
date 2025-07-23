@@ -140,7 +140,7 @@ class Judge0Service {
         // Increase delay slightly for longer running code
         if (attempts > 10) delay = 1000;
         
-        console.log(`Attempt ${attempts}: Status ${result.status.id} - ${result.status.description}`);
+        // console.log(`Attempt ${attempts}: Status ${result.status.id} - ${result.status.description}`);
       } while (result.status.id <= 2 && attempts < maxAttempts); // Status 1 = In Queue, 2 = Processing
 
       if (attempts >= maxAttempts && result.status.id <= 2) {

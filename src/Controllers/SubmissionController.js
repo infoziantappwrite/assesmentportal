@@ -123,7 +123,15 @@ export const runSampleTestCases = async (questionId, payload) => {
 };
 
 // Submit final code (runs hidden test cases, locks submission)
-export const submitCodeForEvaluation = async (submissionId, payload) => {
+export const submitCode = async (submissionId, payload) => {
+  const response = await axiosClient.post(`/submissions/${submissionId}/submit`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// Final submission - evaluate with hidden test cases
+export const evaluateCodingSubmission = async (submissionId, payload) => {
   const response = await axiosClient.post(`/submissions/${submissionId}/submitCode`, payload, {
     withCredentials: true,
   });
