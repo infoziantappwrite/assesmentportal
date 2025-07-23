@@ -35,6 +35,23 @@ const JUDGE0_LANGUAGE_MAP = {
   'typescript': 74,
 };
 
+// Default supported languages - fallback if fullDetails.supported_languages is not available
+const DEFAULT_SUPPORTED_LANGUAGES = [
+  { language: 'javascript', name: 'JavaScript (Node.js)' },
+  { language: 'python', name: 'Python 3' },
+  { language: 'java', name: 'Java 11+' },
+  { language: 'cpp', name: 'C++ (GCC)' },
+  { language: 'c', name: 'C (GCC)' },
+  { language: 'csharp', name: 'C# (.NET)' },
+  { language: 'php', name: 'PHP 8+' },
+  { language: 'ruby', name: 'Ruby 3+' },
+  { language: 'go', name: 'Go 1.19+' },
+  { language: 'rust', name: 'Rust 1.60+' },
+  { language: 'swift', name: 'Swift 5+' },
+  { language: 'kotlin', name: 'Kotlin 1.7+' },
+  { language: 'typescript', name: 'TypeScript 4+' }
+];
+
 // Startup code templates for each language
 const LANGUAGE_TEMPLATES = {
   'javascript': `// JavaScript Solution
@@ -155,18 +172,85 @@ const SolutionSection = ({
 }) => {
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
+  const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
+  const [autoReloadTemplate, setAutoReloadTemplate] = useState(true);
+  const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
+  const [templateReloadNotification, setTemplateReloadNotification] = useState('');
   
   const { isExecuting, executeCode, executeWithTestCases } = useJudge0();
 
   const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY || '';
 
+  // Get available languages - use fullDetails.supported_languages if available, otherwise use default
+  const getAvailableLanguages = () => {
+    // Force use default languages if toggle is enabled or if fullDetails has limited languages
+    if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
+      console.log('Using default supported languages:', DEFAULT_SUPPORTED_LANGUAGES);
+      return DEFAULT_SUPPORTED_LANGUAGES;
+    }
+    console.log('Using languages from fullDetails:', fullDetails.supported_languages);
+    return fullDetails.supported_languages;
+  };
+
+  const availableLanguages = getAvailableLanguages();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('SolutionSection Debug Info:', {
+      selectedLanguage,
+      availableLanguages,
+      fullDetailsLanguages: fullDetails?.supported_languages,
+      hasFullDetails: !!fullDetails,
+      totalAvailableLanguages: availableLanguages.length,
+      useDefaultLanguages
+    });
+  }, [selectedLanguage, availableLanguages, fullDetails, useDefaultLanguages]);
+
   // Initialize code with language template when language changes
   useEffect(() => {
-    if (!answer || answer.trim() === '') {
-      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-      onAnswerChange(question._id, template);
+    // Check if language has changed
+    const languageChanged = previousLanguage !== selectedLanguage;
+    
+    if (languageChanged) {
+      setPreviousLanguage(selectedLanguage);
     }
-  }, [selectedLanguage, question._id, onAnswerChange]);
+    
+    // Load template if:
+    // 1. No answer exists, OR
+    // 2. Language has changed and auto-reload is enabled, OR  
+    // 3. Answer is just whitespace
+    if (!answer || 
+        answer.trim() === '' || 
+        (languageChanged && autoReloadTemplate)) {
+      
+      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+      console.log(`Loading template for ${selectedLanguage}:`, template.substring(0, 50) + '...');
+      onAnswerChange(question._id, template);
+      
+      // Show notification for auto-reload
+      if (languageChanged && autoReloadTemplate && answer && answer.trim() !== '') {
+        setTemplateReloadNotification(`Template auto-reloaded for ${selectedLanguage.toUpperCase()}`);
+        setTimeout(() => setTemplateReloadNotification(''), 3000);
+      }
+    }
+  }, [selectedLanguage, question._id, onAnswerChange, autoReloadTemplate, previousLanguage, answer]);
+
+  // Ensure selected language is valid
+  useEffect(() => {
+    const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
+    if (!isValidLanguage && availableLanguages.length > 0) {
+      console.log(`Selected language ${selectedLanguage} not found in available languages, switching to ${availableLanguages[0].language}`);
+      setSelectedLanguage(availableLanguages[0].language);
+    }
+  }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
+
+  // Auto-enable default languages if only one language is available from question
+  useEffect(() => {
+    if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
+      console.log('Only one language available from question, auto-enabling default languages');
+      setUseDefaultLanguages(true);
+    }
+  }, [fullDetails, useDefaultLanguages]);
 
   // Reset code to language template
   const handleResetCode = () => {
@@ -174,6 +258,16 @@ const SolutionSection = ({
     onAnswerChange(question._id, template);
     setCustomInput('');
     setJudge0Results(null);
+  };
+
+  // Manually reload template for current language
+  const handleReloadTemplate = () => {
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    console.log(`Manually reloading template for ${selectedLanguage}`);
+    onAnswerChange(question._id, template);
+    setJudge0Results(null);
+    setTemplateReloadNotification(`Template manually reloaded for ${selectedLanguage.toUpperCase()}`);
+    setTimeout(() => setTemplateReloadNotification(''), 3000);
   };
 
   const handleRunWithAPI = async () => {
@@ -247,39 +341,44 @@ const SolutionSection = ({
 
       {/* Language Selection */}
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-          <FileCode className="w-4 h-4" />
-          Programming Language
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <FileCode className="w-4 h-4" />
+            Programming Language
+          </label>
+        </div>
         <select
           value={selectedLanguage}
           onChange={(e) => setSelectedLanguage(e.target.value)}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
         >
-          {fullDetails.supported_languages?.map((lang) => (
-            <option key={lang.language} value={lang.language}>
-              {lang.language.toUpperCase()} - {
-                lang.language === 'javascript' ? 'JavaScript (Node.js)' : 
-                lang.language === 'python' ? 'Python 3' :
-                lang.language === 'java' ? 'Java 11+' :
-                lang.language === 'cpp' ? 'C++ (GCC)' :
-                lang.language === 'c' ? 'C (GCC)' :
-                lang.language === 'csharp' ? 'C# (.NET)' :
-                lang.language === 'php' ? 'PHP 8+' :
-                lang.language === 'ruby' ? 'Ruby 3+' :
-                lang.language === 'go' ? 'Go 1.19+' :
-                lang.language === 'rust' ? 'Rust 1.60+' :
-                lang.language === 'swift' ? 'Swift 5+' :
-                lang.language === 'kotlin' ? 'Kotlin 1.7+' :
-                lang.language === 'typescript' ? 'TypeScript 4+' :
-                lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
-              }
-            </option>
-          ))}
+          {availableLanguages.length > 0 ? (
+            availableLanguages.map((lang) => (
+              <option key={lang.language} value={lang.language}>
+                {lang.language.toUpperCase()} - {
+                  lang.name || (
+                    lang.language === 'javascript' ? 'JavaScript (Node.js)' : 
+                    lang.language === 'python' ? 'Python 3' :
+                    lang.language === 'java' ? 'Java 11+' :
+                    lang.language === 'cpp' ? 'C++ (GCC)' :
+                    lang.language === 'c' ? 'C (GCC)' :
+                    lang.language === 'csharp' ? 'C# (.NET)' :
+                    lang.language === 'php' ? 'PHP 8+' :
+                    lang.language === 'ruby' ? 'Ruby 3+' :
+                    lang.language === 'go' ? 'Go 1.19+' :
+                    lang.language === 'rust' ? 'Rust 1.60+' :
+                    lang.language === 'swift' ? 'Swift 5+' :
+                    lang.language === 'kotlin' ? 'Kotlin 1.7+' :
+                    lang.language === 'typescript' ? 'TypeScript 4+' :
+                    lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
+                  )
+                }
+              </option>
+            ))
+          ) : (
+            <option value="javascript">No languages available - using JavaScript</option>
+          )}
         </select>
-        <div className="text-xs text-gray-500 mt-1">
-          Language ID: {JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 'Unknown'}
-        </div>
       </div>
 
       {/* Enhanced Code Editor Section */}
@@ -293,11 +392,20 @@ const SolutionSection = ({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleReloadTemplate}
+              className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-100 border border-blue-200 flex items-center gap-1"
+              title="Reload template for current language"
+            >
+              <Code2 className="w-4 h-4" />
+              Reload Template
+            </button>
+            <button
               onClick={handleResetCode}
               className="px-3 py-1 bg-orange-50 text-orange-600 rounded-md text-sm font-medium hover:bg-orange-100 border border-orange-200 flex items-center gap-1"
+              title="Reset to template and clear custom input"
             >
               <Settings className="w-4 h-4" />
-              Reset to Template
+              Reset All
             </button>
           </div>
         </div>
@@ -578,15 +686,6 @@ const SolutionSection = ({
               {saveStatus === 'saving' ? 'Saving...' :
                 saveStatus === 'saved' ? '✓ Saved!' :
                   saveStatus === 'error' ? '✗ Error Saving' : 'Save Answer'}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleResetCode}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all shadow-sm flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              Reset to Template
             </button>
           </div>
 
