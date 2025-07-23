@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -15,9 +15,13 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Upload,
+  Download,
+
 } from 'lucide-react';
 import { useJudge0 } from '../../../../hooks/useJudge0';
-import {saveCodingAnswer} from "../../../../Controllers/SubmissionController"
+import { saveCodingAnswer, submitCode, evaluateCodingSubmission } from "../../../../Controllers/SubmissionController"
+import { useNavigate } from "react-router-dom"; // at top
 
 // Language mapping for Judge0
 const JUDGE0_LANGUAGE_MAP = {
@@ -163,25 +167,26 @@ const SolutionSection = ({
   setSelectedLanguage,
   fullDetails,
   testResults,
-  isRunningTests,
-  isSubmitting,
   resetCode,
-  handleRunTestCases,
-  handleSubmitCode,
   submissionId
 }) => {
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
-  const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
+  const [useDefaultLanguages, setUseDefaultLanguages] = useState(false); 
   const [autoReloadTemplate, setAutoReloadTemplate] = useState(true);
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [templateReloadNotification, setTemplateReloadNotification] = useState('');
-   const [saveStatus, setSaveStatus] = useState('idle');
+  const [saveStatus, setSaveStatus] = useState('idle');
+  const navigate = useNavigate(); // inside component
 
-   console.log(judge0Results);
-   
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
+  const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing
 
+  console.log(fullDetails);
   
+
+
   const { isExecuting, executeCode, executeWithTestCases } = useJudge0();
 
   const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY || '';
@@ -190,10 +195,10 @@ const SolutionSection = ({
   const getAvailableLanguages = () => {
     // Force use default languages if toggle is enabled or if fullDetails has limited languages
     if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
-      console.log('Using default supported languages:', DEFAULT_SUPPORTED_LANGUAGES);
+      // console.log('Using default supported languages:', DEFAULT_SUPPORTED_LANGUAGES);
       return DEFAULT_SUPPORTED_LANGUAGES;
     }
-    console.log('Using languages from fullDetails:', fullDetails.supported_languages);
+    // console.log('Using languages from fullDetails:', fullDetails.supported_languages);
     return fullDetails.supported_languages;
   };
 
@@ -201,37 +206,37 @@ const SolutionSection = ({
 
   // Debug logging
   useEffect(() => {
-    console.log('SolutionSection Debug Info:', {
-      selectedLanguage,
-      availableLanguages,
-      fullDetailsLanguages: fullDetails?.supported_languages,
-      hasFullDetails: !!fullDetails,
-      totalAvailableLanguages: availableLanguages.length,
-      useDefaultLanguages
-    });
+    // console.log('SolutionSection Debug Info:', {
+    //   selectedLanguage,
+    //   availableLanguages,
+    //   fullDetailsLanguages: fullDetails?.supported_languages,
+    //   hasFullDetails: !!fullDetails,
+    //   totalAvailableLanguages: availableLanguages.length,
+    //   useDefaultLanguages
+    // });
   }, [selectedLanguage, availableLanguages, fullDetails, useDefaultLanguages]);
 
   // Initialize code with language template when language changes
   useEffect(() => {
     // Check if language has changed
     const languageChanged = previousLanguage !== selectedLanguage;
-    
+
     if (languageChanged) {
       setPreviousLanguage(selectedLanguage);
     }
-    
+
     // Load template if:
     // 1. No answer exists, OR
     // 2. Language has changed and auto-reload is enabled, OR  
     // 3. Answer is just whitespace
-    if (!answer || 
-        answer.trim() === '' || 
-        (languageChanged && autoReloadTemplate)) {
-      
+    if (!answer ||
+      answer.trim() === '' ||
+      (languageChanged && autoReloadTemplate)) {
+
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-      console.log(`Loading template for ${selectedLanguage}:`, template.substring(0, 50) + '...');
+      // console.log(`Loading template for ${selectedLanguage}:`, template.substring(0, 50) + '...');
       onAnswerChange(question._id, template);
-      
+
       // Show notification for auto-reload
       if (languageChanged && autoReloadTemplate && answer && answer.trim() !== '') {
         setTemplateReloadNotification(`Template auto-reloaded for ${selectedLanguage.toUpperCase()}`);
@@ -244,7 +249,7 @@ const SolutionSection = ({
   useEffect(() => {
     const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
     if (!isValidLanguage && availableLanguages.length > 0) {
-      console.log(`Selected language ${selectedLanguage} not found in available languages, switching to ${availableLanguages[0].language}`);
+      // console.log(`Selected language ${selectedLanguage} not found in available languages, switching to ${availableLanguages[0].language}`);
       setSelectedLanguage(availableLanguages[0].language);
     }
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
@@ -252,7 +257,7 @@ const SolutionSection = ({
   // Auto-enable default languages if only one language is available from question
   useEffect(() => {
     if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
-      console.log('Only one language available from question, auto-enabling default languages');
+      // console.log('Only one language available from question, auto-enabling default languages');
       setUseDefaultLanguages(true);
     }
   }, [fullDetails, useDefaultLanguages]);
@@ -287,7 +292,7 @@ const SolutionSection = ({
         codeLength: answer?.length || 0,
         hasCustomInput: !!customInput
       });
-      
+
       const result = await executeCode(answer, selectedLanguage, customInput);
       console.log('API execution result:', result);
       setJudge0Results(result);
@@ -300,78 +305,121 @@ const SolutionSection = ({
     }
   };
 
-  const handleRunTestCasesWithAPI = async () => {
-    if (!fullDetails.test_cases || fullDetails.test_cases.length === 0) {
-      alert('No test cases available');
+  const handleRunTestCases = async () => {
+  const localSubmissionId = localStorage.getItem("submission_id");
+  const currentSubmissionId = submissionId || localSubmissionId;
+  const currentQuestionId = fullDetails?.question_id; // ✅ Add this line
+
+  if (!currentSubmissionId || !currentQuestionId || !savedAnswerId) {
+    toast.error("Missing data for submission");
+    return;
+  }
+
+  setIsRunningTests(true);
+  try {
+    const payload = {
+      question_id: currentQuestionId,
+      code: userCode,
+      language: selectedLanguage,
+      answer_id: savedAnswerId,
+    };
+
+    const res = await evaluateCodingSubmission(currentSubmissionId, payload);
+    console.log("Hidden test evaluation result:", res);
+    toast.success("Hidden test cases evaluated!");
+
+    setJudge0Results(res.results || []);
+    setSubmissionScore(res.score || 0);
+  } catch (err) {
+    console.error("Evaluation failed:", err.response?.data || err.message);
+    toast.error(err.response?.data?.message || "Evaluation failed");
+  } finally {
+    setIsRunningTests(false);
+  }
+};
+
+
+
+  const handleSaveAnswer = async () => {
+    const localSubmissionId = localStorage.getItem("submission_id"); // Get from localStorage
+    console.log(localSubmissionId);
+
+    const currentSubmissionId = submissionId || localSubmissionId;   // Use prop/state if exists, else fallback
+
+    console.log(currentSubmissionId);
+
+    if (!currentSubmissionId || !question?._id || !answer || !selectedLanguage) {
+      console.error('Missing required data for saving');
+      setSaveStatus('error');
       return;
     }
 
     try {
-      const results = await executeWithTestCases(
-        answer, 
-        selectedLanguage, 
-        fullDetails.test_cases
-      );
-      // You can update the parent component's test results here
-      console.log('Test case results:', results);
+      setSaveStatus('saving');
+
+      const payload = {
+        sectionId: question.section_id,
+        questionId: question._id,
+        type: 'coding',
+        codeSolution: answer,
+        programmingLanguage: selectedLanguage,
+        isMarkedForReview: false,
+        isSkipped: false,
+        timeTakenSeconds: 0,
+      };
+
+      const response = await saveCodingAnswer(currentSubmissionId, payload);
+
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+
+      return response;
     } catch (error) {
-      console.error('Error running test cases:', error);
+      console.error('Error saving answer:', error);
+      setSaveStatus('error');
+
+      if (error.response) {
+        console.error('Server response:', error.response.data);
+        if (
+          error.response.status === 400 &&
+          error.response.data.message.includes("cannot update a coding questions answer")
+        ) {
+          alert("Coding answers cannot be updated after submission");
+        }
+      }
+
+      setTimeout(() => setSaveStatus('idle'), 3000);
+      throw error;
     }
   };
 
+  const handleSubmitCode = async () => {
+    try {
+      setIsSubmitting(true);
+      setSubmitStatus(null);
 
-const handleSaveAnswer = async () => {
-  const localSubmissionId = localStorage.getItem("submission_id"); // Get from localStorage
-  console.log(localSubmissionId);
-  
-  const currentSubmissionId = submissionId || localSubmissionId;   // Use prop/state if exists, else fallback
+      const payload = {
+        code: answer,
+        language: selectedLanguage,
+      };
 
-   console.log(currentSubmissionId);
+      const res = await submitCode(submissionId, payload);
 
-  if (!currentSubmissionId || !question?._id || !answer || !selectedLanguage) {
-    console.error('Missing required data for saving');
-    setSaveStatus('error');
-    return;
-  }
+      console.log("Submission result:", res);
+      setSubmitStatus("success");
 
-  try {
-    setSaveStatus('saving');
-
-    const payload = {
-      sectionId: question.section_id,
-      questionId: question._id,
-      type: 'coding',
-      codeSolution: answer,
-      programmingLanguage: selectedLanguage,
-      isMarkedForReview: false,
-      isSkipped: false,
-      timeTakenSeconds: 0,
-    };
-
-    const response = await saveCodingAnswer(currentSubmissionId, payload);
-
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 3000);
-
-    return response;
-  } catch (error) {
-    console.error('Error saving answer:', error);
-    setSaveStatus('error');
-
-    if (error.response) {
-      console.error('Server response:', error.response.data);
-      if (
-        error.response.status === 400 &&
-        error.response.data.message.includes("cannot update a coding questions answer")
-      ) {
-        alert("Coding answers cannot be updated after submission");
-      }
+      // ✅ Wait 3 seconds, then redirect to dashboard
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 3000);
+    } catch (error) {
+      console.error("Error submitting code:", error);
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    setTimeout(() => setSaveStatus('idle'), 3000);
-    throw error;
-  }
-};
 
   const getStatusIcon = (status) => {
     if (status?.description === 'Accepted') {
@@ -385,10 +433,10 @@ const handleSaveAnswer = async () => {
 
 
   const expectedSampleOutput = fullDetails?.sample_test_cases?.[0]?.output?.trim();
-const actualOutput = judge0Results?.stdout?.trim();
+  const actualOutput = judge0Results?.stdout?.trim();
 
-// Normalize output (remove trailing newlines, extra spaces)
-const isSampleTestPassed = expectedSampleOutput === actualOutput;
+  // Normalize output (remove trailing newlines, extra spaces)
+  const isSampleTestPassed = expectedSampleOutput === actualOutput;
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 space-y-6">
@@ -397,7 +445,7 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
           <Code2 className="w-6 h-6 text-indigo-500" />
           Enhanced Code Editor & Execution Environment
         </h2>
-        
+
         {/* API Status Indicator */}
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -423,20 +471,20 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               <option key={lang.language} value={lang.language}>
                 {lang.language.toUpperCase()} - {
                   lang.name || (
-                    lang.language === 'javascript' ? 'JavaScript (Node.js)' : 
-                    lang.language === 'python' ? 'Python 3' :
-                    lang.language === 'java' ? 'Java 11+' :
-                    lang.language === 'cpp' ? 'C++ (GCC)' :
-                    lang.language === 'c' ? 'C (GCC)' :
-                    lang.language === 'csharp' ? 'C# (.NET)' :
-                    lang.language === 'php' ? 'PHP 8+' :
-                    lang.language === 'ruby' ? 'Ruby 3+' :
-                    lang.language === 'go' ? 'Go 1.19+' :
-                    lang.language === 'rust' ? 'Rust 1.60+' :
-                    lang.language === 'swift' ? 'Swift 5+' :
-                    lang.language === 'kotlin' ? 'Kotlin 1.7+' :
-                    lang.language === 'typescript' ? 'TypeScript 4+' :
-                    lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
+                    lang.language === 'javascript' ? 'JavaScript (Node.js)' :
+                      lang.language === 'python' ? 'Python 3' :
+                        lang.language === 'java' ? 'Java 11+' :
+                          lang.language === 'cpp' ? 'C++ (GCC)' :
+                            lang.language === 'c' ? 'C (GCC)' :
+                              lang.language === 'csharp' ? 'C# (.NET)' :
+                                lang.language === 'php' ? 'PHP 8+' :
+                                  lang.language === 'ruby' ? 'Ruby 3+' :
+                                    lang.language === 'go' ? 'Go 1.19+' :
+                                      lang.language === 'rust' ? 'Rust 1.60+' :
+                                        lang.language === 'swift' ? 'Swift 5+' :
+                                          lang.language === 'kotlin' ? 'Kotlin 1.7+' :
+                                            lang.language === 'typescript' ? 'TypeScript 4+' :
+                                              lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
                   )
                 }
               </option>
@@ -484,33 +532,33 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <span className="ml-2 text-sm font-medium text-gray-600">solution.{
                 selectedLanguage === 'javascript' ? 'js' :
-                selectedLanguage === 'python' ? 'py' :
-                selectedLanguage === 'java' ? 'java' :
-                selectedLanguage === 'cpp' ? 'cpp' :
-                selectedLanguage === 'c' ? 'c' :
-                selectedLanguage === 'csharp' ? 'cs' :
-                selectedLanguage === 'php' ? 'php' :
-                selectedLanguage === 'ruby' ? 'rb' :
-                selectedLanguage === 'go' ? 'go' :
-                selectedLanguage === 'rust' ? 'rs' :
-                selectedLanguage === 'swift' ? 'swift' :
-                selectedLanguage === 'kotlin' ? 'kt' :
-                selectedLanguage === 'typescript' ? 'ts' : 'txt'
+                  selectedLanguage === 'python' ? 'py' :
+                    selectedLanguage === 'java' ? 'java' :
+                      selectedLanguage === 'cpp' ? 'cpp' :
+                        selectedLanguage === 'c' ? 'c' :
+                          selectedLanguage === 'csharp' ? 'cs' :
+                            selectedLanguage === 'php' ? 'php' :
+                              selectedLanguage === 'ruby' ? 'rb' :
+                                selectedLanguage === 'go' ? 'go' :
+                                  selectedLanguage === 'rust' ? 'rs' :
+                                    selectedLanguage === 'swift' ? 'swift' :
+                                      selectedLanguage === 'kotlin' ? 'kt' :
+                                        selectedLanguage === 'typescript' ? 'ts' : 'txt'
               }</span>
             </div>
             <div className="text-xs text-gray-500">
-              Lines: {answer ? answer.split('\n').length : 0} | 
+              Lines: {answer ? answer.split('\n').length : 0} |
               Chars: {answer ? answer.length : 0}
             </div>
           </div>
-          
+
           <Editor
             height="600px"
             language={
               selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
-              selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
-              selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
-              selectedLanguage.toLowerCase()
+                selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
+                  selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
+                    selectedLanguage.toLowerCase()
             }
             value={answer || LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || ''}
             onChange={(value) => onAnswerChange(question._id, value || '')}
@@ -569,22 +617,21 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
             <Zap className="w-5 h-5 text-blue-500" />
             Execution Results
           </h3>
-          
+
           <div className="grid md:grid-cols-3 gap-4 mb-4">
             <div className="bg-white p-3 rounded-lg border">
               <div className="flex items-center gap-2 mb-1">
                 {getStatusIcon(judge0Results.status)}
                 <p className="text-sm font-medium text-gray-600">Status</p>
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                judge0Results.status?.description === 'Accepted' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${judge0Results.status?.description === 'Accepted'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+                }`}>
                 {judge0Results.status?.description || 'Unknown'}
               </span>
             </div>
-            
+
             <div className="bg-white p-3 rounded-lg border">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-blue-500" />
@@ -594,7 +641,7 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
                 {judge0Results.time ? `${judge0Results.time}s` : 'N/A'}
               </span>
             </div>
-            
+
             <div className="bg-white p-3 rounded-lg border">
               <div className="flex items-center gap-2 mb-1">
                 <MemoryStick className="w-4 h-4 text-purple-500" />
@@ -605,30 +652,50 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               </span>
             </div>
           </div>
-          
-          {judge0Results.stdout && fullDetails?.sample_test_cases?.length > 0 && (
-  <div className="mt-4 bg-white p-3 rounded-lg border">
-    <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-      <CheckCircle className={`w-4 h-4 ${isSampleTestPassed ? 'text-green-500' : 'text-red-500'}`} />
-      Sample Test Case Result:
-    </p>
-    <div className="text-sm font-mono">
-      <div>
-        <span className="font-semibold">Expected:</span>{" "}
-        {fullDetails.sample_test_cases[0].output}
-      </div>
-      <div>
-        <span className="font-semibold">Your Output:</span>{" "}
-        {judge0Results.stdout}
-      </div>
-      <div className={`mt-2 font-semibold ${isSampleTestPassed ? 'text-green-600' : 'text-red-600'}`}>
-        {isSampleTestPassed ? "✅ Passed" : "❌ Failed"}
-      </div>
-    </div>
-  </div>
-)}
 
-          
+          {judge0Results.stdout && fullDetails?.sample_test_cases?.length > 0 && (
+            <div className="mt-4 bg-white p-4 rounded-xl border shadow-sm">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                {isSampleTestPassed ? (
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                )}
+                <span>Sample Test Case Result</span>
+              </div>
+
+              <div className="text-sm font-mono space-y-2">
+                <div className="flex items-start gap-2">
+                  <Download className="w-4 h-4 text-blue-500 mt-1" />
+                  <div>
+                    <span className="font-semibold">Expected:</span>{" "}
+                    {fullDetails.sample_test_cases[0].output}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+                  <div>
+                    <span className="font-semibold">Your Output:</span>{" "}
+                    {judge0Results.stdout}
+                  </div>
+                </div>
+
+                <div
+                  className={`mt-3 font-semibold flex items-center gap-1 ${isSampleTestPassed ? "text-green-600" : "text-red-600"
+                    }`}
+                >
+                  {isSampleTestPassed ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
+                  {isSampleTestPassed ? "Passed" : "Failed"}
+                </div>
+              </div>
+            </div>
+          )}
+
           {judge0Results.stderr && (
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
@@ -640,7 +707,7 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               </pre>
             </div>
           )}
-          
+
           {judge0Results.compile_output && (
             <div>
               <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
@@ -664,11 +731,10 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
           </h3>
           <div className="space-y-4">
             {testResults.map((result, index) => (
-              <div key={index} className={`p-4 rounded-lg border-2 bg-white ${
-                result.status === 'PASSED' 
-                  ? 'border-green-200' 
-                  : 'border-red-200'
-              }`}>
+              <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
+                ? 'border-green-200'
+                : 'border-red-200'
+                }`}>
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-semibold text-lg">Test Case {index + 1}</span>
                   <div className="flex items-center gap-2">
@@ -677,11 +743,10 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
                     ) : (
                       <XCircle className="w-5 h-5 text-red-500" />
                     )}
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      result.status === 'PASSED' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}>
                       {result.status}
                     </span>
                   </div>
@@ -714,7 +779,7 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
         </div>
       )}
 
-            {/* Custom Input Section */}
+      {/* Custom Input Section */}
       <div className="border-t border-gray-200 pt-6">
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-lg font-medium text-gray-800">
@@ -750,15 +815,14 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               type="button"
               onClick={handleSaveAnswer}
               disabled={saveStatus === 'saving'}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                saveStatus === 'saving'
-                  ? 'bg-cyan-400 text-white cursor-not-allowed'
-                  : saveStatus === 'saved'
-                    ? 'bg-green-100 text-green-800 border-2 border-green-200'
-                    : saveStatus === 'error'
-                      ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                      : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
-              }`}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${saveStatus === 'saving'
+                ? 'bg-cyan-400 text-white cursor-not-allowed'
+                : saveStatus === 'saved'
+                  ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                  : saveStatus === 'error'
+                    ? 'bg-red-100 text-red-800 border-2 border-red-200'
+                    : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
+                }`}
             >
               {saveStatus === 'saving' ? 'Saving...' :
                 saveStatus === 'saved' ? '✓ Saved!' :
@@ -772,9 +836,8 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               type="button"
               onClick={handleRunWithAPI}
               disabled={isExecuting}
-              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${
-                isExecuting ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${isExecuting ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
             >
               <Play className="w-4 h-4" />
               {isExecuting ? 'Executing...' : 'Run Code'}
@@ -784,28 +847,31 @@ const isSampleTestPassed = expectedSampleOutput === actualOutput;
               type="button"
               onClick={handleRunTestCases}
               disabled={isRunningTests}
-              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${
-                isRunningTests ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${isRunningTests ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
             >
               <FlaskConical className="w-4 h-4" />
               {isRunningTests ? 'Running Tests...' : 'Run Test Cases'}
             </button>
 
+
             <button
               type="button"
               onClick={handleSubmitCode}
               disabled={isSubmitting}
-              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${
-                isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
             >
               <Terminal className="w-4 h-4" />
               {isSubmitting ? 'Submitting...' : 'Submit Answer'}
             </button>
+
           </div>
         </div>
       </div>
+      {submitStatus === "success" && (
+        <p className="text-green-600 mt-4">Submitted successfully! Redirecting to dashboard...</p>
+      )}
     </div>
   );
 };
