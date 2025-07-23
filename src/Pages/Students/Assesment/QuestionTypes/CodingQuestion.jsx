@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';``
+import React, { useEffect, useState } from 'react';
 import {
   FileText,
   Download,
@@ -22,11 +22,6 @@ import {
   Hash
 } from 'lucide-react';
 import { getCodingQuestionById } from '../../../../Controllers/QuestionController';
-import {
-  saveCodingAnswer,
-  runSampleTestCases,
-  submitCodeForEvaluation
-} from '../../../../Controllers/SubmissionController';
 import SolutionSection from './SolutionSection';
 import ErrorBoundary from '../../../../Components/ErrorBoundary';
 
@@ -43,10 +38,6 @@ const CodingQuestion = ({
     hidden: false
   });
   const [selectedLanguage, setSelectedLanguage] = useState('python');
-  const [testResults, setTestResults] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRunningTests, setIsRunningTests] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
   
   // Safety check for required props
   if (!question) {
@@ -61,14 +52,6 @@ const CodingQuestion = ({
   // Function to handle answer changes
   const handleAnswerChange = (questionId, newAnswer) => {
     setAnswer(newAnswer);
-  };
-
-  // Function to handle submission completion
-  const handleSubmissionComplete = (response) => {
-    console.log('Submission completed:', response);
-    if (refreshSectionStatus) {
-      refreshSectionStatus();
-    }
   };
 
   useEffect(() => {
@@ -92,9 +75,6 @@ const CodingQuestion = ({
   useEffect(() => {
     const loadExistingAnswer = async () => {
       try {
-        // You would need to implement getAnsweredStatus for coding questions
-        // or use a similar API to load existing code answers
-        // For now, we'll start with an empty answer
         setAnswer('');
       } catch (error) {
         console.error('Failed to load existing answer:', error);
@@ -103,122 +83,13 @@ const CodingQuestion = ({
 
     loadExistingAnswer();
   }, [question._id, submissionId]);
+
   const toggleTestCase = (type) => {
     setExpandedTestCases(prev => ({
       ...prev,
       [type]: !prev[type]
     }));
   };
-
-
-  const handleSaveAnswer = async () => {
-    try {
-      setSaveStatus('saving');
-      const saveData = {
-        sectionId: question.section_id,
-        questionId: question._id,
-        type: 'coding',
-        codeSolution: answer,
-        programmingLanguage: selectedLanguage,
-        isMarkedForReview: false
-      };
-      console.log(submissionId);
-
-
-      console.log('Saving data:', saveData); // Add this line
-      await saveCodingAnswer(submissionId, saveData);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus(null), 2000);
-    } catch (error) {
-      console.error('Failed to save answer:', error);
-      console.error('Error details:', error.response?.data); // Add this to see server response
-      setSaveStatus('error');
-    }
-  };
-
-  const handleRunTestCases = async () => {
-    if (!answer.trim()) {
-      alert('Please write some code before running tests');
-      return;
-    }
-
-    console.log('Payload sent:', {
-      code: answer,
-      language_id: getLanguageId(selectedLanguage)
-    });
-
-
-    try {
-      setIsRunningTests(true);
-      const response = await runSampleTestCases(question._id, {
-        code: answer,
-        language_id: getLanguageId(selectedLanguage)
-      });
-      setTestResults(response.sample_results);
-    } catch (error) {
-      console.error('Failed to run test cases:', error);
-      alert(error.message || 'Failed to run test cases');
-    } finally {
-      setIsRunningTests(false);
-    }
-  };
-
-  const handleSubmitCode = async () => {
-    if (!answer.trim()) {
-      alert('Please write some code before submitting');
-      return;
-    }
-
-    if (!window.confirm('Are you sure you want to submit? You cannot change your answer after submission.')) {
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const response = await submitCodeForEvaluation(submissionId, {
-        question_id: question._id,
-        code: answer,
-        language: selectedLanguage,
-        language_id: getLanguageId(selectedLanguage),
-        answer_id: question.answer_id // This should be passed from parent if exists
-      });
-
-      handleSubmissionComplete(response);
-    } catch (error) {
-      console.error('Failed to submit code:', error);
-      alert(error.message || 'Failed to submit code');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const getLanguageId = (language) => {
-    // Map language names to Judge0 language IDs
-    const languageMap = {
-      'python': 71,
-      'javascript': 63,
-      'java': 62,
-      'c': 50,
-      'cpp': 54,
-      // Add more languages as needed
-    };
-    return languageMap[language.toLowerCase()] || 71; // Default to Python
-  };
-
-  const resetCode = () => {
-    if (window.confirm('Are you sure you want to reset your code?')) {
-      setAnswer('');
-    }
-  };
-
-
-  const sections = [
-    { id: 'problem', title: 'Problem', icon: FileText },
-    { id: 'io', title: 'Input/Output', icon: Terminal },
-    { id: 'constraints', title: 'Constraints', icon: Cpu },
-    { id: 'testcases', title: 'Test Cases', icon: FlaskConical },
-    { id: 'solution', title: 'Your Solution', icon: Code2 }
-  ];
 
   if (!fullDetails) return <div className="text-center py-10">Loading question details...</div>;
 
@@ -499,19 +370,21 @@ const CodingQuestion = ({
             selectedLanguage={selectedLanguage}
             setSelectedLanguage={setSelectedLanguage}
             fullDetails={fullDetails}
-            testResults={testResults}
-            isRunningTests={isRunningTests}
-            isSubmitting={isSubmitting}
-            saveStatus={saveStatus}
-            handleSaveAnswer={handleSaveAnswer}
-            resetCode={resetCode}
-            handleRunTestCases={handleRunTestCases}
-            handleSubmitCode={handleSubmitCode}
+            submissionId={submissionId}
+            refreshSectionStatus={refreshSectionStatus}
           />
         </ErrorBoundary>
       )}
     </div>
   );
 };
+
+const sections = [
+  { id: 'problem', title: 'Problem', icon: FileText },
+  { id: 'io', title: 'Input/Output', icon: Terminal },
+  { id: 'constraints', title: 'Constraints', icon: Cpu },
+  { id: 'testcases', title: 'Test Cases', icon: FlaskConical },
+  { id: 'solution', title: 'Your Solution', icon: Code2 }
+];
 
 export default CodingQuestion;
