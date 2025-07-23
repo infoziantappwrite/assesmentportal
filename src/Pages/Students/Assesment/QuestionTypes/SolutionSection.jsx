@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -8,7 +8,6 @@ import {
   Settings,
   ExternalLink,
   Zap,
-  Monitor,
   FileCode,
   Cpu,
   Clock,
@@ -36,6 +35,108 @@ const JUDGE0_LANGUAGE_MAP = {
   'typescript': 74,
 };
 
+// Startup code templates for each language
+const LANGUAGE_TEMPLATES = {
+  'javascript': `// JavaScript Solution
+function solution() {
+    // Write your code here
+    console.log("Hello World!");
+}
+
+solution();`,
+  'python': `# Python Solution
+def solution():
+    # Write your code here
+    print("Hello World!")
+
+if __name__ == "__main__":
+    solution()`,
+  'java': `// Java Solution
+public class Main {
+    public static void main(String[] args) {
+        // Write your code here
+        System.out.println("Hello World!");
+    }
+}`,
+  'cpp': `// C++ Solution
+#include <iostream>
+using namespace std;
+
+int main() {
+    // Write your code here
+    cout << "Hello World!" << endl;
+    return 0;
+}`,
+  'c': `// C Solution
+#include <stdio.h>
+
+int main() {
+    // Write your code here
+    printf("Hello World!\\n");
+    return 0;
+}`,
+  'csharp': `// C# Solution
+using System;
+
+class Program {
+    static void Main() {
+        // Write your code here
+        Console.WriteLine("Hello World!");
+    }
+}`,
+  'php': `<?php
+// PHP Solution
+function solution() {
+    // Write your code here
+    echo "Hello World!\\n";
+}
+
+solution();
+?>`,
+  'ruby': `# Ruby Solution
+def solution
+    # Write your code here
+    puts "Hello World!"
+end
+
+solution()`,
+  'go': `// Go Solution
+package main
+
+import "fmt"
+
+func main() {
+    // Write your code here
+    fmt.Println("Hello World!")
+}`,
+  'rust': `// Rust Solution
+fn main() {
+    // Write your code here
+    println!("Hello World!");
+}`,
+  'swift': `// Swift Solution
+import Foundation
+
+func solution() {
+    // Write your code here
+    print("Hello World!")
+}
+
+solution()`,
+  'kotlin': `// Kotlin Solution
+fun main() {
+    // Write your code here
+    println("Hello World!")
+}`,
+  'typescript': `// TypeScript Solution
+function solution(): void {
+    // Write your code here
+    console.log("Hello World!");
+}
+
+solution();`
+};
+
 const SolutionSection = ({
   question,
   answer,
@@ -52,145 +153,51 @@ const SolutionSection = ({
   handleRunTestCases,
   handleSubmitCode
 }) => {
-  const [editorMode, setEditorMode] = useState('judge0'); // 'monaco' or 'judge0'
   const [judge0Results, setJudge0Results] = useState(null);
-  const iframeRef = useRef(null);
-  const [judge0Initialized, setJudge0Initialized] = useState(false);
   const [customInput, setCustomInput] = useState('');
   
   const { isExecuting, executeCode, executeWithTestCases } = useJudge0();
 
   const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY || '';
 
-  // Handle Judge0 iframe messages
+  // Initialize code with language template when language changes
   useEffect(() => {
-    const handleMessage = (e) => {
-      // Only handle messages from the Judge0 iframe
-      if (!e.data || e.origin !== 'https://ide.judge0.com') return;
-      
-      console.log('Judge0 message received:', e.data);
-      
-      if (e.data.event === 'initialised') {
-        setJudge0Initialized(true);
-        console.log('Judge0 iframe initialized');
-        // Set initial configuration
-        if (iframeRef.current && JUDGE0_API_KEY) {
-          setTimeout(() => {
-            try {
-              iframeRef.current.contentWindow.postMessage({
-                action: 'set',
-                api_key: JUDGE0_API_KEY,
-                language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
-                source_code: answer || '', // Set current code
-                stdin: customInput || '',
-                flavor: 'CE',
-              }, 'https://ide.judge0.com');
-            } catch (error) {
-              console.error('Error setting initial Judge0 config:', error);
-            }
-          }, 1000);
-        } else {
-          console.warn('Judge0 API key not found or iframe not ready');
-        }
-      }
-      
-      if (e.data.event === 'run-completed') {
-        console.log('Judge0 execution completed:', e.data.data);
-        setJudge0Results(e.data.data);
-      }
-
-      if (e.data.event === 'get-completed') {
-        // Update the answer when code is retrieved from Judge0
-        if (e.data.data && e.data.data.source_code) {
-          onAnswerChange(question._id, e.data.data.source_code);
-        }
-      }
-
-      if (e.data.event === 'error') {
-        console.error('Judge0 iframe error:', e.data);
-        setJudge0Results({
-          status: { description: 'Error' },
-          stderr: e.data.message || 'Unknown error occurred in Judge0 IDE'
-        });
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [answer, selectedLanguage, JUDGE0_API_KEY, customInput, onAnswerChange, question._id]);
-
-  // Update Judge0 IDE when language changes
-  useEffect(() => {
-    if (judge0Initialized && iframeRef.current && editorMode === 'judge0') {
-      try {
-        iframeRef.current.contentWindow.postMessage({
-          action: 'set',
-          language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
-          source_code: answer || '', // Preserve current code
-        }, 'https://ide.judge0.com');
-      } catch (error) {
-        console.error('Error updating Judge0 language:', error);
-      }
+    if (!answer || answer.trim() === '') {
+      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+      onAnswerChange(question._id, template);
     }
-  }, [selectedLanguage, judge0Initialized, editorMode, answer]);
+  }, [selectedLanguage, question._id, onAnswerChange]);
 
-  const handleRunInJudge0 = () => {
-    if (iframeRef.current && judge0Initialized) {
-      try {
-        // First, get the current code from the iframe
-        iframeRef.current.contentWindow.postMessage({ action: 'get' }, 'https://ide.judge0.com');
-        
-        // Then run after a short delay to ensure code is synced
-        setTimeout(() => {
-          iframeRef.current.contentWindow.postMessage({ action: 'run' }, 'https://ide.judge0.com');
-        }, 100);
-      } catch (error) {
-        console.error('Error running Judge0:', error);
-        setJudge0Results({
-          status: { description: 'Error' },
-          stderr: 'Failed to communicate with Judge0 IDE. Please try refreshing the page.'
-        });
-      }
-    } else {
-      console.warn('Judge0 iframe not initialized yet');
-      setJudge0Results({
-        status: { description: 'Error' },
-        stderr: 'Judge0 IDE is not ready yet. Please wait a moment and try again.'
-      });
-    }
-  };
-
-  const handleGetCodeFromJudge0 = () => {
-    if (iframeRef.current && judge0Initialized) {
-      try {
-        iframeRef.current.contentWindow.postMessage({ action: 'get' }, 'https://ide.judge0.com');
-      } catch (error) {
-        console.error('Error getting code from Judge0:', error);
-      }
-    }
-  };
-
-  const syncCodeToJudge0 = () => {
-    if (iframeRef.current && judge0Initialized) {
-      try {
-        iframeRef.current.contentWindow.postMessage({
-          action: 'set',
-          source_code: answer || '',
-          language_id: JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 71,
-          stdin: customInput || '',
-        }, 'https://ide.judge0.com');
-      } catch (error) {
-        console.error('Error syncing code to Judge0:', error);
-      }
-    }
+  // Reset code to language template
+  const handleResetCode = () => {
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    onAnswerChange(question._id, template);
+    setCustomInput('');
+    setJudge0Results(null);
   };
 
   const handleRunWithAPI = async () => {
+    if (!answer || answer.trim() === '') {
+      alert('Please write some code before running!');
+      return;
+    }
+
     try {
+      console.log('Executing code with RapidAPI...', {
+        language: selectedLanguage,
+        codeLength: answer?.length || 0,
+        hasCustomInput: !!customInput
+      });
+      
       const result = await executeCode(answer, selectedLanguage, customInput);
+      console.log('API execution result:', result);
       setJudge0Results(result);
     } catch (error) {
       console.error('Error running code with API:', error);
+      setJudge0Results({
+        status: { description: 'Error' },
+        stderr: error.message || 'Failed to execute code. Please check your code and try again.'
+      });
     }
   };
 
@@ -228,128 +235,183 @@ const SolutionSection = ({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
           <Code2 className="w-6 h-6 text-indigo-500" />
-          Code Editor & Execution Environment
+          Enhanced Code Editor & Execution Environment
         </h2>
         
-        {/* Editor Mode Toggle */}
-        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setEditorMode('monaco')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              editorMode === 'monaco'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <FileCode className="w-4 h-4 inline mr-1" />
-            Code Editor
-          </button>
-          <button
-            onClick={() => setEditorMode('judge0')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              editorMode === 'judge0'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
-          >
-            <Monitor className="w-4 h-4 inline mr-1" />
-            Live IDE
-          </button>
-        </div>
-
-      </div>
-
-      {/* Language Selection and Controls */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Programming Language
-          </label>
-          <select
-            value={selectedLanguage}
-            onChange={(e) => setSelectedLanguage(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
-          >
-            {fullDetails.supported_languages?.map((lang) => (
-              <option key={lang.language} value={lang.language}>
-                {lang.language.toUpperCase()}
-              </option>
-            ))}
-          </select>
+        {/* API Status Indicator */}
+        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-sm font-medium text-green-700">RapidAPI Ready</span>
         </div>
       </div>
 
-      {/* Editor Section */}
+      {/* Language Selection */}
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <FileCode className="w-4 h-4" />
+          Programming Language
+        </label>
+        <select
+          value={selectedLanguage}
+          onChange={(e) => setSelectedLanguage(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
+        >
+          {fullDetails.supported_languages?.map((lang) => (
+            <option key={lang.language} value={lang.language}>
+              {lang.language.toUpperCase()} - {
+                lang.language === 'javascript' ? 'JavaScript (Node.js)' : 
+                lang.language === 'python' ? 'Python 3' :
+                lang.language === 'java' ? 'Java 11+' :
+                lang.language === 'cpp' ? 'C++ (GCC)' :
+                lang.language === 'c' ? 'C (GCC)' :
+                lang.language === 'csharp' ? 'C# (.NET)' :
+                lang.language === 'php' ? 'PHP 8+' :
+                lang.language === 'ruby' ? 'Ruby 3+' :
+                lang.language === 'go' ? 'Go 1.19+' :
+                lang.language === 'rust' ? 'Rust 1.60+' :
+                lang.language === 'swift' ? 'Swift 5+' :
+                lang.language === 'kotlin' ? 'Kotlin 1.7+' :
+                lang.language === 'typescript' ? 'TypeScript 4+' :
+                lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
+              }
+            </option>
+          ))}
+        </select>
+        <div className="text-xs text-gray-500 mt-1">
+          Language ID: {JUDGE0_LANGUAGE_MAP[selectedLanguage.toLowerCase()] || 'Unknown'}
+        </div>
+      </div>
+
+      {/* Enhanced Code Editor Section */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-lg font-medium text-gray-800">Code Editor</label>
+            <div className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
+              {selectedLanguage.toUpperCase()}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  console.log('Testing RapidAPI connection...');
+                  const testResult = await executeCode('console.log("✅ RapidAPI Connection Test Successful!");', 'javascript', '');
+                  console.log('RapidAPI test successful:', testResult);
+                  alert('✅ RapidAPI connection working! Check console for details.');
+                } catch (error) {
+                  console.error('RapidAPI test failed:', error);
+                  alert(`❌ RapidAPI test failed: ${error.message}`);
+                }
+              }}
+              className="px-3 py-1 bg-purple-50 text-purple-600 rounded-md text-sm font-medium hover:bg-purple-100 border border-purple-200 flex items-center gap-1"
+            >
+              <Zap className="w-4 h-4" />
+              Test API
+            </button>
+            <button
+              onClick={handleResetCode}
+              className="px-3 py-1 bg-orange-50 text-orange-600 rounded-md text-sm font-medium hover:bg-orange-100 border border-orange-200 flex items-center gap-1"
+            >
+              <Settings className="w-4 h-4" />
+              Reset to Template
+            </button>
+            <a
+              href="https://judge0.com/#statuses-and-languages"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Language Docs
+            </a>
+          </div>
         </div>
 
-        {editorMode === 'monaco' ? (
-          <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            <Editor
-              height="500px"
-              language={selectedLanguage.toLowerCase()}
-              value={answer}
-              onChange={(value) => onAnswerChange(question._id, value || '')}
-              theme="vs-dark"
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                lineNumbers: 'on',
-                renderWhitespace: 'selection',
-                tabSize: 2,
-                autoIndent: 'full',
-                wordWrap: 'on',
-                scrollbar: {
-                  vertical: 'auto',
-                  horizontal: 'auto',
-                },
-                contextmenu: true,
-                selectOnLineNumbers: true,
-                roundedSelection: false,
-                readOnly: false,
-                cursorStyle: 'line',
-                automaticLayout: true,
-              }}
-            />
+        <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-gray-50">
+          <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="ml-2 text-sm font-medium text-gray-600">solution.{
+                selectedLanguage === 'javascript' ? 'js' :
+                selectedLanguage === 'python' ? 'py' :
+                selectedLanguage === 'java' ? 'java' :
+                selectedLanguage === 'cpp' ? 'cpp' :
+                selectedLanguage === 'c' ? 'c' :
+                selectedLanguage === 'csharp' ? 'cs' :
+                selectedLanguage === 'php' ? 'php' :
+                selectedLanguage === 'ruby' ? 'rb' :
+                selectedLanguage === 'go' ? 'go' :
+                selectedLanguage === 'rust' ? 'rs' :
+                selectedLanguage === 'swift' ? 'swift' :
+                selectedLanguage === 'kotlin' ? 'kt' :
+                selectedLanguage === 'typescript' ? 'ts' : 'txt'
+              }</span>
+            </div>
+            <div className="text-xs text-gray-500">
+              Lines: {answer ? answer.split('\n').length : 0} | 
+              Chars: {answer ? answer.length : 0}
+            </div>
           </div>
-        ) : (
-          <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            {!judge0Initialized && (
-              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <Settings className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-blue-700">
-                      Initializing Judge0 IDE... Please wait.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <iframe
-              ref={iframeRef}
-              src={`https://ide.judge0.com?judge0.style=minimal&judge0.theme=dark&judge0.styleOptions.showNavigation=false&judge0.styleOptions.showFooter=false&judge0.api_key=${JUDGE0_API_KEY}`}
-              frameBorder="0"
-              className="w-full h-[500px]"
-              title="Judge0 IDE"
-              onLoad={() => console.log('Judge0 iframe loaded')}
-              onError={(e) => {
-                console.error('Judge0 iframe error:', e);
-                setJudge0Results({
-                  status: { description: 'Error' },
-                  stderr: 'Failed to load Judge0 IDE. Please check your internet connection and try again.'
-                });
-              }}
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
-          </div>
-        )}
+          
+          <Editor
+            height="600px"
+            language={
+              selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
+              selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
+              selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
+              selectedLanguage.toLowerCase()
+            }
+            value={answer || LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || ''}
+            onChange={(value) => onAnswerChange(question._id, value || '')}
+            theme="vs-dark"
+            options={{
+              minimap: { enabled: true },
+              fontSize: 14,
+              fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+              fontLigatures: true,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              lineNumbers: 'on',
+              renderWhitespace: 'selection',
+              tabSize: selectedLanguage === 'python' ? 4 : 2,
+              autoIndent: 'full',
+              wordWrap: 'on',
+              bracketPairColorization: { enabled: true },
+              scrollbar: {
+                vertical: 'auto',
+                horizontal: 'auto',
+                verticalScrollbarSize: 10,
+                horizontalScrollbarSize: 10,
+              },
+              contextmenu: true,
+              selectOnLineNumbers: true,
+              roundedSelection: false,
+              readOnly: false,
+              cursorStyle: 'line',
+              cursorBlinking: 'blink',
+              renderLineHighlight: 'all',
+              folding: true,
+              foldingStrategy: 'indentation',
+              showFoldingControls: 'always',
+              formatOnPaste: true,
+              formatOnType: true,
+              autoClosingBrackets: 'always',
+              autoClosingQuotes: 'always',
+              autoSurround: 'languageDefined',
+              suggestOnTriggerCharacters: true,
+              acceptSuggestionOnEnter: 'on',
+              quickSuggestions: true,
+              parameterHints: { enabled: true },
+              colorDecorators: true,
+              codeLens: true,
+              links: true,
+              mouseWheelZoom: true,
+            }}
+          />
+        </div>
       </div>
 
       {/* Judge0 Execution Results */}
@@ -519,39 +581,27 @@ const SolutionSection = ({
 
             <button
               type="button"
-              onClick={resetCode}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all shadow-sm"
+              onClick={handleResetCode}
+              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all shadow-sm flex items-center gap-2"
             >
-              Reset Code
+              <Settings className="w-4 h-4" />
+              Reset to Template
             </button>
           </div>
 
           {/* Right side buttons */}
           <div className="flex gap-3">
-            {editorMode === 'monaco' && (
-              <button
-                type="button"
-                onClick={handleRunWithAPI}
-                disabled={isExecuting}
-                className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${
-                  isExecuting ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
-              >
-                <Play className="w-4 h-4" />
-                {isExecuting ? 'Executing...' : 'Run Code'}
-              </button>
-            )}
-
-            {editorMode === 'judge0' && (
-              <button
-                type="button"
-                onClick={handleRunInJudge0}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2"
-              >
-                <Play className="w-4 h-4" />
-                Run in IDE
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleRunWithAPI}
+              disabled={isExecuting}
+              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${
+                isExecuting ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              <Play className="w-4 h-4" />
+              {isExecuting ? 'Executing...' : 'Run Code'}
+            </button>
 
             <button
               type="button"
@@ -576,6 +626,33 @@ const SolutionSection = ({
               <Terminal className="w-4 h-4" />
               {isSubmitting ? 'Submitting...' : 'Submit Answer'}
             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Input Section */}
+      <div className="border-t border-gray-200 pt-6">
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-lg font-medium text-gray-800">
+            <Terminal className="w-5 h-5" />
+            Custom Input (stdin)
+          </label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <textarea
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="Enter input for your program (one value per line)...&#10;Example:&#10;5&#10;3&#10;Hello World"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none shadow-sm font-mono"
+              rows={4}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <div className="text-xs text-gray-500">
+                This input will be passed to your program via stdin
+              </div>
+              <div className="text-xs text-gray-500">
+                Characters: {customInput.length} | Lines: {customInput.split('\n').length}
+              </div>
+            </div>
           </div>
         </div>
       </div>
