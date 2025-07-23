@@ -134,34 +134,48 @@ const fetchAssignment = async () => {
         <Info label="Assigned By" value={`${assigned_by?.name} (${assigned_by?.email})`} />
       </Section>
 
-      <Section title="Target Info" color="pink">
-        <Info label="Target Type" value={target?.type} />
-        
-        {/* Render only if group_ids array is not empty */}
-        {target?.group_ids?.length > 0 && (
-          <Info label="Group IDs" value={target.group_ids.join(', ')} />
-        )}
+<Section title="Target Info" color="pink">
+  <Info label="Target Type" value={target?.type ?? 'N/A'} />
 
-        {/* Render only if college_ids array is not empty */}
-        {target?.college_ids?.length > 0 && (
-          <Info label="College IDs" value={target.college_ids.join(', ')} />
-        )}
+  {target?.type === 'individuals' && target?.student_ids?.length > 0 ? (
+    <div>
+      <h4 className="font-medium text-gray-600 mb-1">Students:</h4>
+      <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
+        {target.student_ids.map((student) => (
+          <li key={student._id} className="text-sm text-gray-800">
+            {student.name} ({student.email})
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : target?.type === 'colleges' && target?.college_ids?.length > 0 ? (
+    <div>
+      <h4 className="font-medium text-gray-600 mb-1">Colleges:</h4>
+      <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
+        {target.college_ids.map((college) => (
+          <li key={college._id} className="text-sm text-gray-800">
+            {college.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : target?.type === 'groups' && target?.group_ids?.length > 0 ? (
+    <div>
+      <h4 className="font-medium text-gray-600 mb-1">Groups:</h4>
+      <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
+        {target.group_ids.map((group) => (
+          <li key={group._id} className="text-sm text-gray-800">
+            {group.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : (
+    <span>No targets assigned.</span>
+  )}
+</Section>
 
-        <div>
-          <h4 className="font-medium text-gray-600 mb-1">Students:</h4>
-          {target?.student_ids && target.student_ids.length > 0 ? (
-            <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
-              {target.student_ids.map((student) => (
-                <li key={student._id} className="text-sm text-gray-800">
-                  {student.name} ({student.email})
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <span>None</span>
-          )}
-        </div>
-      </Section>
+
 
 
       <EligibleStudents id={assignment._id} />
