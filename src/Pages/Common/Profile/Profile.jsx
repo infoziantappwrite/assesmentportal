@@ -7,7 +7,7 @@ import { useUser } from '../../../context/UserContext';
 
 const Profile = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const { loading, user } = useUser(); // Get loading and user from context
+  const { loading, user } = useUser();
 
   const getInitials = (name) => {
     if (!name) return '';
@@ -18,113 +18,110 @@ const Profile = () => {
       .toUpperCase();
   };
 
-  // Show loader until data is ready
   if (loading || !user) {
-    return (
-      <>
-       
-        <Loader />
-      </>
-    );
+    return <Loader />;
   }
 
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-slate-100 to-teal-100 py-10 px-4">
-        <div className="max-w-5xl mx-auto bg-white p-10 rounded-2xl shadow-md border border-gray-200 ring-1 ring-blue-300">
+      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-slate-100 to-teal-100 py-10 px-6">
+        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 ring-1 ring-blue-300 p-8">
           {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white w-12 h-12 rounded-full flex items-center justify-center text-xl font-semibold shadow-md">
               {getInitials(user?.name)}
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-blue-800">Profile</h2>
-              <p className="text-sm text-gray-500 capitalize">{user?.role}</p>
+              <h1 className="text-xl font-semibold text-blue-900 leading-tight">{user.name}</h1>
+              <p className="text-xs text-gray-600 capitalize mt-0.5">{user.role}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm text-gray-800">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-gray-900">
             {/* Left column */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <UserIcon size={16} /> <strong>Name:</strong> {user.name}
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail size={16} /> <strong>Email:</strong> {user.email}
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield size={16} /> <strong>Role:</strong> {user.role}
-              </div>
-              <div className="flex items-center gap-2">
-                <BadgeCheck size={16} /> <strong>Status:</strong>{' '}
-                {user.is_active ? 'Active' : 'Inactive'}
-              </div>
+            <section className="space-y-6">
+              <InfoRow icon={<UserIcon size={18} />} label="Name" value={user.name} />
+              <InfoRow icon={<Mail size={18} />} label="Email" value={user.email} />
+              <InfoRow icon={<Shield size={18} />} label="Role" value={user.role} />
+              <InfoRow
+                icon={<BadgeCheck size={18} />}
+                label="Status"
+                value={
+                  <span
+                    className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      user.is_active
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {user.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                }
+              />
 
               {/* Assigned Colleges */}
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Building2 size={16} /> <strong>Assigned Colleges:</strong>
-                </div>
-                <ul className="ml-6 list-disc">
-                  {user.assigned_colleges.length > 0
-                    ? user.assigned_colleges.map((college, i) => (
-                        <li key={i}>{college}</li>
-                      ))
-                    : <li>None</li>}
-                </ul>
-              </div>
+              <CardSection title="Assigned Colleges" icon={<Building2 size={18} />}>
+                {user.assigned_colleges.length > 0 ? (
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {user.assigned_colleges.map((college, i) => (
+                      <li key={i} className="text-gray-700">
+                        {typeof college === 'string' ? college : college.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-400 italic text-sm">None assigned</p>
+                )}
+              </CardSection>
 
               {/* Assigned Groups */}
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Users size={16} /> <strong>Assigned Groups:</strong>
-                </div>
-                <ul className="ml-6 list-disc">
-                  {user.assigned_groups.length > 0
-                    ? user.assigned_groups.map((group, i) => (
-                        <li key={i}>{group}</li>
-                      ))
-                    : <li>None</li>}
-                </ul>
-              </div>
-            </div>
+              <CardSection title="Assigned Groups" icon={<Users size={18} />}>
+                {user.assigned_groups.length > 0 ? (
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {user.assigned_groups.map((group) => (
+                      <li key={group._id} className="text-gray-700">
+                        {group.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-400 italic text-sm">None assigned</p>
+                )}
+              </CardSection>
+            </section>
 
             {/* Right column */}
-            <div className="space-y-4">
+            <section className="space-y-6">
               {/* Permissions */}
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle size={16} /> <strong>Permissions:</strong>
-                </div>
-                <ul className="ml-6 list-disc">
+              <CardSection
+                title="Permissions"
+                icon={<CheckCircle size={18} />}
+                className="w-96"
+              >
+                <ul className="list-disc list-inside text-sm text-gray-800 leading-relaxed">
                   {Object.entries(user.permissions || {}).map(([key, value]) => (
-                    <li key={key}>
-                      {key.replace(/_/g, ' ')}:{' '}
+                    <li key={key} className="whitespace-nowrap">
+                      {key.replace(/_/g, ' ').replace(/^./, (str) => str.toUpperCase())}:{' '}
                       <span className={value ? 'text-green-600' : 'text-red-600'}>
                         {value ? 'Yes' : 'No'}
                       </span>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </CardSection>
 
               {/* Meta */}
-              <div className="flex items-center gap-2">
-                <Clock size={16} /> <strong>Created At:</strong>{' '}
-                {new Date(user.createdAt).toLocaleString()}
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock size={16} /> <strong>Updated At:</strong>{' '}
-                {new Date(user.updatedAt).toLocaleString()}
-              </div>
+              <MetaRow icon={<Clock size={18} />} label="Created At" date={user.createdAt} />
+              <MetaRow icon={<Clock size={18} />} label="Updated At" date={user.updatedAt} />
 
               {/* Change Password Button */}
               <button
-                className="mt-6 bg-gradient-to-r from-blue-600 to-teal-600 text-white py-2 px-4 rounded-lg hover:opacity-90 flex items-center gap-2"
                 onClick={() => setShowChangePassword(true)}
+                className="mt-4 w-full flex justify-center items-center gap-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white py-2 rounded-lg shadow-md hover:opacity-90 transition duration-200 font-semibold text-base"
               >
-                <Lock size={16} />
+                <Lock size={18} />
                 Change Password
               </button>
 
@@ -133,12 +130,40 @@ const Profile = () => {
                   <ChangePassword onClose={() => setShowChangePassword(false)} />
                 </div>
               )}
-            </div>
+            </section>
           </div>
         </div>
       </div>
     </>
   );
 };
+
+const InfoRow = ({ icon, label, value }) => (
+  <div className="flex items-center gap-2 text-base">
+    <div className="text-blue-600">{icon}</div>
+    <span className="font-semibold w-28">{label}:</span>
+    <span className="text-gray-700">{value}</span>
+  </div>
+);
+
+const CardSection = ({ title, icon, children, className = '' }) => (
+  <div className={`bg-gradient-to-tr from-indigo-50 to-white border border-gray-200 rounded-lg p-4 shadow-sm ${className}`}>
+    <div className="flex items-center mb-2 gap-1.5 text-indigo-700 font-semibold text-base">
+      {icon}
+      {title}
+    </div>
+    <div>{children}</div>
+  </div>
+);
+
+
+const MetaRow = ({ icon, label, date }) => (
+  <div className="flex items-center gap-2 text-gray-700 text-sm font-medium">
+    <div className="text-blue-500">{icon}</div>
+    <div>
+      <span className="font-semibold">{label}:</span> {new Date(date).toLocaleString()}
+    </div>
+  </div>
+);
 
 export default Profile;
