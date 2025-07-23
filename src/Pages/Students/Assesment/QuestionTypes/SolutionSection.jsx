@@ -241,7 +241,7 @@ const SolutionSection = ({
         {/* API Status Indicator */}
         <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-green-700">RapidAPI Ready</span>
+          <span className="text-sm font-medium text-green-700">Ready</span>
         </div>
       </div>
 
@@ -293,38 +293,12 @@ const SolutionSection = ({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={async () => {
-                try {
-                  console.log('Testing RapidAPI connection...');
-                  const testResult = await executeCode('console.log("✅ RapidAPI Connection Test Successful!");', 'javascript', '');
-                  console.log('RapidAPI test successful:', testResult);
-                  alert('✅ RapidAPI connection working! Check console for details.');
-                } catch (error) {
-                  console.error('RapidAPI test failed:', error);
-                  alert(`❌ RapidAPI test failed: ${error.message}`);
-                }
-              }}
-              className="px-3 py-1 bg-purple-50 text-purple-600 rounded-md text-sm font-medium hover:bg-purple-100 border border-purple-200 flex items-center gap-1"
-            >
-              <Zap className="w-4 h-4" />
-              Test API
-            </button>
-            <button
               onClick={handleResetCode}
               className="px-3 py-1 bg-orange-50 text-orange-600 rounded-md text-sm font-medium hover:bg-orange-100 border border-orange-200 flex items-center gap-1"
             >
               <Settings className="w-4 h-4" />
               Reset to Template
             </button>
-            <a
-              href="https://judge0.com/#statuses-and-languages"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Language Docs
-            </a>
           </div>
         </div>
 
@@ -555,6 +529,33 @@ const SolutionSection = ({
         </div>
       )}
 
+            {/* Custom Input Section */}
+      <div className="border-t border-gray-200 pt-6">
+        <div className="space-y-3">
+          <label className="flex items-center gap-2 text-lg font-medium text-gray-800">
+            <Terminal className="w-5 h-5" />
+            Custom Input (stdin)
+          </label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <textarea
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="Enter input for your program (one value per line)...&#10;Example:&#10;5&#10;3&#10;Hello World"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none shadow-sm font-mono"
+              rows={4}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <div className="text-xs text-gray-500">
+                This input will be passed to your program via stdin
+              </div>
+              <div className="text-xs text-gray-500">
+                Characters: {customInput.length} | Lines: {customInput.split('\n').length}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Action Buttons */}
       <div className="border-t border-gray-200 pt-6">
         <div className="flex flex-wrap justify-between gap-3">
@@ -626,33 +627,6 @@ const SolutionSection = ({
               <Terminal className="w-4 h-4" />
               {isSubmitting ? 'Submitting...' : 'Submit Answer'}
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Custom Input Section */}
-      <div className="border-t border-gray-200 pt-6">
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-lg font-medium text-gray-800">
-            <Terminal className="w-5 h-5" />
-            Custom Input (stdin)
-          </label>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <textarea
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              placeholder="Enter input for your program (one value per line)...&#10;Example:&#10;5&#10;3&#10;Hello World"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none shadow-sm font-mono"
-              rows={4}
-            />
-            <div className="flex items-center justify-between mt-2">
-              <div className="text-xs text-gray-500">
-                This input will be passed to your program via stdin
-              </div>
-              <div className="text-xs text-gray-500">
-                Characters: {customInput.length} | Lines: {customInput.split('\n').length}
-              </div>
-            </div>
           </div>
         </div>
       </div>
