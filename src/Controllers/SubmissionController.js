@@ -129,3 +129,34 @@ export const submitCodeForEvaluation = async (submissionId, payload) => {
   });
   return response.data;
 };
+
+// GET section-wise timing by submission ID
+export const getSectionTiming = async ({ sectionID, assessmentID, assignmentID, submissionID }) => {
+  const response = await axiosClient.post(
+    `/submissions/section-timing/${sectionID}`,
+    {
+      assessmentID,
+      assignmentID,
+      submissionID,
+    },
+    { withCredentials: true }
+  );
+  return response.data;
+};
+
+
+// POST section-wise timing data
+export const saveSectionTiming = async (payload) => {
+  const response = await axiosClient.post(`/submissions/section-timing`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
+// POST mark question as visited
+export const questionVisited = async (payload) => {
+  const response = await axiosClient.post(`/submissions/visited`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};
