@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useJudge0 } from '../../../../hooks/useJudge0';
+import {saveCodingAnswer} from "../../../../Controllers/SubmissionController"
 
 // Language mapping for Judge0
 const JUDGE0_LANGUAGE_MAP = {
@@ -164,11 +165,10 @@ const SolutionSection = ({
   testResults,
   isRunningTests,
   isSubmitting,
-  saveStatus,
-  handleSaveAnswer,
   resetCode,
   handleRunTestCases,
-  handleSubmitCode
+  handleSubmitCode,
+  submissionId
 }) => {
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
@@ -176,6 +176,11 @@ const SolutionSection = ({
   const [autoReloadTemplate, setAutoReloadTemplate] = useState(true);
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [templateReloadNotification, setTemplateReloadNotification] = useState('');
+   const [saveStatus, setSaveStatus] = useState('idle');
+
+   console.log(judge0Results);
+   
+
   
   const { isExecuting, executeCode, executeWithTestCases } = useJudge0();
 
@@ -314,6 +319,60 @@ const SolutionSection = ({
     }
   };
 
+
+const handleSaveAnswer = async () => {
+  const localSubmissionId = localStorage.getItem("submission_id"); // Get from localStorage
+  console.log(localSubmissionId);
+  
+  const currentSubmissionId = submissionId || localSubmissionId;   // Use prop/state if exists, else fallback
+
+   console.log(currentSubmissionId);
+
+  if (!currentSubmissionId || !question?._id || !answer || !selectedLanguage) {
+    console.error('Missing required data for saving');
+    setSaveStatus('error');
+    return;
+  }
+
+  try {
+    setSaveStatus('saving');
+
+    const payload = {
+      sectionId: question.section_id,
+      questionId: question._id,
+      type: 'coding',
+      codeSolution: answer,
+      programmingLanguage: selectedLanguage,
+      isMarkedForReview: false,
+      isSkipped: false,
+      timeTakenSeconds: 0,
+    };
+
+    const response = await saveCodingAnswer(currentSubmissionId, payload);
+
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 3000);
+
+    return response;
+  } catch (error) {
+    console.error('Error saving answer:', error);
+    setSaveStatus('error');
+
+    if (error.response) {
+      console.error('Server response:', error.response.data);
+      if (
+        error.response.status === 400 &&
+        error.response.data.message.includes("cannot update a coding questions answer")
+      ) {
+        alert("Coding answers cannot be updated after submission");
+      }
+    }
+
+    setTimeout(() => setSaveStatus('idle'), 3000);
+    throw error;
+  }
+};
+
   const getStatusIcon = (status) => {
     if (status?.description === 'Accepted') {
       return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -323,6 +382,13 @@ const SolutionSection = ({
       return <AlertCircle className="w-4 h-4 text-yellow-500" />;
     }
   };
+
+
+  const expectedSampleOutput = fullDetails?.sample_test_cases?.[0]?.output?.trim();
+const actualOutput = judge0Results?.stdout?.trim();
+
+// Normalize output (remove trailing newlines, extra spaces)
+const isSampleTestPassed = expectedSampleOutput === actualOutput;
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 space-y-6">
@@ -540,17 +606,28 @@ const SolutionSection = ({
             </div>
           </div>
           
-          {judge0Results.stdout && (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                <Terminal className="w-4 h-4" />
-                Output
-              </p>
-              <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                {judge0Results.stdout}
-              </pre>
-            </div>
-          )}
+          {judge0Results.stdout && fullDetails?.sample_test_cases?.length > 0 && (
+  <div className="mt-4 bg-white p-3 rounded-lg border">
+    <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
+      <CheckCircle className={`w-4 h-4 ${isSampleTestPassed ? 'text-green-500' : 'text-red-500'}`} />
+      Sample Test Case Result:
+    </p>
+    <div className="text-sm font-mono">
+      <div>
+        <span className="font-semibold">Expected:</span>{" "}
+        {fullDetails.sample_test_cases[0].output}
+      </div>
+      <div>
+        <span className="font-semibold">Your Output:</span>{" "}
+        {judge0Results.stdout}
+      </div>
+      <div className={`mt-2 font-semibold ${isSampleTestPassed ? 'text-green-600' : 'text-red-600'}`}>
+        {isSampleTestPassed ? "✅ Passed" : "❌ Failed"}
+      </div>
+    </div>
+  </div>
+)}
+
           
           {judge0Results.stderr && (
             <div className="mb-4">
