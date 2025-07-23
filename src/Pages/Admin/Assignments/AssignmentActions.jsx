@@ -15,7 +15,7 @@ import {
   getAssignmentById,
   changeAssignmentStatus,
 } from "../../../Controllers/AssignmentControllers";
-
+ 
 const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
   const AssignmentStatus = Object.freeze({
     DRAFT: "draft",
@@ -25,7 +25,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
     EXPIRED: "expired",
     CANCELLED: "cancelled",
   });
-
+ 
   const navigate = useNavigate();
   const [assignment, setAssignment] = useState(null);
   const [message, setMessage] = useState("");
@@ -35,12 +35,12 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
     gracePeriodMinutes: 0,
   });
   const [showExtendModal, setShowExtendModal] = useState(false);
-
+ 
   // Modal control for status change
   const [showStatusModal, setShowStatusModal] = useState(false);
   // Temporarily holds status selected inside modal
   const [tempStatus, setTempStatus] = useState("");
-
+ 
   // Fetch assignment details on mount or when id changes
   useEffect(() => {
     async function fetchData() {
@@ -55,9 +55,9 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
     }
     fetchData();
   }, [id]);
-
+ 
   const normalizedStatus = assignment?.status?.trim().toLowerCase() || "";
-
+ 
   // Clear messages after 3 seconds
   useEffect(() => {
     if (message || error) {
@@ -68,7 +68,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
       return () => clearTimeout(timeout);
     }
   }, [message, error]);
-
+ 
   const handleToggleStatus = async () => {
     setError("");
     try {
@@ -87,11 +87,11 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
       setError("Action failed. Please try again.");
     }
   };
-
+ 
   const handleExtend = async () => {
     setError("");
     if (!extendData.newEndTime) return setError("Please select new end time.");
-
+ 
     try {
       await extendDeadline(id, extendData);
       setMessage("Deadline extended successfully.");
@@ -103,30 +103,30 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
       setError("Failed to extend deadline.");
     }
   };
-
+ 
   const openExtendModal = () => {
     setError("");
     setShowExtendModal(true);
   };
-
+ 
   const closeExtendModal = () => {
     setShowExtendModal(false);
     setExtendData({ newEndTime: "", gracePeriodMinutes: 0 });
     setError("");
   };
-
+ 
   // Open Status modal and reset error
   const openStatusModal = () => {
     setTempStatus(assignment.status || AssignmentStatus.DRAFT);
     setError("");
     setShowStatusModal(true);
   };
-
+ 
   const closeStatusModal = () => {
     setShowStatusModal(false);
     setError("");
   };
-
+ 
   const handleConfirmStatusChange = async () => {
     setError("");
     if (!tempStatus) {
@@ -149,8 +149,8 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
       setError("Failed to update status.");
     }
   };
-
-
+ 
+ 
   return (
     <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
       {/* Left Title */}
@@ -158,7 +158,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
         <ClipboardList className="w-6 h-6 text-blue-600" />
         Assignment Details
       </h2>
-
+ 
       {/* Right Buttons */}
       <div className="flex gap-2 flex-wrap items-center">
         <button
@@ -167,7 +167,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
         >
           <ArrowLeft size={16} /> Back
         </button>
-
+ 
         {/* Button to open Status Change Modal */}
         <button
           onClick={openStatusModal}
@@ -175,7 +175,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
         >
           Change Status
         </button>
-
+ 
         <button
           onClick={() => navigate(`/${role}/assignments/edit/${id}`)}
           className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm"
@@ -183,7 +183,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
           <Pencil className="w-4 h-4" />
           Edit
         </button>
-
+ 
         {/* Toggle Cancel/Activate button */}
         <button
           onClick={handleToggleStatus}
@@ -212,7 +212,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
             </>
           )}
         </button>
-
+ 
         <button
           onClick={openExtendModal}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
@@ -221,20 +221,20 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
           Extend Deadline
         </button>
       </div>
-
+ 
       {/* Success & Error Messages */}
       {message && (
         <div className="w-full text-center mt-2 px-4 py-2 rounded-lg bg-green-100 text-green-700 text-sm font-medium">
           {message}
         </div>
       )}
-
+ 
       {error && (
         <div className="w-full text-center mt-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 text-sm font-medium">
           {error}
         </div>
       )}
-
+ 
       {/* Modal: Extend Deadline */}
       {showExtendModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
@@ -243,7 +243,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
               <Clock className="w-5 h-5" />
               Extend Assignment Deadline
             </h2>
-
+ 
             <div className="flex flex-col gap-3">
               <label className="text-sm font-medium text-gray-700">New End Time</label>
               <input
@@ -254,7 +254,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
                 }
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-
+ 
               <label className="text-sm font-medium text-gray-700">Grace Period (mins)</label>
               <input
                 type="number"
@@ -268,9 +268,9 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
                 }
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-
+ 
               {error && <p className="text-sm text-red-600">{error}</p>}
-
+ 
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   onClick={closeExtendModal}
@@ -289,7 +289,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
           </div>
         </div>
       )}
-
+ 
       {/* Modal: Change Status */}
       {showStatusModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
@@ -308,9 +308,9 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
                 </option>
               ))}
             </select>
-
+ 
             {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
-
+ 
             <div className="flex justify-end gap-3">
               <button
                 onClick={closeStatusModal}
@@ -331,5 +331,5 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
     </div>
   );
 };
-
+ 
 export default AssignmentActions;

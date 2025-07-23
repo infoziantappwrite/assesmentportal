@@ -6,10 +6,10 @@ import { ArrowLeft, Pencil } from 'lucide-react';
 import AssignmentActions from './AssignmentActions';
 import EligibleStudents from './EligibleStudents';
 import Submissions from './Submissions';
-
+ 
 const ViewAssignment = () => {
   const { id } = useParams();
-
+ 
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
 const fetchAssignment = async () => {
@@ -23,16 +23,16 @@ const fetchAssignment = async () => {
     setLoading(false);
   }
 };
-
+ 
   useEffect(() => {
     fetchAssignment();
   }, [id]);
-
+ 
   const formatDateTimeUTC = (isoString) => {
     if (!isoString) return 'N/A';
     const date = new Date(isoString);
     if (isNaN(date)) return 'Invalid Date';
-
+ 
     return date.toLocaleString('en-GB', {
       timeZone: 'UTC',
       year: 'numeric',
@@ -43,10 +43,10 @@ const fetchAssignment = async () => {
       hour12: true,
     });
   };
-
+ 
   if (loading) return <Loader />;
   if (!assignment) return <div className="text-red-500 p-4">Assignment not found.</div>;
-
+ 
   const {
     title,
     description,
@@ -59,7 +59,7 @@ const fetchAssignment = async () => {
     stats,
     target,
   } = assignment;
-
+ 
   const statusColorMap = {
     draft: 'bg-yellow-100 text-yellow-700',
     scheduled: 'bg-blue-100 text-blue-700',
@@ -68,14 +68,14 @@ const fetchAssignment = async () => {
     expired: 'bg-red-100 text-red-700',
     cancelled: 'bg-pink-100 text-pink-700',
   };
-
+ 
   const statusColor = statusColorMap[status] || 'bg-gray-100 text-gray-700'; // fallback
-
+ 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <AssignmentActions id={assignment._id} role="admin" fetchAssignment={fetchAssignment} />
-
+ 
       {/* Title Card */}
       <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-2">
         <div className="flex items-center justify-between">
@@ -86,7 +86,7 @@ const fetchAssignment = async () => {
         </div>
         <p className="text-gray-700">{description}</p>
       </div>
-
+ 
       <Section title="Schedule" color="purple">
         <Grid>
           <Info label="Start Time" value={formatDateTimeUTC(schedule?.start_time)} />
@@ -95,7 +95,7 @@ const fetchAssignment = async () => {
           <Info label="Grace Period" value={`${schedule?.grace_period_minutes} minutes`} />
         </Grid>
       </Section>
-
+ 
       <Section title="Assignment Settings" color="green">
         <Grid>
           <Info label="Allow Retake" value={settings?.allow_retake ? 'Yes' : 'No'} />
@@ -106,7 +106,7 @@ const fetchAssignment = async () => {
           <Info label="Proctoring Enabled" value={settings?.proctoring_enabled ? 'Yes' : 'No'} />
         </Grid>
       </Section>
-
+ 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Group 2: Notification + Performance */}
         <Section title="Notification Status" color="indigo">
@@ -115,7 +115,7 @@ const fetchAssignment = async () => {
             <Info label="SMS Sent" value={notification?.sms_sent ? 'Yes' : 'No'} />
           </Grid>
         </Section>
-
+ 
         <Section title="Performance Stats" color="orange">
           <Grid cols={3}>
             <Info label="Total Eligible" value={stats?.total_eligible} />
@@ -127,13 +127,12 @@ const fetchAssignment = async () => {
           </Grid>
         </Section>
       </div>
-
+ 
       {/* Full-width Sections */}
       <Section title="Assessment Info" color="blue">
         <Info label="Assessment" value={`${assessment_id?.title} – ${assessment_id?.description}`} />
         <Info label="Assigned By" value={`${assigned_by?.name} (${assigned_by?.email})`} />
       </Section>
-
 <Section title="Target Info" color="pink">
   <Info label="Target Type" value={target?.type ?? 'N/A'} />
 
@@ -175,17 +174,14 @@ const fetchAssignment = async () => {
   )}
 </Section>
 
-
-
-
       <EligibleStudents id={assignment._id} />
       <Submissions id={assignment._id} />
     </div>
   );
 };
-
+ 
 // Styled Components
-
+ 
 const Section = ({ title, children, color = 'gray' }) => {
   const colorMap = {
     blue: 'border-blue-300 bg-blue-50',
@@ -196,7 +192,7 @@ const Section = ({ title, children, color = 'gray' }) => {
     pink: 'border-pink-300 bg-pink-50',
     gray: 'border-gray-300 bg-gray-50',
   };
-
+ 
   return (
     <div
       className={`p-5 rounded-xl border ${colorMap[color]} shadow-md hover:shadow-lg transition-shadow duration-200`}
@@ -206,16 +202,16 @@ const Section = ({ title, children, color = 'gray' }) => {
     </div>
   );
 };
-
+ 
 const Info = ({ label, value }) => (
   <div className="text-sm text-gray-800 px-4 py-2 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 flex justify-between">
     <span className="font-medium text-gray-600">{label}:</span>
     <span>{value}</span>
   </div>
 );
-
+ 
 const Grid = ({ children, cols = 2 }) => (
   <div className={`grid grid-cols-1 md:grid-cols-${cols} gap-4`}>{children}</div>
 );
-
+ 
 export default ViewAssignment;

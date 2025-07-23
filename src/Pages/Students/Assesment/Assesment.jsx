@@ -16,22 +16,36 @@ const Assessment = () => {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
+  const [answerStatusMap, setAnswerStatusMap] = useState({});
 
   const activeSection = sections[sectionIndex];
   const question = activeSection.questions[questionIndex];
 
   const refreshSectionStatus = async () => {
-  try {
-    const res = await getSectionWiseStatus(submissionId);
-    setSectionWiseStatus(res);
-    console.log('Section-wise status refreshed');
-  } catch (error) {
-    console.error('Failed to refresh status:', error.message);
-  }
-};
-//  useEffect(() => {
-//   refreshSectionStatus();
-//  })
+    try {
+      const res = await getSectionWiseStatus(submissionId);
+      const data = res || {}; // ✅ only use the actual section-wise map
+      setSectionWiseStatus(data);
+      //console.log("called")
+      //console.log("Section-wise status refreshed:", data);
+    } catch (error) {
+      console.error("Failed to refresh status:", error.message);
+    }
+  };
+
+  //  useEffect(() => {
+  //   refreshSectionStatus();
+  //  })
+  useEffect(() => {
+    const map = {};
+    Object.values(sectionWiseStatus).forEach((questionArray) => {
+      questionArray.forEach((q) => {
+        map[q.question_id] = q;
+      });
+    });
+    setAnswerStatusMap(map);
+  }, [sectionWiseStatus]);
+
 
 
   useEffect(() => {
@@ -86,7 +100,12 @@ const Assessment = () => {
   };
 
   const renderQuestion = () => {
-    const props = { question, refreshSectionStatus };
+    if (!question) return <div>No question available</div>;
+
+    const answerStatus = answerStatusMap[question._id];
+    //console.log(answerStatus)
+    const props = { question, refreshSectionStatus, answerStatus };
+
     switch (question.type) {
       case 'single_correct':
       case 'multi_correct':
@@ -99,6 +118,7 @@ const Assessment = () => {
         return <div>Unsupported question type</div>;
     }
   };
+
 
   const getQuestionStatusClass = (qid, idx) => {
     const isCurrent = idx === questionIndex;
@@ -136,11 +156,10 @@ const Assessment = () => {
               setSectionIndex(idx);
               setQuestionIndex(0);
             }}
-            className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${
-              idx === sectionIndex
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
-            }`}
+            className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${idx === sectionIndex
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+              }`}
           >
             {sec.title}
           </button>
@@ -167,7 +186,11 @@ const Assessment = () => {
             {activeSection.questions.map((q, idx) => (
               <button
                 key={q._id}
-                onClick={() => setQuestionIndex(idx)}
+                onClick={() => {
+                  setQuestionIndex(idx);
+                  refreshSectionStatus(); // ✅ refresh when question is changed from palette
+                }}
+
                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition duration-150 ${getQuestionStatusClass(
                   q._id,
                   idx
@@ -205,30 +228,59 @@ const Assessment = () => {
 
           {/* Prev/Next Buttons */}
           <div className="mt-6 flex justify-between gap-4 border-t pt-4 border-gray-300">
-            <button
-              onClick={() => setQuestionIndex((prev) => prev - 1)}
-              disabled={questionIndex === 0}
-              className={`px-5 py-2 rounded-lg text-sm font-medium shadow transition ${
-                questionIndex === 0
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              ← Previous
-            </button>
+              {/* Previous Button */}
+              {questionIndex > 0 ? (
+                <button
+                  onClick={() => {
+                    setQuestionIndex((prev) => prev - 1);
+                    refreshSectionStatus(); // ✅ refresh on previous
+                  }}
+                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  ← Previous
+                </button>
+              ) : sectionIndex > 0 ? (
+                <button
+                  onClick={() => {
+                    setSectionIndex((prev) => prev - 1);
+                    setQuestionIndex(sections[sectionIndex - 1].questions.length - 1); // Last question of previous section
+                    refreshSectionStatus();
+                  }}
+                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  ← Previous Section
+                </button>
+              ) : (
+                <div></div> // Empty placeholder if no previous
+              )}
 
-            <button
-              onClick={() => setQuestionIndex((prev) => prev + 1)}
-              disabled={questionIndex === activeSection.questions.length - 1}
-              className={`px-5 py-2 rounded-lg text-sm font-medium shadow transition ${
-                questionIndex === activeSection.questions.length - 1
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-            >
-              Next →
-            </button>
-          </div>
+              {/* Next Button */}
+              {questionIndex < activeSection.questions.length - 1 ? (
+                <button
+                  onClick={() => {
+                    setQuestionIndex((prev) => prev + 1);
+                    refreshSectionStatus(); // ✅ refresh on next
+                  }}
+                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Next →
+                </button>
+              ) : sectionIndex < sections.length - 1 ? (
+                <button
+                  onClick={() => {
+                    setSectionIndex((prev) => prev + 1);
+                    setQuestionIndex(0); // Go to first question of next section
+                    refreshSectionStatus();
+                  }}
+                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Go to Next Section →
+                </button>
+              ) : null}
+            </div>
+
+
+          
         </div>
       </div>
 
