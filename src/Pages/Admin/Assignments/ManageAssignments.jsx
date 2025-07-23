@@ -13,7 +13,7 @@ import {
   Filter,
   XCircle,
 } from "lucide-react";
-
+ 
 const ManageAssignments = () => {
   const [assignments, setAssignments] = useState([]);
   const [filteredAssignments, setFilteredAssignments] = useState([]);
@@ -28,7 +28,7 @@ const ManageAssignments = () => {
     studentId: "",
     assignedBy: "",
   });
-
+ 
   const [showFilters, setShowFilters] = useState(false);
   const [colleges, setColleges] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -36,9 +36,9 @@ const ManageAssignments = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 const [assignedByUsers, setAssignedByUsers] = useState([]);
-
+ 
   const navigate = useNavigate();
-
+ 
   useEffect(() => {
     getAllColleges().then((res) => setColleges(res || []));
     getAllGroups().then((res) => setGroups(res.data?.groups || []));
@@ -46,7 +46,7 @@ const [assignedByUsers, setAssignedByUsers] = useState([]);
       setStudents((res.data?.users || []).filter((u) => u.role === "candidate"))
     );
   }, []);
-
+ 
 useEffect(() => {
   getAllAssignments(filters)
     .then((res) => {
@@ -55,7 +55,7 @@ useEffect(() => {
       //console.log(fetchedAssignments)
       setPagination(res.data.pagination || {});
       setError("");
-
+ 
       // 🔹 Extract unique assigned_by users
       const uniqueAssignedBy = Array.from(
         new Map(
@@ -66,7 +66,7 @@ useEffect(() => {
       );
       //console.log(uniqueAssignedBy)
       setAssignedByUsers(uniqueAssignedBy); // 👈 add this state
-
+ 
       setLoading(false);
     })
     .catch((err) => {
@@ -75,8 +75,8 @@ useEffect(() => {
       setLoading(false);
     });
 }, [filters.page, filters.status, filters.collegeId, filters.groupId, filters.studentId, filters.assignedBy]);
-
-
+ 
+ 
   useEffect(() => {
     let result = [...assignments];
     if (filters.search) {
@@ -87,7 +87,7 @@ useEffect(() => {
     }
     setFilteredAssignments(result);
   }, [assignments, filters.search]);
-
+ 
   const handleClearFilters = () => {
     setFilters({
       ...filters,
@@ -98,7 +98,7 @@ useEffect(() => {
       assignedBy: "",
     });
   };
-
+ 
   const columns = [
     { label: "Title", accessor: "title" },
     {
@@ -109,7 +109,7 @@ useEffect(() => {
       return (
         <div className="text-sm text-gray-700">
           <span className="font-medium">{assignedBy.name}</span>
-          
+         
         </div>
       );
     },
@@ -143,11 +143,11 @@ useEffect(() => {
       ),
     },
   ];
-
+ 
   if (loading){
 return (<Loader />);
-  } 
-
+  }
+ 
   return (
     <div className="p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6">
@@ -156,7 +156,7 @@ return (<Loader />);
           <FileSignature className="w-5 h-5" />
           Manage Assignments
         </h2>
-
+ 
         {/* Right Controls */}
         <div className="w-full sm:w-auto flex flex-col sm:flex-row sm:items-center gap-3">
           {/* Search Input - full width on mobile */}
@@ -172,7 +172,7 @@ return (<Loader />);
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg shadow-lg bg-white border border-gray-300"
             />
           </div>
-
+ 
           {/* Button Row - buttons take half width on mobile */}
           <div className="w-full flex gap-3 sm:w-auto">
             {/* Filter Button */}
@@ -183,7 +183,7 @@ return (<Loader />);
               <Filter className="w-4 h-4" />
               Filters
             </button>
-
+ 
             {/* Create Button */}
             <button
               onClick={() => navigate("/admin/assignments/create")}
@@ -195,8 +195,8 @@ return (<Loader />);
           </div>
         </div>
       </div>
-
-
+ 
+ 
       {/* Filter Section */}
       {showFilters && (
         <div className="bg-gray-50 p-4 rounded-xl shadow mb-6 grid md:grid-cols-3 gap-4">
@@ -218,7 +218,7 @@ return (<Loader />);
               ))}
             </select>
           </div>
-
+ 
           {/* Group Filter */}
           <div>
             <label className="block text-sm mb-1 text-gray-600">Group</label>
@@ -237,7 +237,7 @@ return (<Loader />);
               ))}
             </select>
           </div>
-
+ 
           {/* Student Filter */}
           <div>
             <label className="block text-sm mb-1 text-gray-600">Student</label>
@@ -256,7 +256,7 @@ return (<Loader />);
               ))}
             </select>
           </div>
-
+ 
           {/* Status Filter */}
           <div>
             <label className="block text-sm mb-1 text-gray-600">Status</label>
@@ -276,8 +276,8 @@ return (<Loader />);
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
-
-
+ 
+ 
           {/* AssignedBy Filter */}
           <div>
   <label className="block text-sm mb-1 text-gray-600">Assigned By</label>
@@ -296,8 +296,8 @@ return (<Loader />);
     ))}
   </select>
 </div>
-
-
+ 
+ 
           {/* Clear Filters */}
           <div className="flex items-end">
             <button
@@ -310,8 +310,8 @@ return (<Loader />);
           </div>
         </div>
       )}
-
-
+ 
+ 
       {/* Table or Error */}
       {error ? (
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-center shadow">
@@ -321,7 +321,7 @@ return (<Loader />);
       ) : (
         <Table columns={columns} data={filteredAssignments} />
       )}
-
+ 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="mt-6 flex justify-center items-center flex-wrap gap-2">
@@ -337,7 +337,7 @@ return (<Loader />);
           >
             ← Prev
           </button>
-
+ 
           {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(
             (pageNum) => (
               <button
@@ -354,7 +354,7 @@ return (<Loader />);
               </button>
             )
           )}
-
+ 
           <button
             className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
             onClick={() =>
@@ -372,5 +372,5 @@ return (<Loader />);
     </div>
   );
 };
-
+ 
 export default ManageAssignments;
