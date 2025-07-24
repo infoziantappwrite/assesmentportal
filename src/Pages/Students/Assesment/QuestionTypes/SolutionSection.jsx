@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -20,25 +20,10 @@ import {
 
 } from 'lucide-react';
 import { useJudge0 } from '../../../../hooks/useJudge0';
-import { saveCodingAnswer, submitCode, evaluateCodingSubmission, runSampleTestCases } from "../../../../Controllers/SubmissionController"
+import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, saveAnswer } from "../../../../Controllers/SubmissionController"
 import { useNavigate } from "react-router-dom"; // at top
 
-// Language mapping for Judge0
-const JUDGE0_LANGUAGE_MAP = {
-  'javascript': 63,
-  'python': 71,
-  'java': 62,
-  'cpp': 54,
-  'c': 50,
-  'csharp': 51,
-  'php': 68,
-  'ruby': 72,
-  'go': 60,
-  'rust': 73,
-  'swift': 83,
-  'kotlin': 78,
-  'typescript': 74,
-};
+
 
 // Default supported languages - fallback if fullDetails.supported_languages is not available
 const DEFAULT_SUPPORTED_LANGUAGES = [
@@ -167,18 +152,16 @@ const SolutionSection = ({
   setSelectedLanguage,
   fullDetails,
   testResults,
-  resetCode,
   submissionId
 }) => {
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
-  const [useDefaultLanguages, setUseDefaultLanguages] = useState(false); 
+  const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
   const [autoReloadTemplate, setAutoReloadTemplate] = useState(true);
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [templateReloadNotification, setTemplateReloadNotification] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
-  const [isLanguageLocked, setIsLanguageLocked] = useState(false); // Track if language is locked after first save
-  const [initialSavedLanguage, setInitialSavedLanguage] = useState(null); // Track the first saved language
+
   const navigate = useNavigate(); // inside component
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -186,7 +169,8 @@ const SolutionSection = ({
   const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
 
 
-  const { isExecuting, executeCode, executeWithTestCases } = useJudge0();
+  //console.log(selectedLanguage);
+  const { isExecuting, executeCode, } = useJudge0();
 
   const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY || '';
 
@@ -303,12 +287,12 @@ const SolutionSection = ({
 
   const handleRunTestCases = async () => {
     if (!answer || answer.trim() === '') {
-      alert('Please write some code before running test cases!');
+      //alert('Please write some code before running test cases!');
       return;
     }
 
     if (!fullDetails?.sample_test_cases || fullDetails.sample_test_cases.length === 0) {
-      alert('No test cases available for this question');
+      //alert('No test cases available for this question');
       return;
     }
 
@@ -317,15 +301,15 @@ const SolutionSection = ({
     const currentQuestionId = fullDetails?.question_id || question._id;
 
     if (!currentSubmissionId || !currentQuestionId) {
-      alert("Missing submission or question data");
+      //alert("Missing submission or question data");
       return;
     }
 
     setIsRunningTests(true);
     try {
       // Step 1: Save the answer first
-      console.log('Saving answer before running test cases...');
-      
+      //console.log('Saving answer before running test cases...');
+
       const savePayload = {
         sectionId: question.section_id,
         questionId: question._id,
@@ -337,11 +321,11 @@ const SolutionSection = ({
         timeTakenSeconds: 0,
       };
 
-      console.log('Test cases save payload:', savePayload);
-      console.log('Selected language for test cases:', selectedLanguage);
+      //console.log('Test cases save payload:', savePayload);
+      //console.log('Selected language for test cases:', selectedLanguage);
 
       const saveResponse = await saveCodingAnswer(currentSubmissionId, savePayload);
-      console.log('Save response:', saveResponse);
+      console.log('Save response:', saveResponse.data);
 
       // Step 2: Get language ID for Judge0
       const getLanguageId = (language) => {
@@ -367,95 +351,31 @@ const SolutionSection = ({
       const testPayload = {
         code: answer,
         language_id: getLanguageId(selectedLanguage),
-        submission_id: currentSubmissionId // Include submission ID
-      };
 
-      console.log('🚀 [TEST CASES DEBUG] === RUNNING TEST CASES ===');
-      console.log('🚀 [TEST CASES DEBUG] Test payload (question_id in URL):', JSON.stringify(testPayload, null, 2));
-      console.log('🚀 [TEST CASES DEBUG] Question ID (URL param):', currentQuestionId);
-      console.log('🚀 [TEST CASES DEBUG] Question ID type:', typeof currentQuestionId);
-      console.log('🚀 [TEST CASES DEBUG] Is Question ID valid?', !!currentQuestionId);
-      console.log('🚀 [TEST CASES DEBUG] Full API URL will be: /submissions/test-cases/' + currentQuestionId);
-      
-      // Validate question ID before making API call
-      if (!currentQuestionId || currentQuestionId === 'undefined' || currentQuestionId === 'null') {
-        console.error('❌ [TEST CASES DEBUG] Invalid question ID:', currentQuestionId);
-        alert('Error: Invalid question ID. Cannot run test cases.');
-        setIsRunningTests(false);
-        return;
-      }
-      
+      };
+      console.log(testPayload);
+
+
+
       try {
         const response = await runSampleTestCases(currentQuestionId, testPayload);
         // Check if response is successful
-      
-        // Handle different possible response formats
-        let testResults = null;
-        if (response.sample_results && Array.isArray(response.sample_results)) {
-          testResults = response.sample_results;
-          console.log('✅ [RESULTS] Using response.sample_results');
-        } else if (response.results && Array.isArray(response.results)) {
-          testResults = response.results;
-          console.log('✅ [RESULTS] Using response.results');
-        } else if (response.data && Array.isArray(response.data)) {
-          testResults = response.data;
-          console.log('✅ [RESULTS] Using response.data');
-        } else if (Array.isArray(response)) {
-          testResults = response;
-          console.log('✅ [RESULTS] Using response directly (array)');
-        }
+        console.log(response)
 
-        console.log('✅ [RESULTS] Final testResults:', testResults);
-        console.log('✅ [RESULTS] Test results count:', testResults?.length || 0);
 
-        if (testResults && testResults.length > 0) {
-          // Store the results so they can be displayed in the Test Results Display section
-          setJudge0Results({
-            testResults: testResults,
-            message: 'Sample test cases completed'
-          });
-          
-          const passedCount = testResults.filter(result => 
-            result.status === 'PASSED' || result.status === 'Accepted' || result.passed === true
-          ).length;
-          const totalCount = testResults.length;
-          
-          console.log(`✅ [RESULTS] ${passedCount}/${totalCount} test cases passed`);
-          alert(`Test cases completed! ${passedCount}/${totalCount} test cases passed.`);
-          
-          // Update save status to indicate successful save + test
-          setSaveStatus('saved');
-          setTimeout(() => setSaveStatus('idle'), 3000);
-        } else {
-          console.error('❌ [RESULTS] No valid test results found in response');
-          console.error('❌ [RESULTS] Raw response:', response);
-          alert('Test cases completed but no valid results received. Check console for details.');
-        }
+
+
+
       } catch (apiError) {
-        
-        const errorMessage = apiError.response?.data?.message || apiError.message || "Test cases API call failed";
-        
-        // If it's a URL error, show specific message
-        if (errorMessage.includes('Invalid URL') || apiError.message?.includes('URL')) {
-          alert(`URL Error: The question ID "${currentQuestionId}" is invalid for the API call.`);
-        } else if (apiError.response?.status === 404) {
-          console.error('❌ [404 ERROR] API endpoint not found');
-          alert('Error: Test cases API endpoint not found. Please check the backend configuration.');
-        } else if (apiError.response?.status === 500) {
-          console.error('[500 ERROR] Internal server error');
-          alert('Error: Internal server error while running test cases. Please try again or contact support.');
-        } else {
-          alert(`Test Cases Error: ${errorMessage}`);
-        }
-        
-        throw apiError; // Re-throw to be caught by outer catch
+
+        console.error(apiError)
       }
 
     } catch (error) {
       console.error("Test cases failed:", error);
       const errorMessage = error.response?.data?.message || error.message || "Test cases failed";
       alert(`Error: ${errorMessage}`);
-      
+
       // If it's a save error, show appropriate status
       if (error.response?.status === 400) {
         setSaveStatus('error');
@@ -469,9 +389,9 @@ const SolutionSection = ({
 
 
   const handleSaveAnswer = async () => {
-    const localSubmissionId = localStorage.getItem("submission_id"); 
+    const localSubmissionId = localStorage.getItem("submission_id");
 
-    const currentSubmissionId = submissionId || localSubmissionId;  
+    const currentSubmissionId = submissionId || localSubmissionId;
 
     if (!currentSubmissionId || !question?._id || !answer || !selectedLanguage) {
       setSaveStatus('error');
@@ -493,7 +413,7 @@ const SolutionSection = ({
       };
 
       const response = await saveCodingAnswer(currentSubmissionId, payload);
-    
+
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
 
@@ -516,14 +436,18 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
-    if (!answer || answer.trim() === '') {
-      alert('Please write some code before submitting!');
+    let res;
+
+    try {
+      res = await handleSaveAnswer(); // Await the promise
+      console.log("Saved answer response:", res);
+    } catch (error) {
+      console.error("Error saving answer:", error);
+      alert("Failed to save answer before submitting.");
       return;
     }
 
-    if (!window.confirm('Are you sure you want to submit? You cannot change your answer after submission.')) {
-      return;
-    }
+    const answerId = res?.data?.answer?._id;
 
     const localSubmissionId = localStorage.getItem("submission_id");
     const currentSubmissionId = submissionId || localSubmissionId;
@@ -538,7 +462,6 @@ const SolutionSection = ({
       setIsSubmitting(true);
       setSubmitStatus(null);
 
-      // Get language ID for Judge0
       const getLanguageId = (language) => {
         const languageMap = {
           'python': 71,
@@ -555,7 +478,7 @@ const SolutionSection = ({
           'kotlin': 78,
           'typescript': 74,
         };
-        return languageMap[language.toLowerCase()] || 71; // Default to Python
+        return languageMap[language.toLowerCase()] || 71;
       };
 
       const payload = {
@@ -563,17 +486,14 @@ const SolutionSection = ({
         code: answer,
         language: selectedLanguage,
         language_id: getLanguageId(selectedLanguage),
+        answer_id: answerId, // ✅ include answer_id in the payload
       };
-      
-      const response = await evaluateCodingSubmission(currentSubmissionId, payload);
-      
-      setSubmitStatus("success");
-      alert("Code submitted successfully! Redirecting to dashboard...");
 
-      // Wait 3 seconds, then redirect to dashboard
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 3000);
+      const response = await evaluateCodingSubmission(currentSubmissionId, payload);
+      console.log("Evaluation response:", response);
+      setSubmitStatus("success");
+
+
     } catch (error) {
       setSubmitStatus("error");
       alert(error.response?.data?.message || error.message || "Failed to submit code");
@@ -581,6 +501,7 @@ const SolutionSection = ({
       setIsSubmitting(false);
     }
   };
+
 
 
   const getStatusIcon = (status) => {
@@ -790,14 +711,14 @@ const SolutionSection = ({
 
       {/* Judge0 Execution Results */}
       {judge0Results && (
-        <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div>
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <Zap className="w-5 h-5 text-blue-500" />
             Execution Results
           </h3>
 
           <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-white p-3 rounded-lg border">
+            <div className="bg-white p-3 rounded-lg border border-gray-300">
               <div className="flex items-center gap-2 mb-1">
                 {getStatusIcon(judge0Results.status)}
                 <p className="text-sm font-medium text-gray-600">Status</p>
@@ -810,7 +731,7 @@ const SolutionSection = ({
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-lg border">
+            <div className="bg-white p-3 rounded-lg border border-gray-300">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="w-4 h-4 text-blue-500" />
                 <p className="text-sm font-medium text-gray-600">Execution Time</p>
@@ -820,7 +741,7 @@ const SolutionSection = ({
               </span>
             </div>
 
-            <div className="bg-white p-3 rounded-lg border">
+            <div className="bg-white p-3 rounded-lg border border-gray-300">
               <div className="flex items-center gap-2 mb-1">
                 <MemoryStick className="w-4 h-4 text-purple-500" />
                 <p className="text-sm font-medium text-gray-600">Memory Used</p>
@@ -832,7 +753,7 @@ const SolutionSection = ({
           </div>
 
           {judge0Results.stdout && fullDetails?.sample_test_cases?.length > 0 && (
-            <div className="mt-4 bg-white p-4 rounded-xl border shadow-sm">
+            <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                 {isSampleTestPassed ? (
                   <CheckCircle className="w-5 h-5 text-green-600" />
@@ -907,23 +828,21 @@ const SolutionSection = ({
             <FlaskConical className="w-5 h-5 text-yellow-500" />
             Sample Test Case Results
           </h3>
-          
+
           {/* Display sample test results from judge0Results */}
           {judge0Results?.testResults && (
             <div className="mb-4">
               <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
               <div className="space-y-3">
                 {judge0Results.testResults.map((result, index) => (
-                  <div key={index} className={`p-3 rounded-lg border bg-white ${
-                    result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
-                  }`}>
+                  <div key={index} className={`p-3 rounded-lg border bg-white ${result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
+                    }`}>
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Test Case {index + 1}</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        result.status === 'PASSED' 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`px-2 py-1 rounded text-xs ${result.status === 'PASSED'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}>
+                        }`}>
                         {result.status || 'COMPLETED'}
                       </span>
                     </div>
@@ -937,11 +856,10 @@ const SolutionSection = ({
           {testResults && (
             <div className="space-y-4">
               {testResults.map((result, index) => (
-                <div key={index} className={`p-4 rounded-lg border-2 bg-white ${
-                  result.status === 'PASSED' 
-                    ? 'border-green-200' 
+                <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
+                    ? 'border-green-200'
                     : 'border-red-200'
-                }`}>
+                  }`}>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-semibold text-lg">Test Case {index + 1}</span>
                     <div className="flex items-center gap-2">
@@ -950,11 +868,10 @@ const SolutionSection = ({
                       ) : (
                         <XCircle className="w-5 h-5 text-red-500" />
                       )}
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        result.status === 'PASSED' 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}>
+                        }`}>
                         {result.status}
                       </span>
                     </div>
@@ -1024,40 +941,23 @@ const SolutionSection = ({
               type="button"
               onClick={handleSaveAnswer}
               disabled={saveStatus === 'saving'}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                saveStatus === 'saving'
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${saveStatus === 'saving'
                   ? 'bg-cyan-400 text-white cursor-not-allowed'
                   : saveStatus === 'saved'
                     ? 'bg-green-100 text-green-800 border-2 border-green-200'
                     : saveStatus === 'error'
                       ? 'bg-red-100 text-red-800 border-2 border-red-200'
                       : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
-              }`}
+                }`}
             >
               {saveStatus === 'saving' ? 'Saving...' :
                 saveStatus === 'saved' ? '✓ Saved!' :
                   saveStatus === 'error' ? '✗ Error Saving' : 'Save Answer'}
             </button>
 
-            <button
-              type="button"
-              onClick={handleReloadTemplate}
-              className="px-5 py-2.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-sm flex items-center gap-2"
-              title="Reload template for current language"
-            >
-              <Code2 className="w-4 h-4" />
-              Reload Template
-            </button>
 
-            <button
-              type="button"
-              onClick={handleResetCode}
-              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all shadow-sm flex items-center gap-2"
-              title="Reset to template and clear all"
-            >
-              <Settings className="w-4 h-4" />
-              Reset All
-            </button>
+
+
           </div>
 
           {/* Right side buttons */}
@@ -1100,7 +1000,7 @@ const SolutionSection = ({
         </div>
       </div>
       {submitStatus === "success" && (
-        <p className="text-green-600 mt-4">Submitted successfully! Redirecting to dashboard...</p>
+        <p className="text-green-600 mt-4">Submitted successfully!</p>
       )}
     </div>
   );
