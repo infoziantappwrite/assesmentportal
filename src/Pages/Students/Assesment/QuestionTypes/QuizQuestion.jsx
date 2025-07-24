@@ -3,14 +3,17 @@ import {
   saveAnswer,
   questionVisited,
 } from '../../../../Controllers/SubmissionController';
-import NotificationMessage from '../../../../Components/NotificationMessage'; // adjust path
+import NotificationMessage from '../../../../Components/NotificationMessage'; 
 
-const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
+const QuizQuestion = ({ question, refreshSectionStatus, answerStatus }) => {
   const submissionId = localStorage.getItem('submission_id');
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [isMarkedForReview, setIsMarkedForReview] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
-  const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message: string }
+  const [notification, setNotification] = useState(null); 
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(0);
+  const MIN_SAVE_INTERVAL = 500; // in ms
 
   // Show notification then auto-clear after 2s
   const showNotification = (type, message) => {
@@ -19,54 +22,56 @@ const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
   };
 
   useEffect(() => {
-  const fetchAnswer = async () => {
-    setSelectedOptions([]);
-    setIsMarkedForReview(false);
-    setStartTime(Date.now());
+    const fetchAnswer = async () => {
+      setIsLoading(true);
+      setSelectedOptions([]);
+      setIsMarkedForReview(false);
+      setStartTime(Date.now());
 
-    try {
-      const answer = answerStatus;
+      try {
+        const answer = answerStatus;
 
-      if (!answer || answer.selected_options?.length === 0) {
-        await questionVisited({
-          submissionID: submissionId,
-          sectionID: question.section_id,
-          questionID: question._id,
-          type: question.type,
-          isMarkedForReview: false,
-          isSkipped: true,
-        });
-        
+        if (!answer || answer.selected_options?.length === 0) {
+          await questionVisited({
+            submissionID: submissionId,
+            sectionID: question.section_id,
+            questionID: question._id,
+            type: question.type,
+            isMarkedForReview: false,
+            isSkipped: true,
+          });
+        } else {
+          if (Array.isArray(answer.selected_options)) {
+            setSelectedOptions(answer.selected_options);
+          }
 
-      } else {
-        // Set selected options if available
-        if (Array.isArray(answer.selected_options)) {
-          setSelectedOptions(answer.selected_options);
+          if (answer.is_marked_for_review) {
+            setIsMarkedForReview(true);
+          }
         }
-
-        // Set mark for review flag
-        if (answer.is_marked_for_review) {
-          setIsMarkedForReview(true);
+      } catch {
+        // handle error silently or log
+      } finally {
+        setIsLoading(false);
+        if (typeof refreshSectionStatus === 'function') {
+          refreshSectionStatus();
         }
       }
-    } catch  {
-      //console.error("Error processing answerStatus or questionVisited:", err);
-    } finally {
-      if (typeof refreshSectionStatus === 'function') {
-        refreshSectionStatus();
-      }
+    };
+
+    if (submissionId && question?._id) {
+      fetchAnswer();
     }
-  };
-
-  if (submissionId && question?._id) {
-    fetchAnswer();
-  }
-}, [submissionId, question._id]);
-
+  }, [submissionId, question._id]);
 
   const handleSaveAnswer = async (opts = selectedOptions, marked = isMarkedForReview) => {
-    const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
+    const now = Date.now();
+    if (now - lastSaveTime < MIN_SAVE_INTERVAL) return;
+    setLastSaveTime(now);
 
+    setIsLoading(true);
+
+    const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
     const payload = {
       sectionId: question.section_id,
       questionId: question._id,
@@ -83,10 +88,14 @@ const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
       showNotification('success', 'Answer saved');
     } catch {
       showNotification('error', 'Error saving answer');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleOptionClick = async (optionId) => {
+    if (isLoading) return;
+
     let updatedOptions;
     if (question.type === 'single_correct') {
       updatedOptions = [optionId];
@@ -102,6 +111,8 @@ const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
   };
 
   const handleMarkForReview = async (e) => {
+    if (isLoading) return;
+
     const checked = e.target.checked;
 
     if (selectedOptions.length === 0 && checked) {
@@ -114,10 +125,17 @@ const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
   };
 
   return (
-    <div>
+    <div className="relative">
       {/* 🔔 Notification if exists */}
       {notification && (
         <NotificationMessage type={notification.type} message={notification.message} />
+      )}
+
+      {/* Optional Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-10">
+          <div className="text-sm text-gray-700">Loading...</div>
+        </div>
       )}
 
       {/* Images */}
@@ -135,7 +153,7 @@ const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
       )}
 
       {/* Options */}
-      <div className="space-y-3 mb-6">
+      <div className={`space-y-3 mb-6 ${isLoading ? 'pointer-events-none opacity-60' : ''}`}>
         {question.options.map((opt) => {
           const selected = selectedOptions.includes(opt.option_id);
           return (
@@ -161,6 +179,7 @@ const QuizQuestion = ({ question, refreshSectionStatus,answerStatus }) => {
             className="mr-2"
             checked={isMarkedForReview}
             onChange={handleMarkForReview}
+            disabled={isLoading}
           />
           Mark for Review
         </label>
