@@ -6,7 +6,6 @@ import {
   FlaskConical,
   Play,
   Settings,
-  ExternalLink,
   Zap,
   FileCode,
   Cpu,
@@ -20,129 +19,10 @@ import {
 
 } from 'lucide-react';
 import { useJudge0 } from '../../../../hooks/useJudge0';
-import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, saveAnswer } from "../../../../Controllers/SubmissionController"
-import { useNavigate } from "react-router-dom"; // at top
+import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases } from "../../../../Controllers/SubmissionController"
+import { DEFAULT_SUPPORTED_LANGUAGES, LANGUAGE_TEMPLATES } from "./utils/languageConfig";
+import NotificationMessage from '../../../../Components/NotificationMessage';
 
-
-
-// Default supported languages - fallback if fullDetails.supported_languages is not available
-const DEFAULT_SUPPORTED_LANGUAGES = [
-  { language: 'javascript', name: 'JavaScript (Node.js)' },
-  { language: 'python', name: 'Python 3' },
-  { language: 'java', name: 'Java 11+' },
-  { language: 'cpp', name: 'C++ (GCC)' },
-  { language: 'c', name: 'C (GCC)' },
-  { language: 'csharp', name: 'C# (.NET)' },
-  { language: 'php', name: 'PHP 8+' },
-  { language: 'ruby', name: 'Ruby 3+' },
-  { language: 'go', name: 'Go 1.19+' },
-  { language: 'rust', name: 'Rust 1.60+' },
-  { language: 'swift', name: 'Swift 5+' },
-  { language: 'kotlin', name: 'Kotlin 1.7+' },
-  { language: 'typescript', name: 'TypeScript 4+' }
-];
-
-// Startup code templates for each language
-const LANGUAGE_TEMPLATES = {
-  'javascript': `// JavaScript Solution
-function solution() {
-    // Write your code here
-    console.log("Hello World!");
-}
-
-solution();`,
-  'python': `# Python Solution
-def solution():
-    # Write your code here
-    print("Hello World!")
-
-if __name__ == "__main__":
-    solution()`,
-  'java': `// Java Solution
-public class Main {
-    public static void main(String[] args) {
-        // Write your code here
-        System.out.println("Hello World!");
-    }
-}`,
-  'cpp': `// C++ Solution
-#include <iostream>
-using namespace std;
-
-int main() {
-    // Write your code here
-    cout << "Hello World!" << endl;
-    return 0;
-}`,
-  'c': `// C Solution
-#include <stdio.h>
-
-int main() {
-    // Write your code here
-    printf("Hello World!\\n");
-    return 0;
-}`,
-  'csharp': `// C# Solution
-using System;
-
-class Program {
-    static void Main() {
-        // Write your code here
-        Console.WriteLine("Hello World!");
-    }
-}`,
-  'php': `<?php
-// PHP Solution
-function solution() {
-    // Write your code here
-    echo "Hello World!\\n";
-}
-
-solution();
-?>`,
-  'ruby': `# Ruby Solution
-def solution
-    # Write your code here
-    puts "Hello World!"
-end
-
-solution()`,
-  'go': `// Go Solution
-package main
-
-import "fmt"
-
-func main() {
-    // Write your code here
-    fmt.Println("Hello World!")
-}`,
-  'rust': `// Rust Solution
-fn main() {
-    // Write your code here
-    println!("Hello World!");
-}`,
-  'swift': `// Swift Solution
-import Foundation
-
-func solution() {
-    // Write your code here
-    print("Hello World!")
-}
-
-solution()`,
-  'kotlin': `// Kotlin Solution
-fun main() {
-    // Write your code here
-    println("Hello World!")
-}`,
-  'typescript': `// TypeScript Solution
-function solution(): void {
-    // Write your code here
-    console.log("Hello World!");
-}
-
-solution();`
-};
 
 const SolutionSection = ({
   question,
@@ -161,48 +41,26 @@ const SolutionSection = ({
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [templateReloadNotification, setTemplateReloadNotification] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
-
-  const navigate = useNavigate(); // inside component
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
   const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
-
-
-  //console.log(selectedLanguage);
   const { isExecuting, executeCode, } = useJudge0();
+  const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
 
-  const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY || '';
+  const showNotification = (type, message) => {
+    setNotification({ type, message });
+  };
+  
 
-  //console.log('Selected Language:', selectedLanguage);
-  //console.log('Answer:', answer);
-
-  // Get available languages - use fullDetails.supported_languages if available, otherwise use default
-  const getAvailableLanguages = () => {
-    // Force use default languages if toggle is enabled or if fullDetails has limited languages
-    if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
-      // console.log('Using default supported languages:', DEFAULT_SUPPORTED_LANGUAGES);
-      return DEFAULT_SUPPORTED_LANGUAGES;
+   const getAvailableLanguages = () => {
+       if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
+        return DEFAULT_SUPPORTED_LANGUAGES;
     }
-    // console.log('Using languages from fullDetails:', fullDetails.supported_languages);
-    return fullDetails.supported_languages;
+     return fullDetails.supported_languages;
   };
 
   const availableLanguages = getAvailableLanguages();
 
-  // Debug logging
-  useEffect(() => {
-    // console.log('SolutionSection Debug Info:', {
-    //   selectedLanguage,
-    //   availableLanguages,
-    //   fullDetailsLanguages: fullDetails?.supported_languages,
-    //   hasFullDetails: !!fullDetails,
-    //   totalAvailableLanguages: availableLanguages.length,
-    //   useDefaultLanguages
-    // });
-  }, [selectedLanguage, availableLanguages, fullDetails, useDefaultLanguages]);
-
-  // Initialize code with language template when language changes
   useEffect(() => {
     // Check if language has changed
     const languageChanged = previousLanguage !== selectedLanguage;
@@ -211,10 +69,6 @@ const SolutionSection = ({
       setPreviousLanguage(selectedLanguage);
     }
 
-    // Load template if:
-    // 1. No answer exists, OR
-    // 2. Language has changed and auto-reload is enabled, OR  
-    // 3. Answer is just whitespace
     if (!answer ||
       answer.trim() === '' ||
       (languageChanged && autoReloadTemplate)) {
@@ -253,7 +107,7 @@ const SolutionSection = ({
   // Manually reload template for current language
   const handleReloadTemplate = () => {
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-    console.log(`Manually reloading template for ${selectedLanguage}`);
+    //console.log(`Manually reloading template for ${selectedLanguage}`);
     onAnswerChange(question._id, template);
     setJudge0Results(null);
     setTemplateReloadNotification(`Template manually reloaded for ${selectedLanguage.toUpperCase()}`);
@@ -261,27 +115,22 @@ const SolutionSection = ({
   };
 
   const handleRunWithAPI = async () => {
+    // console.log(answer)
     if (!answer || answer.trim() === '') {
-      alert('Please write some code before running!');
+      showNotification('warning', 'Please write some code before running!');
       return;
     }
 
     try {
-      console.log('Executing code with RapidAPI...', {
-        language: selectedLanguage,
-        codeLength: answer?.length || 0,
-        hasCustomInput: !!customInput
-      });
-
       const result = await executeCode(answer, selectedLanguage, customInput);
-      console.log('API execution result:', result);
       setJudge0Results(result);
+      showNotification('success', 'Code executed successfully');
     } catch (error) {
-      console.error('Error running code with API:', error);
       setJudge0Results({
         status: { description: 'Error' },
         stderr: error.message || 'Failed to execute code. Please check your code and try again.'
       });
+      showNotification('error', 'Error executing code');
     }
   };
 
@@ -324,8 +173,8 @@ const SolutionSection = ({
       //console.log('Test cases save payload:', savePayload);
       //console.log('Selected language for test cases:', selectedLanguage);
 
-      const saveResponse = await saveCodingAnswer(currentSubmissionId, savePayload);
-      console.log('Save response:', saveResponse.data);
+      await saveCodingAnswer(currentSubmissionId, savePayload);
+      // console.log('Save response:', saveResponse.data);
 
       // Step 2: Get language ID for Judge0
       const getLanguageId = (language) => {
@@ -353,34 +202,30 @@ const SolutionSection = ({
         language_id: getLanguageId(selectedLanguage),
 
       };
-      console.log(testPayload);
+      //console.log(testPayload);
 
 
 
       try {
-        const response = await runSampleTestCases(currentQuestionId, testPayload);
+         await runSampleTestCases(currentQuestionId, testPayload);
         // Check if response is successful
-        console.log(response)
+        //console.log(response)
 
 
 
 
 
-      } catch (apiError) {
+      } catch  {
 
-        console.error(apiError)
+        // console.error(apiError)
       }
 
-    } catch (error) {
-      console.error("Test cases failed:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Test cases failed";
-      alert(`Error: ${errorMessage}`);
+    } catch  {
+      
+      
 
       // If it's a save error, show appropriate status
-      if (error.response?.status === 400) {
-        setSaveStatus('error');
-        setTimeout(() => setSaveStatus('idle'), 3000);
-      }
+      
     } finally {
       setIsRunningTests(false);
     }
@@ -440,10 +285,10 @@ const SolutionSection = ({
 
     try {
       res = await handleSaveAnswer(); // Await the promise
-      console.log("Saved answer response:", res);
-    } catch (error) {
-      console.error("Error saving answer:", error);
-      alert("Failed to save answer before submitting.");
+      //console.log("Saved answer response:", res);
+    } catch  {
+      //console.error("Error saving answer:", error);
+      //alert("Failed to save answer before submitting.");
       return;
     }
 
@@ -454,7 +299,7 @@ const SolutionSection = ({
     const currentQuestionId = fullDetails?.question_id || question._id;
 
     if (!currentSubmissionId || !currentQuestionId) {
-      alert("Missing submission or question data");
+      //alert("Missing submission or question data");
       return;
     }
 
@@ -489,8 +334,8 @@ const SolutionSection = ({
         answer_id: answerId, // ✅ include answer_id in the payload
       };
 
-      const response = await evaluateCodingSubmission(currentSubmissionId, payload);
-      console.log("Evaluation response:", response);
+      await evaluateCodingSubmission(currentSubmissionId, payload);
+      //console.log("Evaluation response:", response);
       setSubmitStatus("success");
 
 
@@ -520,6 +365,10 @@ const SolutionSection = ({
 
   // Normalize output (remove trailing newlines, extra spaces)
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
+  
+{notification && (
+        <NotificationMessage type={notification.type} message={notification.message} />
+      )}
 
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 space-y-6">
@@ -556,11 +405,11 @@ const SolutionSection = ({
           value={selectedLanguage}
           onChange={(e) => {
             const newLanguage = e.target.value;
-            console.log('🔄 [LANGUAGE CHANGE] Language dropdown changed:', {
-              from: selectedLanguage,
-              to: newLanguage,
-              timestamp: new Date().toISOString()
-            });
+            // console.log('🔄 [LANGUAGE CHANGE] Language dropdown changed:', {
+            //   from: selectedLanguage,
+            //   to: newLanguage,
+            //   timestamp: new Date().toISOString()
+            // });
             setSelectedLanguage(newLanguage);
           }}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
