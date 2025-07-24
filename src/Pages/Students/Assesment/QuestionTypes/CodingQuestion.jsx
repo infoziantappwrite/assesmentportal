@@ -24,30 +24,24 @@ import {
 import { getCodingQuestionById } from '../../../../Controllers/QuestionController';
 import SolutionSection from './SolutionSection';
 import ErrorBoundary from '../../../../Components/ErrorBoundary';
+import {questionVisited,} from '../../../../Controllers/SubmissionController';
+
 
 const CodingQuestion = ({
   question,
-  refreshSectionStatus
+  refreshSectionStatus,
+  answerStatus
 }) => {
   const submissionId = localStorage.getItem('submission_id');
+  //console.log(answerStatus)
   const [answer, setAnswer] = useState('');
   const [fullDetails, setFullDetails] = useState(null);
   const [activeSection, setActiveSection] = useState('problem');
-  const [expandedTestCases, setExpandedTestCases] = useState({
-    sample: true,
-    hidden: false
-  });
+  const [expandedTestCases, setExpandedTestCases] = useState({sample: true,hidden: false});
   const [selectedLanguage, setSelectedLanguage] = useState('python');
   
   // Safety check for required props
-  if (!question) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-600 font-semibold">Error: CodingQuestion component missing required props</p>
-        <p className="text-red-600 text-sm mt-1">Missing: question</p>
-      </div>
-    );
-  }
+  
 
   // Function to handle answer changes
   const handleAnswerChange = (questionId, newAnswer) => {
@@ -59,6 +53,7 @@ const CodingQuestion = ({
       try {
         const res = await getCodingQuestionById(question._id);
         setFullDetails(res.data?.codingQuestion);
+        //console.log(fullDetails)
         // Set default language if available
         if (res.data?.codingQuestion?.supported_languages?.length) {
           setSelectedLanguage(res.data.codingQuestion.supported_languages[0].language);
@@ -73,16 +68,34 @@ const CodingQuestion = ({
 
   // Load existing answer if any
   useEffect(() => {
-    const loadExistingAnswer = async () => {
-      try {
-        setAnswer('');
-      } catch (error) {
-        console.error('Failed to load existing answer:', error);
+  const loadExistingAnswer = async () => {
+    try {
+      if (!answerStatus) {
+        // Answer not available yet, mark as visited
+        await questionVisited({
+          submissionID: submissionId,
+          sectionID: question.section_id,
+          questionID: question._id,
+          type: question.type,
+          isMarkedForReview: false,
+          isSkipped: true,
+        });
+      } else {
+        // Set code and language from saved answer
+        setAnswer(answerStatus.code_solution || '');
+        if (answerStatus) {
+          console.log(answerStatus.programming_language)
+          setSelectedLanguage(answerStatus.programming_language);
+        }
       }
-    };
+    } catch  {
+      //console.error('Failed to load or visit question:', error);
+    }
+  };
 
-    loadExistingAnswer();
-  }, [question._id, submissionId]);
+  loadExistingAnswer();
+}, [question._id, submissionId, answerStatus]);
+
 
   const toggleTestCase = (type) => {
     setExpandedTestCases(prev => ({

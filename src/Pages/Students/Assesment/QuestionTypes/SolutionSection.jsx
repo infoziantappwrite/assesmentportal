@@ -20,7 +20,7 @@ import {
 
 } from 'lucide-react';
 import { useJudge0 } from '../../../../hooks/useJudge0';
-import { saveCodingAnswer, submitCode, evaluateCodingSubmission } from "../../../../Controllers/SubmissionController"
+import { saveCodingAnswer, submitCode, evaluateCodingSubmission, runSampleTestCases } from "../../../../Controllers/SubmissionController"
 import { useNavigate } from "react-router-dom"; // at top
 
 // Language mapping for Judge0
@@ -177,19 +177,21 @@ const SolutionSection = ({
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [templateReloadNotification, setTemplateReloadNotification] = useState('');
   const [saveStatus, setSaveStatus] = useState('idle');
+  const [isLanguageLocked, setIsLanguageLocked] = useState(false); // Track if language is locked after first save
+  const [initialSavedLanguage, setInitialSavedLanguage] = useState(null); // Track the first saved language
   const navigate = useNavigate(); // inside component
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
-  const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing
-
-  console.log(fullDetails);
-  
+  const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
 
 
   const { isExecuting, executeCode, executeWithTestCases } = useJudge0();
 
   const JUDGE0_API_KEY = import.meta.env.VITE_JUDGE0_API_KEY || '';
+
+  //console.log('Selected Language:', selectedLanguage);
+  //console.log('Answer:', answer);
 
   // Get available languages - use fullDetails.supported_languages if available, otherwise use default
   const getAvailableLanguages = () => {
@@ -236,12 +238,6 @@ const SolutionSection = ({
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
       // console.log(`Loading template for ${selectedLanguage}:`, template.substring(0, 50) + '...');
       onAnswerChange(question._id, template);
-
-      // Show notification for auto-reload
-      if (languageChanged && autoReloadTemplate && answer && answer.trim() !== '') {
-        setTemplateReloadNotification(`Template auto-reloaded for ${selectedLanguage.toUpperCase()}`);
-        setTimeout(() => setTemplateReloadNotification(''), 3000);
-      }
     }
   }, [selectedLanguage, question._id, onAnswerChange, autoReloadTemplate, previousLanguage, answer]);
 
@@ -306,50 +302,178 @@ const SolutionSection = ({
   };
 
   const handleRunTestCases = async () => {
-  const localSubmissionId = localStorage.getItem("submission_id");
-  const currentSubmissionId = submissionId || localSubmissionId;
-  const currentQuestionId = fullDetails?.question_id; // ✅ Add this line
+    if (!answer || answer.trim() === '') {
+      alert('Please write some code before running test cases!');
+      return;
+    }
 
-  if (!currentSubmissionId || !currentQuestionId || !savedAnswerId) {
-    toast.error("Missing data for submission");
-    return;
-  }
+    if (!fullDetails?.sample_test_cases || fullDetails.sample_test_cases.length === 0) {
+      alert('No test cases available for this question');
+      return;
+    }
 
-  setIsRunningTests(true);
-  try {
-    const payload = {
-      question_id: currentQuestionId,
-      code: userCode,
-      language: selectedLanguage,
-      answer_id: savedAnswerId,
-    };
+    const localSubmissionId = localStorage.getItem("submission_id");
+    const currentSubmissionId = submissionId || localSubmissionId;
+    const currentQuestionId = fullDetails?.question_id || question._id;
 
-    const res = await evaluateCodingSubmission(currentSubmissionId, payload);
-    console.log("Hidden test evaluation result:", res);
-    toast.success("Hidden test cases evaluated!");
+    if (!currentSubmissionId || !currentQuestionId) {
+      alert("Missing submission or question data");
+      return;
+    }
 
-    setJudge0Results(res.results || []);
-    setSubmissionScore(res.score || 0);
-  } catch (err) {
-    console.error("Evaluation failed:", err.response?.data || err.message);
-    toast.error(err.response?.data?.message || "Evaluation failed");
-  } finally {
-    setIsRunningTests(false);
-  }
-};
+    setIsRunningTests(true);
+    try {
+      // Step 1: Save the answer first
+      console.log('Saving answer before running test cases...');
+      
+      const savePayload = {
+        sectionId: question.section_id,
+        questionId: question._id,
+        type: 'coding',
+        codeSolution: answer,
+        programmingLanguage: selectedLanguage, // Backend expects this field
+        isMarkedForReview: false,
+        isSkipped: false,
+        timeTakenSeconds: 0,
+      };
+
+      console.log('Test cases save payload:', savePayload);
+      console.log('Selected language for test cases:', selectedLanguage);
+
+      const saveResponse = await saveCodingAnswer(currentSubmissionId, savePayload);
+      console.log('Save response:', saveResponse);
+
+      // Step 2: Get language ID for Judge0
+      const getLanguageId = (language) => {
+        const languageMap = {
+          'python': 71,
+          'javascript': 63,
+          'java': 62,
+          'c': 50,
+          'cpp': 54,
+          'csharp': 51,
+          'php': 68,
+          'ruby': 72,
+          'go': 60,
+          'rust': 73,
+          'swift': 83,
+          'kotlin': 78,
+          'typescript': 74,
+        };
+        return languageMap[language.toLowerCase()] || 71; // Default to Python
+      };
+
+      // Step 3: Prepare test cases payload (question_id is passed in URL, not body)
+      const testPayload = {
+        code: answer,
+        language_id: getLanguageId(selectedLanguage),
+        submission_id: currentSubmissionId // Include submission ID
+      };
+
+      console.log('🚀 [TEST CASES DEBUG] === RUNNING TEST CASES ===');
+      console.log('🚀 [TEST CASES DEBUG] Test payload (question_id in URL):', JSON.stringify(testPayload, null, 2));
+      console.log('🚀 [TEST CASES DEBUG] Question ID (URL param):', currentQuestionId);
+      console.log('🚀 [TEST CASES DEBUG] Question ID type:', typeof currentQuestionId);
+      console.log('🚀 [TEST CASES DEBUG] Is Question ID valid?', !!currentQuestionId);
+      console.log('🚀 [TEST CASES DEBUG] Full API URL will be: /submissions/test-cases/' + currentQuestionId);
+      
+      // Validate question ID before making API call
+      if (!currentQuestionId || currentQuestionId === 'undefined' || currentQuestionId === 'null') {
+        console.error('❌ [TEST CASES DEBUG] Invalid question ID:', currentQuestionId);
+        alert('Error: Invalid question ID. Cannot run test cases.');
+        setIsRunningTests(false);
+        return;
+      }
+      
+      try {
+        const response = await runSampleTestCases(currentQuestionId, testPayload);
+        // Check if response is successful
+      
+        // Handle different possible response formats
+        let testResults = null;
+        if (response.sample_results && Array.isArray(response.sample_results)) {
+          testResults = response.sample_results;
+          console.log('✅ [RESULTS] Using response.sample_results');
+        } else if (response.results && Array.isArray(response.results)) {
+          testResults = response.results;
+          console.log('✅ [RESULTS] Using response.results');
+        } else if (response.data && Array.isArray(response.data)) {
+          testResults = response.data;
+          console.log('✅ [RESULTS] Using response.data');
+        } else if (Array.isArray(response)) {
+          testResults = response;
+          console.log('✅ [RESULTS] Using response directly (array)');
+        }
+
+        console.log('✅ [RESULTS] Final testResults:', testResults);
+        console.log('✅ [RESULTS] Test results count:', testResults?.length || 0);
+
+        if (testResults && testResults.length > 0) {
+          // Store the results so they can be displayed in the Test Results Display section
+          setJudge0Results({
+            testResults: testResults,
+            message: 'Sample test cases completed'
+          });
+          
+          const passedCount = testResults.filter(result => 
+            result.status === 'PASSED' || result.status === 'Accepted' || result.passed === true
+          ).length;
+          const totalCount = testResults.length;
+          
+          console.log(`✅ [RESULTS] ${passedCount}/${totalCount} test cases passed`);
+          alert(`Test cases completed! ${passedCount}/${totalCount} test cases passed.`);
+          
+          // Update save status to indicate successful save + test
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 3000);
+        } else {
+          console.error('❌ [RESULTS] No valid test results found in response');
+          console.error('❌ [RESULTS] Raw response:', response);
+          alert('Test cases completed but no valid results received. Check console for details.');
+        }
+      } catch (apiError) {
+        
+        const errorMessage = apiError.response?.data?.message || apiError.message || "Test cases API call failed";
+        
+        // If it's a URL error, show specific message
+        if (errorMessage.includes('Invalid URL') || apiError.message?.includes('URL')) {
+          alert(`URL Error: The question ID "${currentQuestionId}" is invalid for the API call.`);
+        } else if (apiError.response?.status === 404) {
+          console.error('❌ [404 ERROR] API endpoint not found');
+          alert('Error: Test cases API endpoint not found. Please check the backend configuration.');
+        } else if (apiError.response?.status === 500) {
+          console.error('[500 ERROR] Internal server error');
+          alert('Error: Internal server error while running test cases. Please try again or contact support.');
+        } else {
+          alert(`Test Cases Error: ${errorMessage}`);
+        }
+        
+        throw apiError; // Re-throw to be caught by outer catch
+      }
+
+    } catch (error) {
+      console.error("Test cases failed:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Test cases failed";
+      alert(`Error: ${errorMessage}`);
+      
+      // If it's a save error, show appropriate status
+      if (error.response?.status === 400) {
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
+    } finally {
+      setIsRunningTests(false);
+    }
+  };
 
 
 
   const handleSaveAnswer = async () => {
-    const localSubmissionId = localStorage.getItem("submission_id"); // Get from localStorage
-    console.log(localSubmissionId);
+    const localSubmissionId = localStorage.getItem("submission_id"); 
 
-    const currentSubmissionId = submissionId || localSubmissionId;   // Use prop/state if exists, else fallback
-
-    console.log(currentSubmissionId);
+    const currentSubmissionId = submissionId || localSubmissionId;  
 
     if (!currentSubmissionId || !question?._id || !answer || !selectedLanguage) {
-      console.error('Missing required data for saving');
       setSaveStatus('error');
       return;
     }
@@ -362,24 +486,22 @@ const SolutionSection = ({
         questionId: question._id,
         type: 'coding',
         codeSolution: answer,
-        programmingLanguage: selectedLanguage,
+        programmingLanguage: selectedLanguage, // Backend expects this field
         isMarkedForReview: false,
         isSkipped: false,
         timeTakenSeconds: 0,
       };
 
       const response = await saveCodingAnswer(currentSubmissionId, payload);
-
+    
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
 
       return response;
     } catch (error) {
-      console.error('Error saving answer:', error);
       setSaveStatus('error');
 
       if (error.response) {
-        console.error('Server response:', error.response.data);
         if (
           error.response.status === 400 &&
           error.response.data.message.includes("cannot update a coding questions answer")
@@ -394,27 +516,67 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
+    if (!answer || answer.trim() === '') {
+      alert('Please write some code before submitting!');
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to submit? You cannot change your answer after submission.')) {
+      return;
+    }
+
+    const localSubmissionId = localStorage.getItem("submission_id");
+    const currentSubmissionId = submissionId || localSubmissionId;
+    const currentQuestionId = fullDetails?.question_id || question._id;
+
+    if (!currentSubmissionId || !currentQuestionId) {
+      alert("Missing submission or question data");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setSubmitStatus(null);
 
-      const payload = {
-        code: answer,
-        language: selectedLanguage,
+      // Get language ID for Judge0
+      const getLanguageId = (language) => {
+        const languageMap = {
+          'python': 71,
+          'javascript': 63,
+          'java': 62,
+          'c': 50,
+          'cpp': 54,
+          'csharp': 51,
+          'php': 68,
+          'ruby': 72,
+          'go': 60,
+          'rust': 73,
+          'swift': 83,
+          'kotlin': 78,
+          'typescript': 74,
+        };
+        return languageMap[language.toLowerCase()] || 71; // Default to Python
       };
 
-      const res = await submitCode(submissionId, payload);
-
-      console.log("Submission result:", res);
+      const payload = {
+        question_id: currentQuestionId,
+        code: answer,
+        language: selectedLanguage,
+        language_id: getLanguageId(selectedLanguage),
+      };
+      
+      const response = await evaluateCodingSubmission(currentSubmissionId, payload);
+      
       setSubmitStatus("success");
+      alert("Code submitted successfully! Redirecting to dashboard...");
 
-      // ✅ Wait 3 seconds, then redirect to dashboard
+      // Wait 3 seconds, then redirect to dashboard
       setTimeout(() => {
         navigate("/dashboard");
       }, 3000);
     } catch (error) {
-      console.error("Error submitting code:", error);
       setSubmitStatus("error");
+      alert(error.response?.data?.message || error.message || "Failed to submit code");
     } finally {
       setIsSubmitting(false);
     }
@@ -453,6 +615,14 @@ const SolutionSection = ({
         </div>
       </div>
 
+      {/* Template Reload Notification */}
+      {templateReloadNotification && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-blue-600" />
+          <span className="text-blue-800 font-medium">{templateReloadNotification}</span>
+        </div>
+      )}
+
       {/* Language Selection */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -463,7 +633,15 @@ const SolutionSection = ({
         </div>
         <select
           value={selectedLanguage}
-          onChange={(e) => setSelectedLanguage(e.target.value)}
+          onChange={(e) => {
+            const newLanguage = e.target.value;
+            console.log('🔄 [LANGUAGE CHANGE] Language dropdown changed:', {
+              from: selectedLanguage,
+              to: newLanguage,
+              timestamp: new Date().toISOString()
+            });
+            setSelectedLanguage(newLanguage);
+          }}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
         >
           {availableLanguages.length > 0 ? (
@@ -723,59 +901,90 @@ const SolutionSection = ({
       )}
 
       {/* Test Results Display */}
-      {testResults && (
+      {(testResults || judge0Results?.testResults) && (
         <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <FlaskConical className="w-5 h-5 text-yellow-500" />
-            Test Case Results
+            Sample Test Case Results
           </h3>
-          <div className="space-y-4">
-            {testResults.map((result, index) => (
-              <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
-                ? 'border-green-200'
-                : 'border-red-200'
-                }`}>
-                <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold text-lg">Test Case {index + 1}</span>
-                  <div className="flex items-center gap-2">
-                    {result.status === 'PASSED' ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-500" />
-                    )}
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
+          
+          {/* Display sample test results from judge0Results */}
+          {judge0Results?.testResults && (
+            <div className="mb-4">
+              <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
+              <div className="space-y-3">
+                {judge0Results.testResults.map((result, index) => (
+                  <div key={index} className={`p-3 rounded-lg border bg-white ${
+                    result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
+                  }`}>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Test Case {index + 1}</span>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        result.status === 'PASSED' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
                       }`}>
-                      {result.status}
-                    </span>
+                        {result.status || 'COMPLETED'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
-                    <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                      {result.input}
-                    </pre>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
-                    <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                      {result.actual_output}
-                    </pre>
-                  </div>
-                </div>
-                {result.expected_output && (
-                  <div className="mt-3">
-                    <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
-                    <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                      {result.expected_output}
-                    </pre>
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Display existing testResults */}
+          {testResults && (
+            <div className="space-y-4">
+              {testResults.map((result, index) => (
+                <div key={index} className={`p-4 rounded-lg border-2 bg-white ${
+                  result.status === 'PASSED' 
+                    ? 'border-green-200' 
+                    : 'border-red-200'
+                }`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-lg">Test Case {index + 1}</span>
+                    <div className="flex items-center gap-2">
+                      {result.status === 'PASSED' ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        result.status === 'PASSED' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {result.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
+                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                        {result.input}
+                      </pre>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
+                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                        {result.actual_output}
+                      </pre>
+                    </div>
+                  </div>
+                  {result.expected_output && (
+                    <div className="mt-3">
+                      <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
+                      <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                        {result.expected_output}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -815,18 +1024,39 @@ const SolutionSection = ({
               type="button"
               onClick={handleSaveAnswer}
               disabled={saveStatus === 'saving'}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${saveStatus === 'saving'
-                ? 'bg-cyan-400 text-white cursor-not-allowed'
-                : saveStatus === 'saved'
-                  ? 'bg-green-100 text-green-800 border-2 border-green-200'
-                  : saveStatus === 'error'
-                    ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                    : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
-                }`}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
+                saveStatus === 'saving'
+                  ? 'bg-cyan-400 text-white cursor-not-allowed'
+                  : saveStatus === 'saved'
+                    ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                    : saveStatus === 'error'
+                      ? 'bg-red-100 text-red-800 border-2 border-red-200'
+                      : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
+              }`}
             >
               {saveStatus === 'saving' ? 'Saving...' :
                 saveStatus === 'saved' ? '✓ Saved!' :
                   saveStatus === 'error' ? '✗ Error Saving' : 'Save Answer'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleReloadTemplate}
+              className="px-5 py-2.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-sm flex items-center gap-2"
+              title="Reload template for current language"
+            >
+              <Code2 className="w-4 h-4" />
+              Reload Template
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResetCode}
+              className="px-5 py-2.5 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all shadow-sm flex items-center gap-2"
+              title="Reset to template and clear all"
+            >
+              <Settings className="w-4 h-4" />
+              Reset All
             </button>
           </div>
 
