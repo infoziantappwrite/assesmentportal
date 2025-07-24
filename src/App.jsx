@@ -71,6 +71,7 @@ import ViewAssignment from './Pages/Admin/Assignments/ViewAssignment';
 import EditAssignment from './Pages/Admin/Assignments/EditAssignment';
 import AddQuestionToSectionCode from './Pages/Common/Section/AddQuestionToSectionCode';
 import ViewCodingQuestionsInSection from './Pages/Common/Section/ViewCodingQuestionsInSection';
+import ViewFullSubmission from './Pages/Admin/Assignments/ViewFullSubmission';
 // import AddQuestionToSectionAssignment from "./Pages/Common/Section/AddQuestionToSectionAssignment"
 // import AddQuestionToSectionSurvey from './Pages/Common/Section/AddQuestionToSectionSurvey';
 
@@ -156,6 +157,7 @@ const App = () => {
           <Route path="/admin/assignments" element={<ManageAssignments />} />
           <Route path="/admin/assignments/:id" element={<ViewAssignment />} />
           <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
+          <Route path="/submissions/:submissionId" element={<ViewFullSubmission />} />
 
 
         </Route>

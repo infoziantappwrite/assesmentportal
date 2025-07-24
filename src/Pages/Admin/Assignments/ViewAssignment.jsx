@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getAssignmentById } from '../../../Controllers/AssignmentControllers';
+import { getAssignmentById, getAssignmentResults } from '../../../Controllers/AssignmentControllers';
 import Loader from '../../../Components/Loader';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import AssignmentActions from './AssignmentActions';
@@ -9,13 +9,14 @@ import Submissions from './Submissions';
  
 const ViewAssignment = () => {
   const { id } = useParams();
+  // getAssignmentResults(id)  get assignment result
  
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
 const fetchAssignment = async () => {
   try {
     const response = await getAssignmentById(id);
-    console.log('API Response:', JSON.stringify(response, null, 2)); // <--- Log the JSON response here
+    // console.log('API Response:', JSON.stringify(response, null, 2)); // <--- Log the JSON response here
     setAssignment(response.data.assignment);
   } catch (error) {
     console.error('Failed to fetch assignment:', error);
