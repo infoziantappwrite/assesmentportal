@@ -61,10 +61,12 @@ export const getEligibleStudents = async (id) => {
 };
 
 // GET /assignments/:id/submissions - Get all submissions
-export const getSubmissions = async (id) => {
+export const getSubmissions = async (id, page = 1, limit = 10) => {
   const response = await axiosClient.get(`/assignments/${id}/submissions`, {
     withCredentials: true,
+    params: { page, limit },
   });
+    
   return response.data;
 };
 
@@ -83,3 +85,24 @@ export const changeAssignmentStatus = async (id, status) => {
   return response.data;
 };
 
+
+// GET /results/submission/:submissionId - Calculate & fetch results for a submission
+export const calculateResultsForSubmission = async (submissionId) => {
+  const response = await axiosClient.get(`/results/submission/${submissionId}`, {
+    withCredentials: true,
+  });
+
+  console.log(response);
+  
+  return response.data;
+};
+
+// GET /results/assignment/:assignmentId - Get overall results for an assignment
+export const getAssignmentResults = async (assignmentId) => {
+  const response = await axiosClient.get(`/results/assignment/${assignmentId}`, {
+    withCredentials: true,
+  });
+  console.log(response);
+  
+  return response.data;
+};
