@@ -55,9 +55,11 @@ const CodingQuestion = ({
         setFullDetails(res.data?.codingQuestion);
         //console.log(fullDetails)
         // Set default language if available
+        if (!answerStatus?.programming_language){
         if (res.data?.codingQuestion?.supported_languages?.length) {
           setSelectedLanguage(res.data.codingQuestion.supported_languages[0].language);
         }
+      }
       } catch (error) {
         console.error('Failed to fetch coding question details:', error);
       }
@@ -83,8 +85,8 @@ const CodingQuestion = ({
       } else {
         // Set code and language from saved answer
         setAnswer(answerStatus.code_solution || '');
-        if (answerStatus) {
-          console.log(answerStatus.programming_language)
+        if (answerStatus?.programming_language) {
+          //console.log(answerStatus.programming_language)
           setSelectedLanguage(answerStatus.programming_language);
         }
       }
