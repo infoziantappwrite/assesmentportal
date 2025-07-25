@@ -52,22 +52,18 @@ const SolutionSection = ({
   const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); // Track current question
   const [showConfirmModal, setShowConfirmModal] = useState(false); // Show confirmation modal
   const [pendingAction, setPendingAction] = useState(null); // Store pending action details
+  const [startTime, setStartTime] = useState(Date.now()); // Track when question started
 
   const showNotification = (type, message) => {
     setNotification({ type, message });
-    // Auto-dismiss after 3 seconds
-    setTimeout(() => setNotification(null), 3000);
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => setNotification(null), 5000);
   };
 
   // Helper function to check if code has been modified since last save
   const hasCodeChanged = (code) => {
-    if (!hasValidCode(code)) return false; // Template or empty code doesn't count as changes
+    if (!hasValidCode(code)) return false; 
     return code !== lastSavedCode;
-  };
-
-  // Helper function to show unsaved changes warning
-  const showUnsavedChangesWarning = (action) => {
-    showNotification('warning', `You have unsaved changes! Your code will be lost if you ${action} without saving.`);
   };
 
   // Helper function to show confirmation modal
@@ -101,6 +97,7 @@ const SolutionSection = ({
         setCurrentQuestionId(newQuestionId);
         setLastSavedCode('');
         setHasUnsavedChanges(false);
+        setStartTime(Date.now()); // Reset timer for new question
         
         // Always reset all states when changing questions
         setJudge0Results(null); // Clear previous execution results
@@ -155,6 +152,7 @@ const SolutionSection = ({
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
       setHasUnsavedChanges(false);
+      setStartTime(Date.now()); // Reset timer for new question
       
       // Reset all execution and UI states for new question
       setJudge0Results(null); // Clear previous execution results
@@ -165,6 +163,7 @@ const SolutionSection = ({
       
     } else if (newQuestionId && !currentQuestionId) {
       setCurrentQuestionId(newQuestionId);
+      setStartTime(Date.now()); // Set start time for the first question
     }
   }, [question?._id, hasUnsavedChanges, answer]);
 
@@ -230,6 +229,7 @@ const SolutionSection = ({
       setCustomInput('');
       setLastActionType(null);
       setSaveStatus('idle');
+      setStartTime(Date.now()); // Reset timer for new question
       
       // Only preserve submitStatus for submitted questions
       // For new questions, always reset submitStatus to allow interaction
@@ -367,6 +367,7 @@ const SolutionSection = ({
     setLastActionType('testCases'); // Mark this as test cases action
     try {
       // Step 1: Save the answer first
+      const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
       const savePayload = {
         sectionId: question.section_id,
         questionId: question._id,
@@ -375,7 +376,7 @@ const SolutionSection = ({
         programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
-        timeTakenSeconds: 0,
+        timeTakenSeconds: timeTakenSeconds,
       };
 
       await saveCodingAnswer(currentSubmissionId, savePayload);
@@ -383,6 +384,9 @@ const SolutionSection = ({
       // Update tracking after successful save in test cases
       setLastSavedCode(answer);
       setHasUnsavedChanges(false);
+      
+      // DON'T reset timer after test cases save - keep accumulating time like QuizQuestion
+      // setStartTime(Date.now()); // Removed - timer continues running
 
       // Step 2: Get language ID for Judge0
       const getLanguageId = (language) => {
@@ -487,6 +491,9 @@ const SolutionSection = ({
     try {
       setSaveStatus('saving');
 
+      // Calculate time taken since question started
+      const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
+
       const payload = {
         sectionId: question.section_id,
         questionId: question._id,
@@ -495,7 +502,7 @@ const SolutionSection = ({
         programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
-        timeTakenSeconds: 0,
+        timeTakenSeconds: timeTakenSeconds,
       };
 
       const response = await saveCodingAnswer(currentSubmissionId, payload);
