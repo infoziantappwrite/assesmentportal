@@ -95,21 +95,19 @@ const SolutionSection = ({
         setLastSavedCode('');
         setHasUnsavedChanges(false);
       } else if (pendingAction.type === 'questionChange') {
-        // Proceed with question change - only reset states for non-submitted questions
+        // Proceed with question change - always reset states for different questions
         const newQuestionId = pendingAction.data.newQuestionId;
-        const shouldResetState = submitStatus !== 'success';
         
         setCurrentQuestionId(newQuestionId);
         setLastSavedCode('');
         setHasUnsavedChanges(false);
         
-        if (shouldResetState) {
-          setJudge0Results(null); // Clear previous execution results
-          setCustomInput(''); // Clear custom input
-          setLastActionType(null); // Reset action type
-          setSaveStatus('idle'); // Reset save status
-          setSubmitStatus(null); // Reset submit status
-        }
+        // Always reset all states when changing questions
+        setJudge0Results(null); // Clear previous execution results
+        setCustomInput(''); // Clear custom input
+        setLastActionType(null); // Reset action type
+        setSaveStatus('idle'); // Reset save status
+        setSubmitStatus(null); // Reset submit status - each question is independent
       }
     } else if (!confirmed && pendingAction?.type === 'questionChange') {
       // User cancelled question change - revert to old question
@@ -153,26 +151,22 @@ const SolutionSection = ({
         return; // Don't update state until user confirms
       }
       
-      // Only reset states if the question hasn't been submitted
-      // Check if this question has been submitted by looking at submitStatus or other indicators
-      const shouldResetState = submitStatus !== 'success';
-      
+      // Always reset states for different questions to ensure clean slate
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
       setHasUnsavedChanges(false);
       
-      if (shouldResetState) {
-        // Only reset execution results for non-submitted questions
-        setJudge0Results(null); // Clear previous execution results
-        setCustomInput(''); // Clear custom input
-        setLastActionType(null); // Reset action type
-        setSaveStatus('idle'); // Reset save status
-        setSubmitStatus(null); // Reset submit status
-      }
+      // Reset all execution and UI states for new question
+      setJudge0Results(null); // Clear previous execution results
+      setCustomInput(''); // Clear custom input
+      setLastActionType(null); // Reset action type
+      setSaveStatus('idle'); // Reset save status
+      setSubmitStatus(null); // Reset submit status - each question is independent
+      
     } else if (newQuestionId && !currentQuestionId) {
       setCurrentQuestionId(newQuestionId);
     }
-  }, [question?._id, hasUnsavedChanges, answer, submitStatus]);
+  }, [question?._id, hasUnsavedChanges, answer]);
 
   // Add browser beforeunload warning for unsaved changes
   useEffect(() => {
@@ -231,18 +225,19 @@ const SolutionSection = ({
   // Clear results when question changes (backup cleanup)
   useEffect(() => {
     if (question?._id && currentQuestionId !== question._id) {
-      // Only reset for non-submitted questions
-      const shouldResetState = submitStatus !== 'success';
+      // Always reset execution results and button states for different questions
+      setJudge0Results(null);
+      setCustomInput('');
+      setLastActionType(null);
+      setSaveStatus('idle');
       
-      if (shouldResetState) {
-        setJudge0Results(null);
-        setCustomInput('');
-        setLastActionType(null);
-        setSaveStatus('idle');
-        setSubmitStatus(null);
+      // Only preserve submitStatus for submitted questions
+      // For new questions, always reset submitStatus to allow interaction
+      if (currentQuestionId !== question._id) {
+        setSubmitStatus(null); // Reset submit status for new question
       }
     }
-  }, [question?._id, currentQuestionId, submitStatus]);
+  }, [question?._id, currentQuestionId]);
 
   // Helper function to check if current code is just template code
   const isTemplateCode = (code) => {
