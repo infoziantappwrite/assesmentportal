@@ -1017,15 +1017,13 @@ const SolutionSection = ({
                     ? 'bg-green-100 text-green-800 border-2 border-green-200'
                     : saveStatus === 'error'
                       ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                      : hasUnsavedChanges
-                        ? 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500 shadow-sm animate-pulse'
-                        : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
-                }`}
+                      : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
+              }`}
             >
-              {saveStatus === 'saving' ? 'Saving...' :
-                saveStatus === 'saved' ? '✓ Saved!' :
-                  saveStatus === 'error' ? '✗ Error Saving' : 
-                    hasUnsavedChanges ? '● Save Changes' : 'Save Answer'}
+                {saveStatus === 'saving' ? 'Saving...' :
+                  saveStatus === 'saved' ? '✓ Saved!' :
+                    saveStatus === 'error' ? '✗ Error Saving' :
+                      'Save Answer'}
             </button>
 
 
