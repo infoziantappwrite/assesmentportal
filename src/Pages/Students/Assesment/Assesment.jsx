@@ -6,6 +6,7 @@ import QuizQuestion from './QuestionTypes/QuizQuestion';
 import CodingQuestion from './QuestionTypes/CodingQuestion';
 import DescriptiveQuestion from './QuestionTypes/DescriptiveQuestion';
 import { getSectionWiseStatus } from '../../../Controllers/SubmissionController';
+import AssessmentSection from './AssessmentSection';
 
 const Assessment = () => {
   const { state } = useLocation();
@@ -17,6 +18,8 @@ const Assessment = () => {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
   const [answerStatusMap, setAnswerStatusMap] = useState({});
+  const [layout, setLayout] = useState('top-info-nav');
+
 
   const activeSection = sections[sectionIndex];
   const question = activeSection.questions[questionIndex];
@@ -148,141 +151,60 @@ const Assessment = () => {
       <Header />
 
       {/* Section Tabs */}
-      <div className="flex gap-2 p-4 overflow-x-auto border-b border-gray-200">
-        {sections.map((sec, idx) => (
-          <button
-            key={sec._id}
-            onClick={() => {
-              setSectionIndex(idx);
-              setQuestionIndex(0);
-            }}
-            className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${idx === sectionIndex
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
-              }`}
-          >
-            {sec.title}
-          </button>
-        ))}
-      </div>
+      <div className="flex justify-between items-center p-4 overflow-x-auto border-b border-gray-200">
+        {/* Left: Layout Switcher */}
+        <div className="flex items-center gap-2">
+  <label htmlFor="layout" className="text-sm font-medium text-gray-700">
+    Layout:
+  </label>
+  <select
+    id="layout"
+    value={layout}
+    onChange={(e) => setLayout(e.target.value)}
+    className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  >
+    <option value="top-info-nav">Default</option>
+    <option value="left-info">Left Info</option>
+    <option value="compact">Compact</option>
+  </select>
+</div>
 
-      {/* Section Info */}
-      <div className="px-6 py-3 bg-white border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800">{activeSection.title}</h2>
-        {activeSection.description && (
-          <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{activeSection.description}</p>
-        )}
-        <p className="text-sm text-gray-500 mt-1">
-          ⏱️ Duration: {activeSection.configuration?.duration_minutes} mins
-        </p>
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 px-6 py-4">
-        {/* Left Panel – Question Navigation */}
-        <div className="lg:col-span-1 bg-white rounded-xl p-4 border border-gray-200">
-          <h3 className="text-md font-semibold text-gray-700 mb-3">Questions</h3>
-          <div className="flex flex-wrap gap-2">
-            {activeSection.questions.map((q, idx) => (
-              <button
-                key={q._id}
-                onClick={() => {
-                  setQuestionIndex(idx);
-                  refreshSectionStatus(); // ✅ refresh when question is changed from palette
-                }}
-
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition duration-150 ${getQuestionStatusClass(
-                  q._id,
-                  idx
-                )}`}
-              >
-                {idx + 1}
-              </button>
-            ))}
-          </div>
-
-          {/* Color Legend */}
-          <div className="mt-6 text-xs space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-green-600 inline-block"></span> Answered
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-purple-600 inline-block"></span> Marked for Review
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-yellow-400 inline-block"></span> Visited but Unanswered
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full bg-gray-200 border border-gray-300 inline-block"></span> Not Visited
-            </div>
-          </div>
-        </div>
-
-        {/* Right Panel – Question Content */}
-        <div className="lg:col-span-3 bg-white rounded-xl p-6 border border-gray-200">
-          <h2 className="mb-4 font-semibold text-lg text-gray-800">
-            Q{questionIndex + 1}. {question.content.question_text}
-          </h2>
-
-          {renderQuestion()}
-
-          {/* Prev/Next Buttons */}
-          <div className="mt-6 flex justify-between gap-4 border-t pt-4 border-gray-300">
-              {/* Previous Button */}
-              {questionIndex > 0 ? (
-                <button
-                  onClick={() => {
-                    setQuestionIndex((prev) => prev - 1);
-                    refreshSectionStatus(); // ✅ refresh on previous
-                  }}
-                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  ← Previous
-                </button>
-              ) : sectionIndex > 0 ? (
-                <button
-                  onClick={() => {
-                    setSectionIndex((prev) => prev - 1);
-                    setQuestionIndex(sections[sectionIndex - 1].questions.length - 1); // Last question of previous section
-                    refreshSectionStatus();
-                  }}
-                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-yellow-600 hover:bg-yellow-700 text-white"
-                >
-                  ← Previous Section
-                </button>
-              ) : (
-                <div></div> // Empty placeholder if no previous
-              )}
-
-              {/* Next Button */}
-              {questionIndex < activeSection.questions.length - 1 ? (
-                <button
-                  onClick={() => {
-                    setQuestionIndex((prev) => prev + 1);
-                    refreshSectionStatus(); // ✅ refresh on next
-                  }}
-                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Next →
-                </button>
-              ) : sectionIndex < sections.length - 1 ? (
-                <button
-                  onClick={() => {
-                    setSectionIndex((prev) => prev + 1);
-                    setQuestionIndex(0); // Go to first question of next section
-                    refreshSectionStatus();
-                  }}
-                  className="px-5 py-2 rounded-lg text-sm font-medium shadow transition bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Go to Next Section →
-                </button>
-              ) : null}
-            </div>
-
-
-          
+        {/* Right: Section Navigation */}
+        <div className="flex gap-2">
+          {sections.map((sec, idx) => (
+            <button
+              key={sec._id}
+              onClick={() => {
+                setSectionIndex(idx);
+                setQuestionIndex(0);
+              }}
+              className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${idx === sectionIndex
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+                }`}
+            >
+              {sec.title}
+            </button>
+          ))}
         </div>
       </div>
+
+
+
+      <AssessmentSection
+        layout={layout} // or "compact" or "default"
+        activeSection={activeSection}
+        sections={sections}
+        sectionIndex={sectionIndex}
+        setSectionIndex={setSectionIndex}
+        questionIndex={questionIndex}
+        setQuestionIndex={setQuestionIndex}
+        question={question}
+        renderQuestion={renderQuestion}
+        getQuestionStatusClass={getQuestionStatusClass}
+        refreshSectionStatus={refreshSectionStatus}
+      />
+
 
       {/* Exit Confirmation Modal */}
       {showExitConfirm && (
