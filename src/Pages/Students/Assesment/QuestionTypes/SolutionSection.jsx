@@ -44,6 +44,7 @@ const SolutionSection = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
   const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
+  const [lastActionType, setLastActionType] = useState(null); // Track if last action was run code or test cases
   const { isExecuting, executeCode, } = useJudge0();
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
@@ -275,10 +276,16 @@ const SolutionSection = ({
     }
 
     try {
+      setLastActionType('runCode'); // Mark this as run code action
       const result = await executeCode(answer, selectedLanguage, customInput);
       
-      // Set status based on execution result
+      // For "Run Code" button, always show "Compiled" status if execution was successful
       if (result.status?.description === 'Accepted') {
+        result.status.description = 'Compiled';
+        showNotification('success', 'Code compiled and executed successfully');
+      } else if (result.status?.description === 'Wrong Answer') {
+        // Even if Judge0 says "Wrong Answer", for Run Code it should be "Compiled" 
+        // because we're not testing against expected output, just running with custom input
         result.status.description = 'Compiled';
         showNotification('success', 'Code compiled and executed successfully');
       } else {
@@ -317,6 +324,7 @@ const SolutionSection = ({
     }
 
     setIsRunningTests(true);
+    setLastActionType('testCases'); // Mark this as test cases action
     try {
       // Step 1: Save the answer first
       const savePayload = {
@@ -576,8 +584,9 @@ const SolutionSection = ({
   const expectedSampleOutput = fullDetails?.sample_test_cases?.[0]?.output?.trim();
   const actualOutput = judge0Results?.stdout?.trim();
 
-  // Normalize output (remove trailing newlines, extra spaces)
+  // Only compare with sample test case if the last action was "testCases", not "runCode"
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
+  const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0;
 
   return (
     <div className=" space-y-6">
@@ -821,7 +830,7 @@ const SolutionSection = ({
             </div>
           </div>
 
-          {judge0Results.stdout && fullDetails?.sample_test_cases?.length > 0 && (
+          {shouldShowSampleComparison && (
             <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                 {isSampleTestPassed ? (
