@@ -44,6 +44,7 @@ const SolutionSection = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
   const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
+  const [lastActionType, setLastActionType] = useState(null); // Track if last action was run code or test cases
   const { isExecuting, executeCode, } = useJudge0();
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
@@ -94,11 +95,26 @@ const SolutionSection = ({
         setLastSavedCode('');
         setHasUnsavedChanges(false);
       } else if (pendingAction.type === 'questionChange') {
-        // Question change is handled by parent component
-        // We just reset our tracking
+        // Proceed with question change - only reset states for non-submitted questions
+        const newQuestionId = pendingAction.data.newQuestionId;
+        const shouldResetState = submitStatus !== 'success';
+        
+        setCurrentQuestionId(newQuestionId);
         setLastSavedCode('');
         setHasUnsavedChanges(false);
+        
+        if (shouldResetState) {
+          setJudge0Results(null); // Clear previous execution results
+          setCustomInput(''); // Clear custom input
+          setLastActionType(null); // Reset action type
+          setSaveStatus('idle'); // Reset save status
+          setSubmitStatus(null); // Reset submit status
+        }
       }
+    } else if (!confirmed && pendingAction?.type === 'questionChange') {
+      // User cancelled question change - revert to old question
+      // Note: The parent component should handle preventing the question change
+      // We just reset our pending action
     }
     
     setPendingAction(null);
@@ -136,13 +152,27 @@ const SolutionSection = ({
         });
         return; // Don't update state until user confirms
       }
+      
+      // Only reset states if the question hasn't been submitted
+      // Check if this question has been submitted by looking at submitStatus or other indicators
+      const shouldResetState = submitStatus !== 'success';
+      
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
       setHasUnsavedChanges(false);
+      
+      if (shouldResetState) {
+        // Only reset execution results for non-submitted questions
+        setJudge0Results(null); // Clear previous execution results
+        setCustomInput(''); // Clear custom input
+        setLastActionType(null); // Reset action type
+        setSaveStatus('idle'); // Reset save status
+        setSubmitStatus(null); // Reset submit status
+      }
     } else if (newQuestionId && !currentQuestionId) {
       setCurrentQuestionId(newQuestionId);
     }
-  }, [question?._id, hasUnsavedChanges, answer]);
+  }, [question?._id, hasUnsavedChanges, answer, submitStatus]);
 
   // Add browser beforeunload warning for unsaved changes
   useEffect(() => {
@@ -197,6 +227,22 @@ const SolutionSection = ({
       setSelectedLanguage(availableLanguages[0].language);
     }
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
+
+  // Clear results when question changes (backup cleanup)
+  useEffect(() => {
+    if (question?._id && currentQuestionId !== question._id) {
+      // Only reset for non-submitted questions
+      const shouldResetState = submitStatus !== 'success';
+      
+      if (shouldResetState) {
+        setJudge0Results(null);
+        setCustomInput('');
+        setLastActionType(null);
+        setSaveStatus('idle');
+        setSubmitStatus(null);
+      }
+    }
+  }, [question?._id, currentQuestionId, submitStatus]);
 
   // Helper function to check if current code is just template code
   const isTemplateCode = (code) => {
@@ -275,10 +321,16 @@ const SolutionSection = ({
     }
 
     try {
+      setLastActionType('runCode'); // Mark this as run code action
       const result = await executeCode(answer, selectedLanguage, customInput);
       
-      // Set status based on execution result
+      // For "Run Code" button, always show "Compiled" status if execution was successful
       if (result.status?.description === 'Accepted') {
+        result.status.description = 'Compiled';
+        showNotification('success', 'Code compiled and executed successfully');
+      } else if (result.status?.description === 'Wrong Answer') {
+        // Even if Judge0 says "Wrong Answer", for Run Code it should be "Compiled" 
+        // because we're not testing against expected output, just running with custom input
         result.status.description = 'Compiled';
         showNotification('success', 'Code compiled and executed successfully');
       } else {
@@ -317,6 +369,7 @@ const SolutionSection = ({
     }
 
     setIsRunningTests(true);
+    setLastActionType('testCases'); // Mark this as test cases action
     try {
       // Step 1: Save the answer first
       const savePayload = {
@@ -576,8 +629,9 @@ const SolutionSection = ({
   const expectedSampleOutput = fullDetails?.sample_test_cases?.[0]?.output?.trim();
   const actualOutput = judge0Results?.stdout?.trim();
 
-  // Normalize output (remove trailing newlines, extra spaces)
+  // Only compare with sample test case if the last action was "testCases", not "runCode"
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
+  const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0;
 
   return (
     <div className=" space-y-6">
@@ -821,7 +875,7 @@ const SolutionSection = ({
             </div>
           </div>
 
-          {judge0Results.stdout && fullDetails?.sample_test_cases?.length > 0 && (
+          {shouldShowSampleComparison && (
             <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                 {isSampleTestPassed ? (
@@ -894,7 +948,6 @@ const SolutionSection = ({
       {(testResults || judge0Results?.testResults) && (
         <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FlaskConical className="w-5 h-5 text-yellow-500" />
             Sample Test Case Results
           </h3>
 
@@ -1009,21 +1062,24 @@ const SolutionSection = ({
             <button
               type="button"
               onClick={handleSaveAnswer}
-              disabled={saveStatus === 'saving'}
+              disabled={saveStatus === 'saving' || submitStatus === 'success'}
               className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
                 saveStatus === 'saving'
                   ? 'bg-cyan-400 text-white cursor-not-allowed'
-                  : saveStatus === 'saved'
-                    ? 'bg-green-100 text-green-800 border-2 border-green-200'
-                    : saveStatus === 'error'
-                      ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                      : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
+                  : submitStatus === 'success'
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    : saveStatus === 'saved'
+                      ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                      : saveStatus === 'error'
+                        ? 'bg-red-100 text-red-800 border-2 border-red-200'
+                        : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
               }`}
             >
-                {saveStatus === 'saving' ? 'Saving...' :
-                  saveStatus === 'saved' ? '✓ Saved!' :
-                    saveStatus === 'error' ? '✗ Error Saving' :
-                      'Save Answer'}
+                {submitStatus === 'success' ? 'Submitted' :
+                  saveStatus === 'saving' ? 'Saving...' :
+                    saveStatus === 'saved' ? '✓ Saved!' :
+                      saveStatus === 'error' ? '✗ Error Saving' :
+                        'Save Answer'}
             </button>
 
 
@@ -1036,35 +1092,41 @@ const SolutionSection = ({
             <button
               type="button"
               onClick={handleRunWithAPI}
-              disabled={isExecuting}
-              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${isExecuting ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              disabled={isExecuting || submitStatus === 'success'}
+              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${
+                isExecuting || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
+              }`}
             >
               <Play className="w-4 h-4" />
-              {isExecuting ? 'Executing...' : 'Run Code'}
+              {submitStatus === 'success' ? 'Submitted' : 
+                isExecuting ? 'Executing...' : 'Run Code'}
             </button>
 
             <button
               type="button"
               onClick={handleRunTestCases}
-              disabled={isRunningTests}
-              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${isRunningTests ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              disabled={isRunningTests || submitStatus === 'success'}
+              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${
+                isRunningTests || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
+              }`}
             >
               <FlaskConical className="w-4 h-4" />
-              {isRunningTests ? 'Running Tests...' : 'Run Test Cases'}
+              {submitStatus === 'success' ? 'Submitted' : 
+                isRunningTests ? 'Running Tests...' : 'Run Test Cases'}
             </button>
 
 
             <button
               type="button"
               onClick={handleSubmitCode}
-              disabled={isSubmitting}
-              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              disabled={isSubmitting || submitStatus === 'success'}
+              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${
+                isSubmitting || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
+              }`}
             >
               <Terminal className="w-4 h-4" />
-              {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+              {submitStatus === 'success' ? 'Submitted' : 
+                isSubmitting ? 'Submitting...' : 'Submit Answer'}
             </button>
 
           </div>
