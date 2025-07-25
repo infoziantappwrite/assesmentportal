@@ -743,7 +743,7 @@ const SolutionSection = ({
 
   // Only compare with sample test case if the last action was "testCases", not "runCode"
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
-  const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0;
+  const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0 && lastActionType === 'testCases';
 
   return (
     <div className=" space-y-6">
@@ -986,6 +986,28 @@ const SolutionSection = ({
               </span>
             </div>
           </div>
+
+          {/* Show output for Run Code without comparison */}
+          {lastActionType === 'runCode' && judge0Results?.stdout && (
+            <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                <Terminal className="w-5 h-5 text-blue-600" />
+                <span>Program Output</span>
+              </div>
+
+              <div className="text-sm font-mono space-y-2">
+                <div className="flex items-start gap-2">
+                  <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+                  <div className="flex-1">
+                    <span className="font-semibold">Output:</span>
+                    <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
+                      {judge0Results.stdout}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {shouldShowSampleComparison && (
             <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
