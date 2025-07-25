@@ -56,19 +56,14 @@ const SolutionSection = ({
 
   const showNotification = (type, message) => {
     setNotification({ type, message });
-    // Auto-dismiss after 3 seconds
-    setTimeout(() => setNotification(null), 3000);
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => setNotification(null), 5000);
   };
 
   // Helper function to check if code has been modified since last save
   const hasCodeChanged = (code) => {
-    if (!hasValidCode(code)) return false; // Template or empty code doesn't count as changes
+    if (!hasValidCode(code)) return false; 
     return code !== lastSavedCode;
-  };
-
-  // Helper function to show unsaved changes warning
-  const showUnsavedChangesWarning = (action) => {
-    showNotification('warning', `You have unsaved changes! Your code will be lost if you ${action} without saving.`);
   };
 
   // Helper function to show confirmation modal
@@ -518,9 +513,6 @@ const SolutionSection = ({
       // Update tracking after successful save
       setLastSavedCode(answer);
       setHasUnsavedChanges(false);
-      
-      // DON'T reset timer after save - keep accumulating time like QuizQuestion
-      // setStartTime(Date.now()); // Removed - timer continues running
       
       setTimeout(() => setSaveStatus('idle'), 3000);
 
