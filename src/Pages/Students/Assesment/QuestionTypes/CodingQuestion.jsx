@@ -109,12 +109,11 @@ const CodingQuestion = ({
   if (!fullDetails) return <div className="text-center py-10">Loading question details...</div>;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div >
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">{question.content?.question_text}</h1>
-          <div className="flex items-center gap-3 mt-2">
+         <div className="flex items-center gap-3 mt-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               <Target className="w-3 h-3 mr-1" /> {fullDetails.difficulty_level}
             </span>
