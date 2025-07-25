@@ -54,6 +54,42 @@ const SolutionSection = ({
   const [pendingAction, setPendingAction] = useState(null); // Store pending action details
   const [startTime, setStartTime] = useState(Date.now()); // Track when question started
 
+  // Helper functions for submission state persistence
+  const getSubmissionStateKey = (questionId, submissionId) => {
+    return `submission_state_${submissionId}_${questionId}`;
+  };
+
+  const saveSubmissionState = (questionId, submissionId, isSubmitted) => {
+    const key = getSubmissionStateKey(questionId, submissionId);
+    const stateData = {
+      isSubmitted,
+      timestamp: Date.now(),
+      questionId,
+      submissionId
+    };
+    console.log('Saving submission state:', key, stateData);
+    localStorage.setItem(key, JSON.stringify(stateData));
+  };
+
+  const getSubmissionState = (questionId, submissionId) => {
+    const key = getSubmissionStateKey(questionId, submissionId);
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // Optional: Clear submission state for a question (useful for development/testing)
+  const clearSubmissionState = (questionId, submissionId) => {
+    const key = getSubmissionStateKey(questionId, submissionId);
+    localStorage.removeItem(key);
+  };
+
   const showNotification = (type, message) => {
     setNotification({ type, message });
     // Auto-dismiss after 5 seconds
@@ -104,7 +140,18 @@ const SolutionSection = ({
         setCustomInput(''); // Clear custom input
         setLastActionType(null); // Reset action type
         setSaveStatus('idle'); // Reset save status
-        setSubmitStatus(null); // Reset submit status - each question is independent
+        
+        // Check submission state for the new question
+        const localSubmissionId = localStorage.getItem("submission_id");
+        const currentSubmissionId = submissionId || localSubmissionId;
+        if (newQuestionId && currentSubmissionId) {
+          const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
+          if (submissionState && submissionState.isSubmitted) {
+            setSubmitStatus('success');
+          } else {
+            setSubmitStatus(null); // Reset submit status for new unsubmitted question
+          }
+        }
       }
     } else if (!confirmed && pendingAction?.type === 'questionChange') {
       // User cancelled question change - revert to old question
@@ -124,6 +171,23 @@ const SolutionSection = ({
   };
 
   const availableLanguages = getAvailableLanguages();
+
+  // Check for existing submission state when question loads
+  useEffect(() => {
+    const localSubmissionId = localStorage.getItem("submission_id");
+    const currentSubmissionId = submissionId || localSubmissionId;
+    const currentQuestionId = question?._id;
+
+    if (currentQuestionId && currentSubmissionId) {
+      const submissionState = getSubmissionState(currentQuestionId, currentSubmissionId);
+      console.log('Checking submission state for question:', currentQuestionId, 'State:', submissionState);
+      if (submissionState && submissionState.isSubmitted) {
+        setSubmitStatus('success');
+        // Show notification that this question was already submitted
+        showNotification('info', 'This question has already been submitted');
+      }
+    }
+  }, [question?._id, submissionId]);
 
   // Track unsaved changes when code changes
   useEffect(() => {
@@ -159,7 +223,18 @@ const SolutionSection = ({
       setCustomInput(''); // Clear custom input
       setLastActionType(null); // Reset action type
       setSaveStatus('idle'); // Reset save status
-      setSubmitStatus(null); // Reset submit status - each question is independent
+      
+      // Check submission state for the new question
+      const localSubmissionId = localStorage.getItem("submission_id");
+      const currentSubmissionId = submissionId || localSubmissionId;
+      if (newQuestionId && currentSubmissionId) {
+        const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
+        if (submissionState && submissionState.isSubmitted) {
+          setSubmitStatus('success');
+        } else {
+          setSubmitStatus(null); // Reset submit status for new unsubmitted question
+        }
+      }
       
     } else if (newQuestionId && !currentQuestionId) {
       setCurrentQuestionId(newQuestionId);
@@ -315,6 +390,16 @@ const SolutionSection = ({
       return;
     }
 
+    // Check if question is already submitted
+    const localSubmissionId = localStorage.getItem("submission_id");
+    const currentSubmissionId = submissionId || localSubmissionId;
+    const submissionState = getSubmissionState(question._id, currentSubmissionId);
+    if (submissionState && submissionState.isSubmitted) {
+      showNotification('error', 'This question has already been submitted and cannot be executed');
+      setSubmitStatus('success'); // Ensure buttons stay disabled
+      return;
+    }
+
     try {
       setLastActionType('runCode'); // Mark this as run code action
       const result = await executeCode(answer, selectedLanguage, customInput);
@@ -360,6 +445,14 @@ const SolutionSection = ({
 
     if (!currentSubmissionId || !currentQuestionId) {
       showNotification('error', 'Missing submission or question data');
+      return;
+    }
+
+    // Check if question is already submitted
+    const submissionState = getSubmissionState(question._id, currentSubmissionId);
+    if (submissionState && submissionState.isSubmitted) {
+      showNotification('error', 'This question has already been submitted and test cases cannot be run');
+      setSubmitStatus('success'); // Ensure buttons stay disabled
       return;
     }
 
@@ -488,6 +581,15 @@ const SolutionSection = ({
       return;
     }
 
+    // Check if question is already submitted
+    const submissionState = getSubmissionState(question._id, currentSubmissionId);
+    if (submissionState && submissionState.isSubmitted) {
+      setSaveStatus('error');
+      showNotification('error', 'This question has already been submitted and cannot be modified');
+      setSubmitStatus('success'); // Ensure buttons stay disabled
+      return;
+    }
+
     try {
       setSaveStatus('saving');
 
@@ -523,9 +625,13 @@ const SolutionSection = ({
       if (error.response) {
         if (
           error.response.status === 400 &&
-          error.response.data.message.includes("cannot update a coding questions answer")
+          (error.response.data.message.includes("cannot update a coding questions answer") ||
+           error.response.data.message.includes("Once it is submitted, it cannot be changed"))
         ) {
-          showNotification('error', 'Coding answers cannot be updated after submission');
+          // This question was already submitted - save this state for future reference
+          saveSubmissionState(question._id, currentSubmissionId, true);
+          setSubmitStatus('success'); // Disable buttons
+          showNotification('error', 'This question has already been submitted and cannot be modified');
         } else {
           showNotification('error', 'Failed to save answer');
         }
@@ -598,6 +704,10 @@ const SolutionSection = ({
 
       await evaluateCodingSubmission(currentSubmissionId, payload);
       setSubmitStatus("success");
+      
+      // Save submission state to localStorage for persistence
+      saveSubmissionState(currentQuestionId, currentSubmissionId, true);
+      
       showNotification('success', 'Code submitted successfully!');
 
     } catch (error) {
