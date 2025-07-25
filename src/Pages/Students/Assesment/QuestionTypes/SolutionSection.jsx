@@ -46,9 +46,62 @@ const SolutionSection = ({
   const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
   const { isExecuting, executeCode, } = useJudge0();
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
+  const [lastSavedCode, setLastSavedCode] = useState(''); // Track last saved code
+  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); // Track current question
+  const [showConfirmModal, setShowConfirmModal] = useState(false); // Show confirmation modal
+  const [pendingAction, setPendingAction] = useState(null); // Store pending action details
 
   const showNotification = (type, message) => {
     setNotification({ type, message });
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // Helper function to check if code has been modified since last save
+  const hasCodeChanged = (code) => {
+    if (!hasValidCode(code)) return false; // Template or empty code doesn't count as changes
+    return code !== lastSavedCode;
+  };
+
+  // Helper function to show unsaved changes warning
+  const showUnsavedChangesWarning = (action) => {
+    showNotification('warning', `You have unsaved changes! Your code will be lost if you ${action} without saving.`);
+  };
+
+  // Helper function to show confirmation modal
+  const showConfirmationModal = (actionType, actionData) => {
+    setPendingAction({ type: actionType, data: actionData });
+    setShowConfirmModal(true);
+  };
+
+  // Handle confirmation modal response
+  const handleConfirmAction = (confirmed) => {
+    setShowConfirmModal(false);
+    
+    if (confirmed && pendingAction) {
+      if (pendingAction.type === 'languageChange') {
+        // Proceed with language change
+        const newLanguage = pendingAction.data.newLanguage;
+        setPreviousLanguage(selectedLanguage);
+        setSelectedLanguage(newLanguage);
+        
+        // Load template for new language
+        const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+        onAnswerChange(question._id, template);
+        
+        // Reset tracking when template is loaded
+        setLastSavedCode('');
+        setHasUnsavedChanges(false);
+      } else if (pendingAction.type === 'questionChange') {
+        // Question change is handled by parent component
+        // We just reset our tracking
+        setLastSavedCode('');
+        setHasUnsavedChanges(false);
+      }
+    }
+    
+    setPendingAction(null);
   };
   
 
@@ -61,23 +114,80 @@ const SolutionSection = ({
 
   const availableLanguages = getAvailableLanguages();
 
+  // Track unsaved changes when code changes
+  useEffect(() => {
+    if (hasValidCode(answer)) {
+      const hasChanges = hasCodeChanged(answer);
+      setHasUnsavedChanges(hasChanges);
+    } else {
+      setHasUnsavedChanges(false);
+    }
+  }, [answer, lastSavedCode]);
+
+  // Track question changes
+  useEffect(() => {
+    const newQuestionId = question?._id;
+    if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
+      // Question has changed
+      if (hasUnsavedChanges && hasValidCode(answer)) {
+        showConfirmationModal('questionChange', { 
+          oldQuestionId: currentQuestionId, 
+          newQuestionId: newQuestionId 
+        });
+        return; // Don't update state until user confirms
+      }
+      setCurrentQuestionId(newQuestionId);
+      setLastSavedCode(''); // Reset saved code tracking for new question
+      setHasUnsavedChanges(false);
+    } else if (newQuestionId && !currentQuestionId) {
+      setCurrentQuestionId(newQuestionId);
+    }
+  }, [question?._id, hasUnsavedChanges, answer]);
+
+  // Add browser beforeunload warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges && hasValidCode(answer)) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, answer]);
+
   useEffect(() => {
     // Check if language has changed
     const languageChanged = previousLanguage !== selectedLanguage;
 
-    if (languageChanged) {
+    if (languageChanged && previousLanguage) {
+      // Check for unsaved changes before switching language
+      if (hasUnsavedChanges && hasValidCode(answer)) {
+        // Show confirmation modal for language change
+        showConfirmationModal('languageChange', { 
+          oldLanguage: previousLanguage, 
+          newLanguage: selectedLanguage 
+        });
+        return; // Don't proceed until user confirms
+      }
       setPreviousLanguage(selectedLanguage);
     }
 
+    // Only load template if no unsaved changes or user confirmed
     if (!answer ||
       answer.trim() === '' ||
-      (languageChanged && autoReloadTemplate)) {
+      (languageChanged && autoReloadTemplate && !hasUnsavedChanges)) {
 
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-      // console.log(`Loading template for ${selectedLanguage}:`, template.substring(0, 50) + '...');
       onAnswerChange(question._id, template);
+      
+      // Reset tracking when template is loaded
+      setLastSavedCode('');
+      setHasUnsavedChanges(false);
     }
-  }, [selectedLanguage, question._id, onAnswerChange, autoReloadTemplate, previousLanguage, answer]);
+  }, [selectedLanguage, question._id, onAnswerChange, autoReloadTemplate, previousLanguage, answer, hasUnsavedChanges]);
 
   // Ensure selected language is valid
   useEffect(() => {
@@ -88,7 +198,50 @@ const SolutionSection = ({
     }
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
 
-  // Auto-enable default languages if only one language is available from question
+  // Helper function to check if current code is just template code
+  const isTemplateCode = (code) => {
+    if (!code || code.trim() === '') return true;
+    
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    const normalizedCode = code.replace(/\s+/g, ' ').trim();
+    const normalizedTemplate = template.replace(/\s+/g, ' ').trim();
+    
+    return normalizedCode === normalizedTemplate;
+  };
+
+  // Helper function to check if code has meaningful content
+  const hasValidCode = (code) => {
+    if (!code || code.trim() === '') return false;
+    if (isTemplateCode(code)) return false;
+    
+    // Check if code has more than just comments and basic structure
+    const lines = code.split('\n').filter(line => {
+      const trimmed = line.trim();
+      return trimmed && 
+             !trimmed.startsWith('//') && 
+             !trimmed.startsWith('#') && 
+             !trimmed.startsWith('/*') && 
+             !trimmed.startsWith('*') &&
+             trimmed !== '{' && 
+             trimmed !== '}';
+    });
+    
+    return lines.length > 3; // Require more than basic structure
+  };
+
+  // Handle language dropdown change
+  const handleLanguageChange = (newLanguage) => {
+    // If there are unsaved changes, show confirmation modal
+    if (hasUnsavedChanges && hasValidCode(answer)) {
+      showConfirmationModal('languageChange', { 
+        oldLanguage: selectedLanguage, 
+        newLanguage: newLanguage 
+      });
+    } else {
+      // No unsaved changes, proceed with language change
+      setSelectedLanguage(newLanguage);
+    }
+  };
   useEffect(() => {
     if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
       // console.log('Only one language available from question, auto-enabling default languages');
@@ -115,16 +268,24 @@ const SolutionSection = ({
   };
 
   const handleRunWithAPI = async () => {
-    // console.log(answer)
-    if (!answer || answer.trim() === '') {
-      showNotification('warning', 'Please write some code before running!');
+    // Check if user has written meaningful code
+    if (!hasValidCode(answer)) {
+      showNotification('warning', 'Please write your solution code before running!');
       return;
     }
 
     try {
       const result = await executeCode(answer, selectedLanguage, customInput);
+      
+      // Set status based on execution result
+      if (result.status?.description === 'Accepted') {
+        result.status.description = 'Compiled';
+        showNotification('success', 'Code compiled and executed successfully');
+      } else {
+        showNotification('error', 'Code compilation or execution failed');
+      }
+      
       setJudge0Results(result);
-      showNotification('success', 'Code executed successfully');
     } catch (error) {
       setJudge0Results({
         status: { description: 'Error' },
@@ -135,13 +296,14 @@ const SolutionSection = ({
   };
 
   const handleRunTestCases = async () => {
-    if (!answer || answer.trim() === '') {
-      //alert('Please write some code before running test cases!');
+    // Check if user has written meaningful code
+    if (!hasValidCode(answer)) {
+      showNotification('warning', 'Please write your solution code before running test cases!');
       return;
     }
 
     if (!fullDetails?.sample_test_cases || fullDetails.sample_test_cases.length === 0) {
-      //alert('No test cases available for this question');
+      showNotification('warning', 'No test cases available for this question');
       return;
     }
 
@@ -150,31 +312,29 @@ const SolutionSection = ({
     const currentQuestionId = fullDetails?.question_id || question._id;
 
     if (!currentSubmissionId || !currentQuestionId) {
-      //alert("Missing submission or question data");
+      showNotification('error', 'Missing submission or question data');
       return;
     }
 
     setIsRunningTests(true);
     try {
       // Step 1: Save the answer first
-      //console.log('Saving answer before running test cases...');
-
       const savePayload = {
         sectionId: question.section_id,
         questionId: question._id,
         type: 'coding',
         codeSolution: answer,
-        programmingLanguage: selectedLanguage, // Backend expects this field
+        programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
         timeTakenSeconds: 0,
       };
 
-      //console.log('Test cases save payload:', savePayload);
-      //console.log('Selected language for test cases:', selectedLanguage);
-
       await saveCodingAnswer(currentSubmissionId, savePayload);
-      // console.log('Save response:', saveResponse.data);
+
+      // Update tracking after successful save in test cases
+      setLastSavedCode(answer);
+      setHasUnsavedChanges(false);
 
       // Step 2: Get language ID for Judge0
       const getLanguageId = (language) => {
@@ -193,39 +353,65 @@ const SolutionSection = ({
           'kotlin': 78,
           'typescript': 74,
         };
-        return languageMap[language.toLowerCase()] || 71; // Default to Python
+        return languageMap[language.toLowerCase()] || 71;
       };
 
-      // Step 3: Prepare test cases payload (question_id is passed in URL, not body)
+      // Step 3: Prepare test cases payload
       const testPayload = {
         code: answer,
         language_id: getLanguageId(selectedLanguage),
-
       };
-      //console.log(testPayload);
-
-
 
       try {
-         await runSampleTestCases(currentQuestionId, testPayload);
-        // Check if response is successful
-        //console.log(response)
+        const response = await runSampleTestCases(currentQuestionId, testPayload);
+        
+        // Process test results and determine status
+        let testResults = null;
+        if (response.sample_results && Array.isArray(response.sample_results)) {
+          testResults = response.sample_results;
+        } else if (response.results && Array.isArray(response.results)) {
+          testResults = response.results;
+        } else if (response.data && Array.isArray(response.data)) {
+          testResults = response.data;
+        } else if (Array.isArray(response)) {
+          testResults = response;
+        }
 
-
-
-
-
-      } catch  {
-
-        // console.error(apiError)
+        if (testResults && testResults.length > 0) {
+          const passedCount = testResults.filter(result => 
+            result.status === 'PASSED' || result.status === 'Accepted' || result.passed === true
+          ).length;
+          const totalCount = testResults.length;
+          
+          // Set status based on test results
+          const allPassed = passedCount === totalCount;
+          const statusDescription = allPassed ? 'Correct' : 'Incorrect';
+          
+          setJudge0Results({
+            testResults: testResults,
+            status: { description: statusDescription },
+            message: `Test cases completed: ${passedCount}/${totalCount} passed`
+          });
+          
+          if (allPassed) {
+            showNotification('success', `All test cases passed! (${passedCount}/${totalCount})`);
+          } else {
+            showNotification('error', `Some test cases failed. (${passedCount}/${totalCount} passed)`);
+          }
+          
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 3000);
+        } else {
+          showNotification('error', 'Test cases completed but no valid results received');
+        }
+      } catch (apiError) {
+        showNotification('error', 'Failed to run test cases. Please try again.');
+        console.error('Test cases API error:', apiError);
       }
 
-    } catch  {
-      
-      
-
-      // If it's a save error, show appropriate status
-      
+    } catch (error) {
+      showNotification('error', 'Failed to save answer before running test cases');
+      console.error('Save error:', error);
     } finally {
       setIsRunningTests(false);
     }
@@ -235,11 +421,18 @@ const SolutionSection = ({
 
   const handleSaveAnswer = async () => {
     const localSubmissionId = localStorage.getItem("submission_id");
-
     const currentSubmissionId = submissionId || localSubmissionId;
 
-    if (!currentSubmissionId || !question?._id || !answer || !selectedLanguage) {
+    // Check if user has written meaningful code
+    if (!hasValidCode(answer)) {
+      showNotification('warning', 'Please write your solution code before saving!');
       setSaveStatus('error');
+      return;
+    }
+
+    if (!currentSubmissionId || !question?._id || !selectedLanguage) {
+      setSaveStatus('error');
+      showNotification('error', 'Missing required data for saving');
       return;
     }
 
@@ -251,7 +444,7 @@ const SolutionSection = ({
         questionId: question._id,
         type: 'coding',
         codeSolution: answer,
-        programmingLanguage: selectedLanguage, // Backend expects this field
+        programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
         timeTakenSeconds: 0,
@@ -260,6 +453,12 @@ const SolutionSection = ({
       const response = await saveCodingAnswer(currentSubmissionId, payload);
 
       setSaveStatus('saved');
+      showNotification('success', 'Answer saved successfully!');
+      
+      // Update tracking after successful save
+      setLastSavedCode(answer);
+      setHasUnsavedChanges(false);
+      
       setTimeout(() => setSaveStatus('idle'), 3000);
 
       return response;
@@ -271,8 +470,12 @@ const SolutionSection = ({
           error.response.status === 400 &&
           error.response.data.message.includes("cannot update a coding questions answer")
         ) {
-          alert("Coding answers cannot be updated after submission");
+          showNotification('error', 'Coding answers cannot be updated after submission');
+        } else {
+          showNotification('error', 'Failed to save answer');
         }
+      } else {
+        showNotification('error', 'Failed to save answer');
       }
 
       setTimeout(() => setSaveStatus('idle'), 3000);
@@ -281,14 +484,18 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
+    // Check if user has written meaningful code
+    if (!hasValidCode(answer)) {
+      showNotification('warning', 'Please write your solution code before submitting!');
+      return;
+    }
+
     let res;
 
     try {
-      res = await handleSaveAnswer(); // Await the promise
-      //console.log("Saved answer response:", res);
-    } catch  {
-      //console.error("Error saving answer:", error);
-      //alert("Failed to save answer before submitting.");
+      res = await handleSaveAnswer();
+    } catch (error) {
+      showNotification('error', 'Failed to save answer before submitting');
       return;
     }
 
@@ -299,7 +506,7 @@ const SolutionSection = ({
     const currentQuestionId = fullDetails?.question_id || question._id;
 
     if (!currentSubmissionId || !currentQuestionId) {
-      //alert("Missing submission or question data");
+      showNotification('error', 'Missing submission or question data');
       return;
     }
 
@@ -331,17 +538,17 @@ const SolutionSection = ({
         code: answer,
         language: selectedLanguage,
         language_id: getLanguageId(selectedLanguage),
-        answer_id: answerId, // ✅ include answer_id in the payload
+        answer_id: answerId,
       };
 
       await evaluateCodingSubmission(currentSubmissionId, payload);
-      //console.log("Evaluation response:", response);
       setSubmitStatus("success");
-
+      showNotification('success', 'Code submitted successfully!');
 
     } catch (error) {
       setSubmitStatus("error");
-      alert(error.response?.data?.message || error.message || "Failed to submit code");
+      const errorMessage = error.response?.data?.message || error.message || "Failed to submit code";
+      showNotification('error', errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -350,9 +557,15 @@ const SolutionSection = ({
 
 
   const getStatusIcon = (status) => {
-    if (status?.description === 'Accepted') {
+    const description = status?.description;
+    
+    if (description === 'Compiled' || description === 'Accepted') {
+      return <CheckCircle className="w-4 h-4 text-blue-500" />;
+    } else if (description === 'Correct') {
       return <CheckCircle className="w-4 h-4 text-green-500" />;
-    } else if (status?.description?.includes('Error') || status?.description?.includes('Failed')) {
+    } else if (description === 'Incorrect') {
+      return <XCircle className="w-4 h-4 text-red-500" />;
+    } else if (description?.includes('Error') || description?.includes('Failed')) {
       return <XCircle className="w-4 h-4 text-red-500" />;
     } else {
       return <AlertCircle className="w-4 h-4 text-yellow-500" />;
@@ -365,17 +578,21 @@ const SolutionSection = ({
 
   // Normalize output (remove trailing newlines, extra spaces)
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
-  
-{notification && (
-        <NotificationMessage type={notification.type} message={notification.message} />
-      )}
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 space-y-6">
+    <div className=" space-y-6">
+      {notification && (
+        <NotificationMessage 
+          type={notification.type} 
+          message={notification.message} 
+          onClose={() => setNotification(null)}
+        />
+      )}
+      
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
           <Code2 className="w-6 h-6 text-indigo-500" />
-          Enhanced Code Editor & Execution Environment
+          Code Editor & Execution Environment
         </h2>
 
         {/* API Status Indicator */}
@@ -405,12 +622,7 @@ const SolutionSection = ({
           value={selectedLanguage}
           onChange={(e) => {
             const newLanguage = e.target.value;
-            // console.log('🔄 [LANGUAGE CHANGE] Language dropdown changed:', {
-            //   from: selectedLanguage,
-            //   to: newLanguage,
-            //   timestamp: new Date().toISOString()
-            // });
-            setSelectedLanguage(newLanguage);
+            handleLanguageChange(newLanguage);
           }}
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
         >
@@ -497,6 +709,9 @@ const SolutionSection = ({
             <div className="text-xs text-gray-500">
               Lines: {answer ? answer.split('\n').length : 0} |
               Chars: {answer ? answer.length : 0}
+              {hasUnsavedChanges && (
+                <span className="ml-2 text-orange-600 font-medium">● Unsaved</span>
+              )}
             </div>
           </div>
 
@@ -572,9 +787,14 @@ const SolutionSection = ({
                 {getStatusIcon(judge0Results.status)}
                 <p className="text-sm font-medium text-gray-600">Status</p>
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${judge0Results.status?.description === 'Accepted'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                judge0Results.status?.description === 'Compiled' || judge0Results.status?.description === 'Accepted' 
+                  ? 'bg-blue-100 text-blue-800'
+                  : judge0Results.status?.description === 'Correct'
+                    ? 'bg-green-100 text-green-800'
+                    : judge0Results.status?.description === 'Incorrect'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-800'
                 }`}>
                 {judge0Results.status?.description || 'Unknown'}
               </span>
@@ -790,18 +1010,22 @@ const SolutionSection = ({
               type="button"
               onClick={handleSaveAnswer}
               disabled={saveStatus === 'saving'}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${saveStatus === 'saving'
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
+                saveStatus === 'saving'
                   ? 'bg-cyan-400 text-white cursor-not-allowed'
                   : saveStatus === 'saved'
                     ? 'bg-green-100 text-green-800 border-2 border-green-200'
                     : saveStatus === 'error'
                       ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                      : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
+                      : hasUnsavedChanges
+                        ? 'bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500 shadow-sm animate-pulse'
+                        : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
                 }`}
             >
               {saveStatus === 'saving' ? 'Saving...' :
                 saveStatus === 'saved' ? '✓ Saved!' :
-                  saveStatus === 'error' ? '✗ Error Saving' : 'Save Answer'}
+                  saveStatus === 'error' ? '✗ Error Saving' : 
+                    hasUnsavedChanges ? '● Save Changes' : 'Save Answer'}
             </button>
 
 
@@ -850,6 +1074,47 @@ const SolutionSection = ({
       </div>
       {submitStatus === "success" && (
         <p className="text-green-600 mt-4">Submitted successfully!</p>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle className="w-6 h-6 text-orange-500" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirm Action
+              </h3>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700">
+                {pendingAction?.type === 'languageChange' 
+                  ? `You have unsaved changes. Changing from ${pendingAction.data.oldLanguage?.toUpperCase()} to ${pendingAction.data.newLanguage?.toUpperCase()} will replace your current code with the template. Do you want to continue?`
+                  : 'You have unsaved changes. Switching to a different question will lose your current work. Do you want to continue?'
+                }
+              </p>
+              <p className="text-sm text-orange-600 mt-2 font-medium">
+                This action cannot be undone. Consider saving your work first.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => handleConfirmAction(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleConfirmAction(true)}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                Yes, Continue
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
