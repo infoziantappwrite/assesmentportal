@@ -95,11 +95,26 @@ const SolutionSection = ({
         setLastSavedCode('');
         setHasUnsavedChanges(false);
       } else if (pendingAction.type === 'questionChange') {
-        // Question change is handled by parent component
-        // We just reset our tracking
+        // Proceed with question change - only reset states for non-submitted questions
+        const newQuestionId = pendingAction.data.newQuestionId;
+        const shouldResetState = submitStatus !== 'success';
+        
+        setCurrentQuestionId(newQuestionId);
         setLastSavedCode('');
         setHasUnsavedChanges(false);
+        
+        if (shouldResetState) {
+          setJudge0Results(null); // Clear previous execution results
+          setCustomInput(''); // Clear custom input
+          setLastActionType(null); // Reset action type
+          setSaveStatus('idle'); // Reset save status
+          setSubmitStatus(null); // Reset submit status
+        }
       }
+    } else if (!confirmed && pendingAction?.type === 'questionChange') {
+      // User cancelled question change - revert to old question
+      // Note: The parent component should handle preventing the question change
+      // We just reset our pending action
     }
     
     setPendingAction(null);
@@ -137,13 +152,27 @@ const SolutionSection = ({
         });
         return; // Don't update state until user confirms
       }
+      
+      // Only reset states if the question hasn't been submitted
+      // Check if this question has been submitted by looking at submitStatus or other indicators
+      const shouldResetState = submitStatus !== 'success';
+      
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
       setHasUnsavedChanges(false);
+      
+      if (shouldResetState) {
+        // Only reset execution results for non-submitted questions
+        setJudge0Results(null); // Clear previous execution results
+        setCustomInput(''); // Clear custom input
+        setLastActionType(null); // Reset action type
+        setSaveStatus('idle'); // Reset save status
+        setSubmitStatus(null); // Reset submit status
+      }
     } else if (newQuestionId && !currentQuestionId) {
       setCurrentQuestionId(newQuestionId);
     }
-  }, [question?._id, hasUnsavedChanges, answer]);
+  }, [question?._id, hasUnsavedChanges, answer, submitStatus]);
 
   // Add browser beforeunload warning for unsaved changes
   useEffect(() => {
@@ -198,6 +227,22 @@ const SolutionSection = ({
       setSelectedLanguage(availableLanguages[0].language);
     }
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
+
+  // Clear results when question changes (backup cleanup)
+  useEffect(() => {
+    if (question?._id && currentQuestionId !== question._id) {
+      // Only reset for non-submitted questions
+      const shouldResetState = submitStatus !== 'success';
+      
+      if (shouldResetState) {
+        setJudge0Results(null);
+        setCustomInput('');
+        setLastActionType(null);
+        setSaveStatus('idle');
+        setSubmitStatus(null);
+      }
+    }
+  }, [question?._id, currentQuestionId, submitStatus]);
 
   // Helper function to check if current code is just template code
   const isTemplateCode = (code) => {
@@ -903,7 +948,6 @@ const SolutionSection = ({
       {(testResults || judge0Results?.testResults) && (
         <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
           <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FlaskConical className="w-5 h-5 text-yellow-500" />
             Sample Test Case Results
           </h3>
 
