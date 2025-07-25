@@ -1062,21 +1062,24 @@ const SolutionSection = ({
             <button
               type="button"
               onClick={handleSaveAnswer}
-              disabled={saveStatus === 'saving'}
+              disabled={saveStatus === 'saving' || submitStatus === 'success'}
               className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
                 saveStatus === 'saving'
                   ? 'bg-cyan-400 text-white cursor-not-allowed'
-                  : saveStatus === 'saved'
-                    ? 'bg-green-100 text-green-800 border-2 border-green-200'
-                    : saveStatus === 'error'
-                      ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                      : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
+                  : submitStatus === 'success'
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                    : saveStatus === 'saved'
+                      ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                      : saveStatus === 'error'
+                        ? 'bg-red-100 text-red-800 border-2 border-red-200'
+                        : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
               }`}
             >
-                {saveStatus === 'saving' ? 'Saving...' :
-                  saveStatus === 'saved' ? '✓ Saved!' :
-                    saveStatus === 'error' ? '✗ Error Saving' :
-                      'Save Answer'}
+                {submitStatus === 'success' ? 'Submitted' :
+                  saveStatus === 'saving' ? 'Saving...' :
+                    saveStatus === 'saved' ? '✓ Saved!' :
+                      saveStatus === 'error' ? '✗ Error Saving' :
+                        'Save Answer'}
             </button>
 
 
@@ -1089,35 +1092,41 @@ const SolutionSection = ({
             <button
               type="button"
               onClick={handleRunWithAPI}
-              disabled={isExecuting}
-              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${isExecuting ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              disabled={isExecuting || submitStatus === 'success'}
+              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${
+                isExecuting || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
+              }`}
             >
               <Play className="w-4 h-4" />
-              {isExecuting ? 'Executing...' : 'Run Code'}
+              {submitStatus === 'success' ? 'Submitted' : 
+                isExecuting ? 'Executing...' : 'Run Code'}
             </button>
 
             <button
               type="button"
               onClick={handleRunTestCases}
-              disabled={isRunningTests}
-              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${isRunningTests ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              disabled={isRunningTests || submitStatus === 'success'}
+              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${
+                isRunningTests || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
+              }`}
             >
               <FlaskConical className="w-4 h-4" />
-              {isRunningTests ? 'Running Tests...' : 'Run Test Cases'}
+              {submitStatus === 'success' ? 'Submitted' : 
+                isRunningTests ? 'Running Tests...' : 'Run Test Cases'}
             </button>
 
 
             <button
               type="button"
               onClick={handleSubmitCode}
-              disabled={isSubmitting}
-              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
+              disabled={isSubmitting || submitStatus === 'success'}
+              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${
+                isSubmitting || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
+              }`}
             >
               <Terminal className="w-4 h-4" />
-              {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+              {submitStatus === 'success' ? 'Submitted' : 
+                isSubmitting ? 'Submitting...' : 'Submit Answer'}
             </button>
 
           </div>
