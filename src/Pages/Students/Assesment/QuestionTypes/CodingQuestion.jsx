@@ -300,7 +300,7 @@ const CodingQuestion = ({
           </div>
 
           {/* Hidden Test Cases */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <button
               onClick={() => toggleTestCase('hidden')}
               className="w-full flex items-center justify-between px-6 py-4 text-left font-medium text-gray-800 hover:bg-gray-50 transition-colors"
@@ -370,7 +370,7 @@ const CodingQuestion = ({
                 ))}
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       )}
 
