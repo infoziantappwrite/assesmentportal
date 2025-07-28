@@ -245,7 +245,9 @@ const EditSection = () => {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
+              className={`bg-green-600 text-white px-6 py-2 rounded-lg ${
+                submitting ? "opacity-50 cursor-not-allowed" : "hover:bg-green-700"
+              }`}
             >
               {submitting ? "Saving..." : "Save Changes"}
             </button>

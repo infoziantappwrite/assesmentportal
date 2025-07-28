@@ -159,7 +159,7 @@ const ManageAssesment = () => {
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-4 italic">
+                <p className="text-sm text-gray-600 mb-4 italic truncate">
                   {item.description || "No description provided."}
                 </p>
 
@@ -183,11 +183,16 @@ const ManageAssesment = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2 text-xs mb-3">
-                  {item.is_active && (
-                    <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                      Active
-                    </span>
-                  )}
+                  <span
+                    className={`px-2 py-0.5 rounded-full ${
+                      item.is_active
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {item.is_active ? "Active" : "Inactive"}
+                  </span>
+
                   {item.is_template && (
                     <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                       Template
