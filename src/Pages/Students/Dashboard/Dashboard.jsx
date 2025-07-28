@@ -15,6 +15,22 @@ import { getMyAssignments } from '../../../Controllers/SubmissionController';
 const TABS = ['upcoming', 'active', 'completed'];
 const visibleTabs = ['upcoming', 'active'];
 
+const formatDateTimeUTC = (isoString) => {
+    if (!isoString) return 'N/A';
+    const date = new Date(isoString);
+    if (isNaN(date)) return 'Invalid Date';
+ 
+    return date.toLocaleString('en-GB', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
 const statusColors = {
   upcoming: 'border-blue-200 text-blue-800',
   active: 'border-green-200 text-green-800',
@@ -106,7 +122,7 @@ const Dashboard = () => {
         {loading ? (
           <p className="text-gray-500 text-sm">Loading assignments...</p>
         ) : filteredTests.length ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTests.map((test) => {
               const start = new Date(test.schedule?.start_time);
               const end = new Date(test.schedule?.end_time);
@@ -115,7 +131,7 @@ const Dashboard = () => {
               return (
                 <div
                   key={test._id}
-                  className={`p-4 rounded-lg border shadow-sm bg-green-100 hover:shadow-md transition space-y-3 ${statusColors[test.display_status]
+                  className={`p-4 rounded-xl border-4 shadow-sm bg-white-100 hover:shadow-md transition space-y-3 ${statusColors[test.display_status]
                     }`}
                 >
                   <div className="flex items-center justify-between">
@@ -125,32 +141,30 @@ const Dashboard = () => {
                     {statusIcon[test.display_status]}
                   </div>
 
-                  <p className="text-sm text-gray-600 truncate" title={test.assessment_id?.description}>
+                  <p className="text-sm text-gray-600 truncate mb-2" title={test.assessment_id?.description}>
                     {test.assessment_id?.description || 'No description'}
                   </p>
 
-                  <div className="flex justify-between text-sm text-gray-800">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {start.toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {formatDuration(durationMin)}
-                    </div>
-                  </div>
+                 
+                    
 
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span className="flex items-center gap-1 text-green-700">
-                      <PlayCircle className="w-4 h-4" />
-                      {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="flex items-center gap-1 text-red-700">
-                      <XCircle className="w-4 h-4" />
-                      {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
+                  
+                    <div className="flex flex-wrap items-center gap-4 text-sm mt-3">
+    <span className="flex items-center gap-1 text-green-700">
+      <PlayCircle className="w-4 h-4" />
+      Start: {formatDateTimeUTC(start)}
+    </span>
+    <span className="flex items-center gap-1 text-red-700">
+      <XCircle className="w-4 h-4" />
+      End: {formatDateTimeUTC(end)}
+    </span>
+    <span className="flex items-center gap-1 text-gray-700">
+      <Clock className="w-4 h-4" />
+      Total Duration: {formatDuration(durationMin)}
+    </span>
+  </div>
 
+                  
                   {test.display_status === 'active' && (
                     <div className="text-right pt-2">
                       <StartTestButton
