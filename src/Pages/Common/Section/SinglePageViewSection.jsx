@@ -187,7 +187,11 @@ const SinglePageViewSection = () => {
           <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-md text-sm">
             No questions linked to this section yet.{" "}
             <button
-              onClick={() => navigate(`/admin/sections/${id}/add-question`)}
+              onClick={() => navigate(
+                  section.type === "code"
+                    ? `/admin/sections/${id}/add-question-code`
+                    : `/admin/sections/${id}/add-question`
+                )}
               className="underline font-medium hover:text-yellow-900"
             >
               Click here to add questions.
