@@ -49,28 +49,28 @@ const Sidebar = ({ isOpen, onClose }) => {
       { label: 'Assessments', to: '/admin/assessments', icon: ClipboardList, gradient: 'from-teal-200 to-lime-100' },
       { label: 'Assignments', to: '/admin/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
       { label: 'Reports', to: '/admin/reports', icon: FileText, gradient: 'from-orange-200 to-red-100' },
-      { label: 'Settings', to: '/admin/settings', icon: UserCheck, gradient: 'from-indigo-200 to-purple-100' },
+      //{ label: 'Settings', to: '/admin/settings', icon: UserCheck, gradient: 'from-indigo-200 to-purple-100' },
     ],
-    college: [
-      { label: 'Dashboard', to: '/college/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
-      { label: 'Manage Students', to: '/college/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
-      { label: 'Assessments', to: '/college/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
-      { label: 'Submissions', to: '/college/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
-      { label: 'Groups', to: '/college/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
-      { label: 'Analytics', to: '/college/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
-      { label: 'Reports', to: '/college/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
-     
+    college_rep: [
+      { label: 'Dashboard', to: '/college_rep/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
+      //{ label: 'Manage Students', to: '/college_rep/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
+      // { label: 'Assessments', to: '/college_rep/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
+      // { label: 'Submissions', to: '/college_rep/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
+      //{ label: 'Analytics', to: '/college_rep/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
+      { label: 'Groups', to: '/college_rep/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Assessments', to: '/college_rep/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
+      { label: 'Assignments', to: '/college_rep/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Reports', to: '/college_rep/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
     ],
     trainer: [
       { label: 'Dashboard', to: '/trainer/dashboard', icon: LayoutDashboard, gradient: 'from-purple-200 to-pink-100' },
       { label: 'My Groups', to: '/trainer/groups', icon: Users2, gradient: 'from-blue-200 to-cyan-100' },
       { label: 'Assessments', to: '/trainer/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
       { label: 'Assignments', to: '/trainer/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
-      { label: 'Submissions', to: '/trainer/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
-      { label: 'Students', to: '/trainer/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
-      { label: 'Analytics', to: '/trainer/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
+      // { label: 'Submissions', to: '/trainer/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
+      // { label: 'Students', to: '/trainer/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
+      // { label: 'Analytics', to: '/trainer/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
       { label: 'Reports', to: '/trainer/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
-      
     ]
   };
 

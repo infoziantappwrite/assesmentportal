@@ -3,12 +3,14 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getSectionsByAssessmentId } from "../../../Controllers/SectionController";
 import { ArrowLeft, FileText, Info, Edit } from "lucide-react";
+import { useUser } from '../../../context/UserContext';
 
 const ViewSections = () => {
   const { id } = useParams(); // assessment ID
   const navigate = useNavigate();
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { role } = useUser();
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -60,13 +62,13 @@ const ViewSections = () => {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate(`/admin/sections/${section._id}`)}
+                    onClick={() => navigate(`/${role}/sections/${section._id}`)}
                     className="flex items-center gap-1 text-sm bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-md"
                   >
                     <Info className="w-4 h-4" /> View
                   </button>
                   <button
-                    onClick={() => navigate(`/admin/sections/edit/${section._id}`)}
+                    onClick={() => navigate(`/${role}/sections/edit/${section._id}`)}
                     className="flex items-center gap-1 text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
                   >
                     <Edit className="w-4 h-4" /> Edit

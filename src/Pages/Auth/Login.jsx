@@ -21,8 +21,8 @@ const Login = () => {
           case 'admin':
             navigate('/admin/dashboard');
             break;
-          case 'college':
-            navigate('/college/dashboard');
+          case 'college_rep':
+            navigate('/college_rep/dashboard');
             break;
           case 'trainer':
             navigate('/trainer/dashboard');
@@ -51,8 +51,8 @@ const Login = () => {
             case 'admin':
               navigate('/admin/dashboard');
               break;
-            case 'college':
-              navigate('/college/dashboard');
+            case 'college_rep':
+              navigate('/college_rep/dashboard');
               break;
             case 'trainer':
               navigate('/trainer/dashboard');

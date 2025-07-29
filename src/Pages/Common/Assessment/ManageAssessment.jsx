@@ -125,6 +125,8 @@ const ManageAssesment = () => {
           <button
             onClick={() => navigate(`/${role}/assessments/create`)}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg shadow text-sm"
+            style={{ display: role === 'college_rep' ? 'none' : 'flex' }}
+
           >
             <PlusCircle className="w-4 h-4" />
             Create
@@ -216,6 +218,7 @@ const ManageAssesment = () => {
                   <button
                     className="text-blue-500 hover:underline font-medium"
                     onClick={() => navigate(`/${role}/assessments/edit/${item._id}`)}
+                    style={{ display: role === 'college_rep' ? 'none' : 'inline' }}
                   >
                     Edit Details
                   </button>

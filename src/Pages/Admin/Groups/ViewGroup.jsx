@@ -21,6 +21,7 @@ import {
 import dayjs from "dayjs";
 import AddStudentsToGroup from "./AddStudentsToGroup";
 import Loader from "../../../Components/Loader";
+import { useUser } from '../../../context/UserContext';
 
 const GroupStatusToggle = ({ groupId, isActiveInitial, onStatusChange }) => {
   const [status, setStatus] = useState(isActiveInitial);
@@ -66,6 +67,7 @@ const GroupStatusToggle = ({ groupId, isActiveInitial, onStatusChange }) => {
 const ViewGroup = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { role } = useUser();
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -142,13 +144,13 @@ return (
       <div className="flex flex-wrap gap-3 items-center">
         <button
           className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-          onClick={() => navigate('/admin/groups')}
+          onClick={() => navigate(`/${role}/groups`)}
         >
           <ArrowLeft size={16} /> Back
         </button>
 
         <button
-          onClick={() => navigate(`/admin/groups/edit/${group._id}`)}
+          onClick={() => navigate(`/${role}/groups/edit/${group._id}`)}
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm flex items-center gap-2 text-sm transition"
         >
           <Pencil size={16} />

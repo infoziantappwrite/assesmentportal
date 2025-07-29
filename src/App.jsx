@@ -103,20 +103,30 @@ const App = () => {
 
 
       {/* Private College Routes */}
-      <Route element={<PrivateRoute allowedRoles={['college']} />}>
+      <Route element={<PrivateRoute allowedRoles={['college_rep']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more college-specific routes here */}
-          <Route path="/college/dashboard" element={<CollegeDashboard />} />
-          <Route path="/college/students" element={<StudentTable />} />
-          <Route path="/college/assessments" element={<CollegeTestList />} />
-          <Route path="/college/submissions" element={<CandidateList />} />
-          <Route path="/college/groups" element={<Groups />} />
-          <Route path="/college/analytics" element={<CollegeAnalytics />} />
-          <Route path="/college/reports" element={<CollegeReports />} />
-          <Route path="/college/profile" element={<CollegeProfile />} />
-          <Route path="college/test/:testId/candidates" element={<CandidateList />} />
-          <Route path="college/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
-          <Route path="/college/students/:studentId" element={<StudentDetails />} />
+          <Route path="/college_rep/dashboard" element={<CollegeDashboard />} />
+          <Route path="/college_rep/students" element={<StudentTable />} />
+          <Route path="/college_rep/assessments" element={<ManageAssesment />} />
+          <Route path="/college_rep/assessments/create" element={<CreateAssesment />} />
+          <Route path="/college_rep/assessments/edit/:id" element={<EditAssessment />} />
+          <Route path="/college_rep/assessments/:id" element={<ViewAssesment />} />
+          <Route path="/college_rep/assessments/:id/create-section" element={<CreateSection />} />
+          <Route path="/college_rep/assessments/:id/sections" element={<ViewSections />} />
+          <Route path="/college_rep/sections/:id" element={<SinglePageViewSection />} />
+          <Route path="/college_rep/sections/edit/:id" element={<EditSection />} />
+          <Route path="/college_rep/sections/:id/add-question" element={<AddQuestionToSection />} />
+          <Route path="/college_rep/sections/:id/add-question-code" element={<AddQuestionToSectionCode />} />
+          <Route path="/college_rep/assignments" element={<ManageAssignments />} />
+          <Route path="/college_rep/submissions" element={<CandidateList />} />
+          <Route path="/college_rep/groups" element={<ManageGroup />} />
+          <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
+          <Route path="/college_rep/reports" element={<CollegeReports />} />
+          <Route path="/college_rep/profile" element={<CollegeProfile />} />
+          <Route path="college_rep/test/:testId/candidates" element={<CandidateList />} />
+          <Route path="college_rep/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
+          <Route path="/college_rep/students/:studentId" element={<StudentDetails />} />
         </Route>
       </Route>
 
@@ -170,10 +180,26 @@ const App = () => {
         <Route element={<ProtectedLayout />}>
           {/* Add more trainer-specific routes here */}
           <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
-          <Route path="/trainer/groups" element={<div>Trainer Groups</div>} />
-          <Route path="/trainer/assessments" element={<TrainerAssesment />} />
+          <Route path="/trainer/groups" element={<ManageGroup />} />
+          <Route path="/trainer/groups/:id" element={<ViewGroup />} />
+          <Route path="/trainer/groups/edit/:id" element={<EditGroup />} />
+          <Route path="/trainer/assessments" element={<ManageAssesment />} />
+          <Route path="/trainer/assessments/create" element={<CreateAssesment />} />
+          <Route path="/trainer/assessments/edit/:id" element={<EditAssessment />} />
+          <Route path="/trainer/assessments/:id/create-section" element={<CreateSection />} />
+          <Route path="/trainer/assessments/:id/sections" element={<ViewSections />} />
+          <Route path="/trainer/assessments/:id" element={<ViewAssesment />} />
           <Route path="/trainer/create-test" element={<CreateTest />} />
-          <Route path="/trainer/assignments" element={<Assignments />} />
+          <Route path="/trainer/assignments" element={<ManageAssignments />} />
+          <Route path="/trainer/assignments/:id" element={<ViewAssignment />} />
+          <Route path="/trainer/assignments/edit/:id" element={<EditAssignment />} />
+          <Route path="/trainer/sections/:id" element={<SinglePageViewSection />} />
+          <Route path="/trainer/sections/edit/:id" element={<EditSection />} />
+          <Route path="/trainer/sections/:id/add-question" element={<AddQuestionToSection />} />
+          <Route path="/trainer/sections/:id/add-question-code" element={<AddQuestionToSectionCode />} />
+          <Route path="/trainer/sections/:id/questions" element={<ViewQuestionsInSection />} />
+          <Route path="/trainer/sections/question/coding/:id" element={<ViewCodingQuestionsInSection />} />
+          <Route path="/trainer/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/trainer/submissions" element={<TrainerCandidateList />} />
           <Route path="/trainer/students" element={<StudentTable />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
