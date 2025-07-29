@@ -8,7 +8,6 @@ import DescriptiveQuestion from './QuestionTypes/DescriptiveQuestion';
 import { getSectionWiseStatus } from '../../../Controllers/SubmissionController';
 import AssessmentSection from './AssessmentSection';
 
-
 const Assessment = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -20,7 +19,7 @@ const Assessment = () => {
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
   const [answerStatusMap, setAnswerStatusMap] = useState({});
   const [layout, setLayout] = useState('top-info-nav');
-
+  const development =false;
 
   const activeSection = sections[sectionIndex];
   const question = activeSection.questions[questionIndex];
@@ -28,18 +27,12 @@ const Assessment = () => {
   const refreshSectionStatus = async () => {
     try {
       const res = await getSectionWiseStatus(submissionId);
-      const data = res || {}; // ✅ only use the actual section-wise map
-      setSectionWiseStatus(data);
-      //console.log("called")
-      //console.log("Section-wise status refreshed:", data);
+      setSectionWiseStatus(res || {});
     } catch (error) {
       console.error("Failed to refresh status:", error.message);
     }
   };
 
-  //  useEffect(() => {
-  //   refreshSectionStatus();
-  //  })
   useEffect(() => {
     const map = {};
     Object.values(sectionWiseStatus).forEach((questionArray) => {
@@ -50,44 +43,52 @@ const Assessment = () => {
     setAnswerStatusMap(map);
   }, [sectionWiseStatus]);
 
-
-
-  useEffect(() => {
-    const beforeUnloadHandler = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-      return '';
-    };
-
-    window.addEventListener('beforeunload', beforeUnloadHandler);
-    return () => {
-      window.removeEventListener('beforeunload', beforeUnloadHandler);
-    };
-  }, []);
+  const enforceFullScreen = () => {
+    const elem = document.documentElement;
+    if (!document.fullscreenElement) {
+      if (elem.requestFullscreen) elem.requestFullscreen();
+      else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+      else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
+      else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
+    }
+  };
 
   useEffect(() => {
+    if (development) return;
+    enforceFullScreen();
+
+    const preventRightClick = (e) => e.preventDefault();
+    const preventDevTools = (e) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(e.key)) ||
+        (e.ctrlKey && e.key === 'U')
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    const handleTabSwitch = () => {
+      setShowExitConfirm(true);
+    };
+
+    window.addEventListener('contextmenu', preventRightClick);
+    window.addEventListener('keydown', preventDevTools);
+    window.addEventListener('blur', handleTabSwitch);
+
     const checkFullScreen = () => {
-      const isFullScreen =
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement;
-
-      if (!isFullScreen) {
+      if (!document.fullscreenElement) {
         setShowExitConfirm(true);
       }
     };
 
     document.addEventListener('fullscreenchange', checkFullScreen);
-    document.addEventListener('webkitfullscreenchange', checkFullScreen);
-    document.addEventListener('mozfullscreenchange', checkFullScreen);
-    document.addEventListener('MSFullscreenChange', checkFullScreen);
 
     return () => {
+      window.removeEventListener('contextmenu', preventRightClick);
+      window.removeEventListener('keydown', preventDevTools);
+      window.removeEventListener('blur', handleTabSwitch);
       document.removeEventListener('fullscreenchange', checkFullScreen);
-      document.removeEventListener('webkitfullscreenchange', checkFullScreen);
-      document.removeEventListener('mozfullscreenchange', checkFullScreen);
-      document.removeEventListener('MSFullscreenChange', checkFullScreen);
     };
   }, []);
 
@@ -98,53 +99,42 @@ const Assessment = () => {
 
   const handleCancelExit = () => {
     setShowExitConfirm(false);
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen();
-    }
+    enforceFullScreen();
   };
 
- const renderQuestion = (layout) => {
-  if (!question) return <div>No question available</div>;
+  const renderQuestion = (layout) => {
+    if (!question) return <div>No question available</div>;
 
-  const answerStatus = answerStatusMap[question._id];
-  const props = { question, refreshSectionStatus, answerStatus, questionIndex, layout };
+    const answerStatus = answerStatusMap[question._id];
+    const props = { question, refreshSectionStatus, answerStatus, questionIndex, layout };
+    const isMobileOrTablet = window.innerWidth < 768;
 
-  const isMobileOrTablet = window.innerWidth < 768; // You can adjust the breakpoint as needed
-
-  switch (question.type) {
-    case 'single_correct':
-    case 'multi_correct':
-      return <QuizQuestion {...props} />;
-
-    case 'coding':
-      if (isMobileOrTablet) {
-        return (
+    switch (question.type) {
+      case 'single_correct':
+      case 'multi_correct':
+        return <QuizQuestion {...props} />;
+      case 'coding':
+        return isMobileOrTablet ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-red-600 font-semibold text-lg p-4">
             You can't take coding assessments on mobile or tablet devices.
           </div>
+        ) : (
+          <CodingQuestion {...props} />
         );
-      }
-      return <CodingQuestion {...props} />;
-
-    case 'descriptive':
-      return <DescriptiveQuestion {...props} />;
-
-    default:
-      return <div>Unsupported question type</div>;
-  }
-};
-
-
+      case 'descriptive':
+        return <DescriptiveQuestion {...props} />;
+      default:
+        return <div>Unsupported question type</div>;
+    }
+  };
 
   const getQuestionStatusClass = (qid, idx) => {
     const isCurrent = idx === questionIndex;
     const currentSectionId = activeSection._id;
     const sectionStatus = sectionWiseStatus[currentSectionId] || [];
-
     const qStatus = sectionStatus.find((q) => q.question_id === qid);
 
     if (isCurrent) return 'bg-blue-600 text-white';
-
     if (qStatus) {
       const isAnswered =
         (qStatus.selected_options && qStatus.selected_options.length > 0) ||
@@ -163,54 +153,29 @@ const Assessment = () => {
     <div className="min-h-screen bg-gray-50 relative">
       <Header />
 
-      {/* Section Tabs */}
-<div className="p-4 border-b border-gray-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-
-  {/* Left: Layout Switcher */}
-  {/* <div className="flex items-center gap-2 flex-wrap">
-    <label htmlFor="layout" className="text-sm font-medium text-gray-700">
-      Layout:
-    </label>
-    <select
-      id="layout"
-      value={layout}
-      onChange={(e) => setLayout(e.target.value)}
-      className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-    >
-      <option value="top-info-nav">Default</option>
-      <option value="left-info">Left Info</option>
-      <option value="default">Questions Only</option>
-      <option value="compact">Compact</option>
-    </select>
-  </div> */}
-
-  {/* Right: Section Navigation (horizontal scroll if needed) */}
-  <div className="flex overflow-x-auto gap-2 md:justify-end scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-    {sections.map((sec, idx) => (
-      <button
-        key={sec._id}
-        onClick={() => {
-          setSectionIndex(idx);
-          setQuestionIndex(0);
-        }}
-        className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${
-          idx === sectionIndex
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
-        }`}
-      >
-        {sec.title}
-      </button>
-    ))}
-  </div>
-
-</div>
-
-
-
+      <div className="p-4 border-b border-gray-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex overflow-x-auto gap-2 md:justify-end scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {sections.map((sec, idx) => (
+            <button
+              key={sec._id}
+              onClick={() => {
+                setSectionIndex(idx);
+                setQuestionIndex(0);
+              }}
+              className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${
+                idx === sectionIndex
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+              }`}
+            >
+              {sec.title}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <AssessmentSection
-        layout={layout} // or "compact" or "default"
+        layout={layout}
         activeSection={activeSection}
         sections={sections}
         sectionIndex={sectionIndex}
@@ -223,8 +188,6 @@ const Assessment = () => {
         refreshSectionStatus={refreshSectionStatus}
       />
 
-
-      {/* Exit Confirmation Modal */}
       {showExitConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl border border-gray-300 relative">
@@ -241,11 +204,9 @@ const Assessment = () => {
               </div>
             </div>
 
-            <h2 className="text-xl font-bold text-center text-gray-800 mb-2">
-              Exit Full Screen?
-            </h2>
+            <h2 className="text-xl font-bold text-center text-gray-800 mb-2">Exit Full Screen?</h2>
             <p className="text-sm text-center text-gray-600 mb-6">
-              Exiting full screen counts as an attempt and may affect your test.
+              Exiting full screen or switching tabs counts as an attempt and may affect your test.
               Are you sure you want to exit?
             </p>
 
