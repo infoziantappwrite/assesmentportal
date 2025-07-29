@@ -19,13 +19,19 @@ export const getSubmissionById = async (id) => {
 };
 
 
-export const startSubmission = async (assignmentId) => {
-  const response = await axiosClient.post(`/submissions/start/${assignmentId}`, {
-    withCredentials: true,
-  });
-  //console.log(response.data);
+export const startSubmission = async (assignmentId, screenResolution = "Unknown") => {
+  const response = await axiosClient.post(
+    `/submissions/start/${assignmentId}`,
+    {
+      screen_resolution: screenResolution,
+    },
+    {
+      withCredentials: true,
+    }
+  );
   return response.data;
 };
+
 
 
 export const resumeSubmission = async (submissionId) => {

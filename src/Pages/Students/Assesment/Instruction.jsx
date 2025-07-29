@@ -130,24 +130,29 @@ const Instruction = () => {
 
   return (
     <>
-      <header className="w-full bg-white border-b border-gray-200 shadow-sm py-3 px-6 flex items-center justify-between fixed top-0 left-0 z-40">
-        <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 font-semibold">
-            <AlarmClock className="w-4 h-4" />
-            {buttonEnabled ? 'Ready to Start' : `Start in ${countdown}s`}
-          </div>
-          <button
-            onClick={handleProceed}
-            disabled={!buttonEnabled}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg shadow transition
-              ${buttonEnabled ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
-          >
-            <PlayCircle className="w-4 h-4" />
-            Start Test
-          </button>
-        </div>
-      </header>
+      <header className="w-full bg-white border-b border-gray-200 shadow-sm py-3 px-4 sm:px-6 flex flex-wrap items-center justify-between gap-3 fixed top-0 left-0 z-40">
+  <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
+
+  <div className="flex  sm:flex-row items-center gap-2 sm:gap-3">
+    {!buttonEnabled && (
+      <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 font-semibold whitespace-nowrap">
+        <AlarmClock className="w-4 h-4" />
+        {countdown}
+      </div>
+    )}
+
+    <button
+      onClick={handleProceed}
+      disabled={!buttonEnabled}
+      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg shadow transition
+        ${buttonEnabled ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+    >
+      <PlayCircle className="w-4 h-4" />
+      Start
+    </button>
+  </div>
+</header>
+
 
       <div className="pt-20 min-h-screen bg-gradient-to-br from-blue-50 to-white py-4 px-4">
         <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-10 border border-gray-200">

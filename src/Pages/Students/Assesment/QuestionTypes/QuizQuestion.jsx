@@ -3,10 +3,11 @@ import debounce from 'lodash.debounce';
 import {
   saveAnswer,
   questionVisited,
+
 } from '../../../../Controllers/SubmissionController';
 import NotificationMessage from '../../../../Components/NotificationMessage';
 
-const QuizQuestion = ({ question, refreshSectionStatus, answerStatus }) => {
+const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionIndex }) => {
   const submissionId = localStorage.getItem('submission_id');
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [isMarkedForReview, setIsMarkedForReview] = useState(false);
@@ -120,7 +121,7 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus }) => {
   };
 
   return (
-    <div>
+    <div className='bg-white p-4 border border-gray-200 rounded-xl'>
       {/* 🔔 Notification */}
       {notification && (
         <NotificationMessage type={notification.type} message={notification.message} />
@@ -139,6 +140,9 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus }) => {
           ))}
         </div>
       )}
+      <h2 className="mb-4 font-semibold text-lg text-gray-800">
+        Q{questionIndex + 1}. {question.content.question_text}
+      </h2>
 
       {/* ✅ Options List */}
       <div className="space-y-3 mb-6">

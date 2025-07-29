@@ -8,6 +8,7 @@ import DescriptiveQuestion from './QuestionTypes/DescriptiveQuestion';
 import { getSectionWiseStatus } from '../../../Controllers/SubmissionController';
 import AssessmentSection from './AssessmentSection';
 
+
 const Assessment = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -102,25 +103,37 @@ const Assessment = () => {
     }
   };
 
-  const renderQuestion = () => {
-    if (!question) return <div>No question available</div>;
+ const renderQuestion = (layout) => {
+  if (!question) return <div>No question available</div>;
 
-    const answerStatus = answerStatusMap[question._id];
-    //console.log(answerStatus)
-    const props = { question, refreshSectionStatus, answerStatus };
+  const answerStatus = answerStatusMap[question._id];
+  const props = { question, refreshSectionStatus, answerStatus, questionIndex, layout };
 
-    switch (question.type) {
-      case 'single_correct':
-      case 'multi_correct':
-        return <QuizQuestion {...props} />;
-      case 'coding':
-        return <CodingQuestion {...props} />;
-      case 'descriptive':
-        return <DescriptiveQuestion {...props} />;
-      default:
-        return <div>Unsupported question type</div>;
-    }
-  };
+  const isMobileOrTablet = window.innerWidth < 768; // You can adjust the breakpoint as needed
+
+  switch (question.type) {
+    case 'single_correct':
+    case 'multi_correct':
+      return <QuizQuestion {...props} />;
+
+    case 'coding':
+      if (isMobileOrTablet) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center text-red-600 font-semibold text-lg p-4">
+            You can't take coding assessments on mobile or tablet devices.
+          </div>
+        );
+      }
+      return <CodingQuestion {...props} />;
+
+    case 'descriptive':
+      return <DescriptiveQuestion {...props} />;
+
+    default:
+      return <div>Unsupported question type</div>;
+  }
+};
+
 
 
   const getQuestionStatusClass = (qid, idx) => {
@@ -151,43 +164,48 @@ const Assessment = () => {
       <Header />
 
       {/* Section Tabs */}
-      <div className="flex justify-between items-center p-4 overflow-x-auto border-b border-gray-200">
-        {/* Left: Layout Switcher */}
-        <div className="flex items-center gap-2">
-  <label htmlFor="layout" className="text-sm font-medium text-gray-700">
-    Layout:
-  </label>
-  <select
-    id="layout"
-    value={layout}
-    onChange={(e) => setLayout(e.target.value)}
-    className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-  >
-    <option value="top-info-nav">Default</option>
-    <option value="left-info">Left Info</option>
-    <option value="compact">Compact</option>
-  </select>
+<div className="p-4 border-b border-gray-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+
+  {/* Left: Layout Switcher */}
+  {/* <div className="flex items-center gap-2 flex-wrap">
+    <label htmlFor="layout" className="text-sm font-medium text-gray-700">
+      Layout:
+    </label>
+    <select
+      id="layout"
+      value={layout}
+      onChange={(e) => setLayout(e.target.value)}
+      className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+    >
+      <option value="top-info-nav">Default</option>
+      <option value="left-info">Left Info</option>
+      <option value="default">Questions Only</option>
+      <option value="compact">Compact</option>
+    </select>
+  </div> */}
+
+  {/* Right: Section Navigation (horizontal scroll if needed) */}
+  <div className="flex overflow-x-auto gap-2 md:justify-end scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+    {sections.map((sec, idx) => (
+      <button
+        key={sec._id}
+        onClick={() => {
+          setSectionIndex(idx);
+          setQuestionIndex(0);
+        }}
+        className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${
+          idx === sectionIndex
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
+        }`}
+      >
+        {sec.title}
+      </button>
+    ))}
+  </div>
+
 </div>
 
-        {/* Right: Section Navigation */}
-        <div className="flex gap-2">
-          {sections.map((sec, idx) => (
-            <button
-              key={sec._id}
-              onClick={() => {
-                setSectionIndex(idx);
-                setQuestionIndex(0);
-              }}
-              className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${idx === sectionIndex
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
-                }`}
-            >
-              {sec.title}
-            </button>
-          ))}
-        </div>
-      </div>
 
 
 
