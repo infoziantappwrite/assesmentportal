@@ -106,17 +106,17 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['college_rep']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more college-specific routes here */}
-          <Route path="/college/dashboard" element={<CollegeDashboard />} />
-          <Route path="/college/students" element={<StudentTable />} />
-          <Route path="/college/assessments" element={<CollegeTestList />} />
-          <Route path="/college/submissions" element={<CandidateList />} />
-          <Route path="/college/groups" element={<Groups />} />
-          <Route path="/college/analytics" element={<CollegeAnalytics />} />
-          <Route path="/college/reports" element={<CollegeReports />} />
-          <Route path="/college/profile" element={<CollegeProfile />} />
-          <Route path="college/test/:testId/candidates" element={<CandidateList />} />
-          <Route path="college/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
-          <Route path="/college/students/:studentId" element={<StudentDetails />} />
+          <Route path="/college_rep/dashboard" element={<CollegeDashboard />} />
+          <Route path="/college_rep/students" element={<StudentTable />} />
+          <Route path="/college_rep/assessments" element={<CollegeTestList />} />
+          <Route path="/college_rep/submissions" element={<CandidateList />} />
+          <Route path="/college_rep/groups" element={<Groups />} />
+          <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
+          <Route path="/college_rep/reports" element={<CollegeReports />} />
+          <Route path="/college_rep/profile" element={<CollegeProfile />} />
+          <Route path="college_rep/test/:testId/candidates" element={<CandidateList />} />
+          <Route path="college_rep/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
+          <Route path="/college_rep/students/:studentId" element={<StudentDetails />} />
         </Route>
       </Route>
 
