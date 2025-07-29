@@ -188,7 +188,7 @@ return (<Loader />);
  
             {/* Create Button */}
             <button
-              onClick={() => navigate("/admin/assignments/create")}
+              onClick={() => navigate(`/${role}/assignments/create`)}
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg shadow text-sm"
             >
               <PlusCircle className="w-4 h-4" />

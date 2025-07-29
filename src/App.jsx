@@ -176,11 +176,20 @@ const App = () => {
           <Route path="/trainer/assessments" element={<ManageAssesment />} />
           <Route path="/trainer/assessments/create" element={<CreateAssesment />} />
           <Route path="/trainer/assessments/edit/:id" element={<EditAssessment />} />
+          <Route path="/trainer/assessments/:id/create-section" element={<CreateSection />} />
+          <Route path="/trainer/assessments/:id/sections" element={<ViewSections />} />
           <Route path="/trainer/assessments/:id" element={<ViewAssesment />} />
           <Route path="/trainer/create-test" element={<CreateTest />} />
           <Route path="/trainer/assignments" element={<ManageAssignments />} />
           <Route path="/trainer/assignments/:id" element={<ViewAssignment />} />
           <Route path="/trainer/assignments/edit/:id" element={<EditAssignment />} />
+          <Route path="/trainer/sections/:id" element={<SinglePageViewSection />} />
+          <Route path="/trainer/sections/edit/:id" element={<EditSection />} />
+          <Route path="/trainer/sections/:id/add-question" element={<AddQuestionToSection />} />
+          <Route path="/trainer/sections/:id/add-question-code" element={<AddQuestionToSectionCode />} />
+          <Route path="/trainer/sections/:id/questions" element={<ViewQuestionsInSection />} />
+          <Route path="/trainer/sections/question/coding/:id" element={<ViewCodingQuestionsInSection />} />
+          <Route path="/trainer/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/trainer/submissions" element={<TrainerCandidateList />} />
           <Route path="/trainer/students" element={<StudentTable />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />

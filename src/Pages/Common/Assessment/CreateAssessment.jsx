@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createAssesment } from "../../../Controllers/AssesmentController";
 import { ClipboardList, Settings, BarChart2, SlidersHorizontal } from "lucide-react"
 import { useNavigate } from "react-router-dom";
+import { useUser } from '../../../context/UserContext';
 
 const CreateAssessment = () => {
    const navigate = useNavigate(); // Add this
@@ -31,6 +32,7 @@ const CreateAssessment = () => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const { role } = useUser();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -79,7 +81,7 @@ const CreateAssessment = () => {
 
       // Navigate to the new assessment's view page
       if (newId) {
-        navigate(`/admin/assessments/${newId}`);
+        navigate(`/${role}/assessments/${newId}`);
       }
 
     } catch (err) {

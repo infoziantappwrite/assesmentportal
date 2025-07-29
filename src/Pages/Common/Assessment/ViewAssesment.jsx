@@ -9,6 +9,7 @@ import {
 } from '../../../Controllers/AssesmentController';
 
 import Loader from '../../../Components/Loader';
+import { useUser } from '../../../context/UserContext';
 
 import {
   Clock, Settings2, BarChart2, BadgeCheck, CheckCircle, ShieldCheck,
@@ -43,7 +44,7 @@ const ViewAssessment = () => {
     if (!window.confirm("Are you sure you want to delete this assessment?")) return;
     try {
       await deleteAssessment(id);
-      navigate("/admin/assessments");
+      navigate(`/${role}/assessments`);
     } catch (err) {
       alert("Failed to delete assessment.");
       console.error(err);
@@ -53,7 +54,7 @@ const ViewAssessment = () => {
   const handleClone = async () => {
     try {
       const res = await cloneAssessment(id);
-      navigate(`/admin/assessments/${res.data.clonedAssessment._id}`);
+      navigate(`/${role}/assessments/${res.data.clonedAssessment._id}`);
     } catch (err) {
       alert("Failed to clone assessment.");
       console.error(err);
@@ -88,6 +89,7 @@ const ViewAssessment = () => {
 
   const usedMarks = sections.reduce((sum, sec) => sum + (sec?.scoring?.total_marks || 0), 0);
   const remainingMarks = scoring.total_marks - usedMarks;
+  const { role } = useUser();
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -122,7 +124,7 @@ const ViewAssessment = () => {
               ></span>
             </button>
 
-            <button onClick={() => navigate(`/admin/assessments/edit/${id}`)}
+            <button onClick={() => navigate(`/${role}/assessments/edit/${id}`)}
               className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm shadow">
               <Pencil className="w-4 h-4" /> Edit
             </button>
@@ -213,7 +215,7 @@ const ViewAssessment = () => {
         </div>
 
         <button
-          onClick={() => navigate(`/admin/assessments/${id}/create-section`)}
+          onClick={() => navigate(`/${role}/assessments/${id}/create-section`)}
           disabled={remainingMarks <= 0}
           className={`mt-4 px-4 py-2 text-sm font-medium rounded-lg shadow ${remainingMarks <= 0 ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
         >
@@ -221,7 +223,7 @@ const ViewAssessment = () => {
         </button>
 
         <button
-          onClick={() => navigate(`/admin/assessments/${id}/sections`)}
+          onClick={() => navigate(`/${role}/assessments/${id}/sections`)}
           className="mt-4 ml-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow"
         >
           📄 View Sections
