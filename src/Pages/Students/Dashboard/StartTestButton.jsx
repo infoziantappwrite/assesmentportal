@@ -15,6 +15,10 @@ const StartTestButton = ({ test, label }) => {
   const handleStartClick = () => {
     setShowConfirm(true);
   };
+  const getScreenResolution = () => {
+  return `${window.screen.width}x${window.screen.height}`;
+};
+
 
   const handleConfirm = async () => {
     try {
@@ -27,12 +31,15 @@ const StartTestButton = ({ test, label }) => {
       }
 
       // API Call
-      let submissionData;
-      if (label === 'Resume Test') {
-        submissionData = await resumeSubmission(test.submission_id);
-      } else {
-        submissionData = await startSubmission(test._id);
-      }
+     let submissionData;
+const screenResolution = getScreenResolution();
+
+if (label === 'Resume Test') {
+  submissionData = await resumeSubmission(test.submission_id);
+} else {
+  submissionData = await startSubmission(test._id, screenResolution);
+}
+
 
       const { submission, assessment, test: sections } = submissionData.data;
       const submissionId = submission?._id;

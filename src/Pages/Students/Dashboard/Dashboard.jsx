@@ -16,20 +16,20 @@ const TABS = ['upcoming', 'active', 'completed'];
 const visibleTabs = ['upcoming', 'active'];
 
 const formatDateTimeUTC = (isoString) => {
-    if (!isoString) return 'N/A';
-    const date = new Date(isoString);
-    if (isNaN(date)) return 'Invalid Date';
- 
-    return date.toLocaleString('en-GB', {
-      timeZone: 'UTC',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
+  if (!isoString) return 'N/A';
+  const date = new Date(isoString);
+  if (isNaN(date)) return 'Invalid Date';
+
+  return date.toLocaleString('en-GB', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
 const statusColors = {
   upcoming: 'border-blue-200 text-blue-800',
@@ -60,6 +60,7 @@ const Dashboard = () => {
       try {
         const res = await getMyAssignments();
         const all = res.data || [];
+        console.log(all)
 
         const formatted = all.map((assignment) => {
           let displayStatus = assignment.status;
@@ -145,26 +146,26 @@ const Dashboard = () => {
                     {test.assessment_id?.description || 'No description'}
                   </p>
 
-                 
-                    
 
-                  
-                    <div className="flex flex-wrap items-center gap-4 text-sm mt-3">
-    <span className="flex items-center gap-1 text-green-700">
-      <PlayCircle className="w-4 h-4" />
-      Start: {formatDateTimeUTC(start)}
-    </span>
-    <span className="flex items-center gap-1 text-red-700">
-      <XCircle className="w-4 h-4" />
-      End: {formatDateTimeUTC(end)}
-    </span>
-    <span className="flex items-center gap-1 text-gray-700">
-      <Clock className="w-4 h-4" />
-      Total Duration: {formatDuration(durationMin)}
-    </span>
-  </div>
 
-                  
+
+
+                  <div className="flex flex-wrap items-center gap-4 text-sm mt-3">
+                    <span className="flex items-center gap-1 text-green-700">
+                      <PlayCircle className="w-4 h-4" />
+                      Start: {formatDateTimeUTC(start)}
+                    </span>
+                    <span className="flex items-center gap-1 text-red-700">
+                      <XCircle className="w-4 h-4" />
+                      End: {formatDateTimeUTC(end)}
+                    </span>
+                    <span className="flex items-center gap-1 text-gray-700">
+                      <Clock className="w-4 h-4" />
+                      Total Duration: {formatDuration(durationMin)}
+                    </span>
+                  </div>
+
+
                   {test.display_status === 'active' && (
                     <div className="text-right pt-2">
                       <StartTestButton
@@ -201,4 +202,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
- 

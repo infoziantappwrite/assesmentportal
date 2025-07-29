@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import {
@@ -17,7 +18,13 @@ import {
   Upload,
   Download,
 
+  Save,
+
+  Loader2,
+  FileCheck2, ChevronDown, ChevronRight
+
 } from 'lucide-react';
+
 import { useJudge0 } from '../../../../hooks/useJudge0';
 import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases } from "../../../../Controllers/SubmissionController"
 import { DEFAULT_SUPPORTED_LANGUAGES, LANGUAGE_TEMPLATES } from "./utils/languageConfig";
@@ -34,6 +41,7 @@ const SolutionSection = ({
   testResults,
   submissionId
 }) => {
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
@@ -77,18 +85,14 @@ const SolutionSection = ({
     if (stored) {
       try {
         return JSON.parse(stored);
-      } catch (e) {
+      } catch {
         return null;
       }
     }
     return null;
   };
 
-  // Optional: Clear submission state for a question (useful for development/testing)
-  const clearSubmissionState = (questionId, submissionId) => {
-    const key = getSubmissionStateKey(questionId, submissionId);
-    localStorage.removeItem(key);
-  };
+
 
   const showNotification = (type, message) => {
     setNotification({ type, message });
@@ -98,7 +102,7 @@ const SolutionSection = ({
 
   // Helper function to check if code has been modified since last save
   const hasCodeChanged = (code) => {
-    if (!hasValidCode(code)) return false; 
+    if (!hasValidCode(code)) return false;
     return code !== lastSavedCode;
   };
 
@@ -111,36 +115,36 @@ const SolutionSection = ({
   // Handle confirmation modal response
   const handleConfirmAction = (confirmed) => {
     setShowConfirmModal(false);
-    
+
     if (confirmed && pendingAction) {
       if (pendingAction.type === 'languageChange') {
         // Proceed with language change
         const newLanguage = pendingAction.data.newLanguage;
         setPreviousLanguage(selectedLanguage);
         setSelectedLanguage(newLanguage);
-        
+
         // Load template for new language
         const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
         onAnswerChange(question._id, template);
-        
+
         // Reset tracking when template is loaded
         setLastSavedCode('');
         setHasUnsavedChanges(false);
       } else if (pendingAction.type === 'questionChange') {
         // Proceed with question change - always reset states for different questions
         const newQuestionId = pendingAction.data.newQuestionId;
-        
+
         setCurrentQuestionId(newQuestionId);
         setLastSavedCode('');
         setHasUnsavedChanges(false);
         setStartTime(Date.now()); // Reset timer for new question
-        
+
         // Always reset all states when changing questions
         setJudge0Results(null); // Clear previous execution results
         setCustomInput(''); // Clear custom input
         setLastActionType(null); // Reset action type
         setSaveStatus('idle'); // Reset save status
-        
+
         // Check submission state for the new question
         const localSubmissionId = localStorage.getItem("submission_id");
         const currentSubmissionId = submissionId || localSubmissionId;
@@ -148,6 +152,7 @@ const SolutionSection = ({
           const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
           if (submissionState && submissionState.isSubmitted) {
             setSubmitStatus('success');
+            showNotification('success', 'Submitted successfully!');
           } else {
             setSubmitStatus(null); // Reset submit status for new unsubmitted question
           }
@@ -158,16 +163,16 @@ const SolutionSection = ({
       // Note: The parent component should handle preventing the question change
       // We just reset our pending action
     }
-    
+
     setPendingAction(null);
   };
-  
 
-   const getAvailableLanguages = () => {
-       if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
-        return DEFAULT_SUPPORTED_LANGUAGES;
+
+  const getAvailableLanguages = () => {
+    if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
+      return DEFAULT_SUPPORTED_LANGUAGES;
     }
-     return fullDetails.supported_languages;
+    return fullDetails.supported_languages;
   };
 
   const availableLanguages = getAvailableLanguages();
@@ -205,25 +210,25 @@ const SolutionSection = ({
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
       // Question has changed
       if (hasUnsavedChanges && hasValidCode(answer)) {
-        showConfirmationModal('questionChange', { 
-          oldQuestionId: currentQuestionId, 
-          newQuestionId: newQuestionId 
+        showConfirmationModal('questionChange', {
+          oldQuestionId: currentQuestionId,
+          newQuestionId: newQuestionId
         });
         return; // Don't update state until user confirms
       }
-      
+
       // Always reset states for different questions to ensure clean slate
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
       setHasUnsavedChanges(false);
       setStartTime(Date.now()); // Reset timer for new question
-      
+
       // Reset all execution and UI states for new question
       setJudge0Results(null); // Clear previous execution results
       setCustomInput(''); // Clear custom input
       setLastActionType(null); // Reset action type
       setSaveStatus('idle'); // Reset save status
-      
+
       // Check submission state for the new question
       const localSubmissionId = localStorage.getItem("submission_id");
       const currentSubmissionId = submissionId || localSubmissionId;
@@ -235,7 +240,7 @@ const SolutionSection = ({
           setSubmitStatus(null); // Reset submit status for new unsubmitted question
         }
       }
-      
+
     } else if (newQuestionId && !currentQuestionId) {
       setCurrentQuestionId(newQuestionId);
       setStartTime(Date.now()); // Set start time for the first question
@@ -264,9 +269,9 @@ const SolutionSection = ({
       // Check for unsaved changes before switching language
       if (hasUnsavedChanges && hasValidCode(answer)) {
         // Show confirmation modal for language change
-        showConfirmationModal('languageChange', { 
-          oldLanguage: previousLanguage, 
-          newLanguage: selectedLanguage 
+        showConfirmationModal('languageChange', {
+          oldLanguage: previousLanguage,
+          newLanguage: selectedLanguage
         });
         return; // Don't proceed until user confirms
       }
@@ -280,7 +285,7 @@ const SolutionSection = ({
 
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
       onAnswerChange(question._id, template);
-      
+
       // Reset tracking when template is loaded
       setLastSavedCode('');
       setHasUnsavedChanges(false);
@@ -305,7 +310,7 @@ const SolutionSection = ({
       setLastActionType(null);
       setSaveStatus('idle');
       setStartTime(Date.now()); // Reset timer for new question
-      
+
       // Only preserve submitStatus for submitted questions
       // For new questions, always reset submitStatus to allow interaction
       if (currentQuestionId !== question._id) {
@@ -317,11 +322,11 @@ const SolutionSection = ({
   // Helper function to check if current code is just template code
   const isTemplateCode = (code) => {
     if (!code || code.trim() === '') return true;
-    
+
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     const normalizedCode = code.replace(/\s+/g, ' ').trim();
     const normalizedTemplate = template.replace(/\s+/g, ' ').trim();
-    
+
     return normalizedCode === normalizedTemplate;
   };
 
@@ -329,19 +334,19 @@ const SolutionSection = ({
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
     if (isTemplateCode(code)) return false;
-    
+
     // Check if code has more than just comments and basic structure
     const lines = code.split('\n').filter(line => {
       const trimmed = line.trim();
-      return trimmed && 
-             !trimmed.startsWith('//') && 
-             !trimmed.startsWith('#') && 
-             !trimmed.startsWith('/*') && 
-             !trimmed.startsWith('*') &&
-             trimmed !== '{' && 
-             trimmed !== '}';
+      return trimmed &&
+        !trimmed.startsWith('//') &&
+        !trimmed.startsWith('#') &&
+        !trimmed.startsWith('/*') &&
+        !trimmed.startsWith('*') &&
+        trimmed !== '{' &&
+        trimmed !== '}';
     });
-    
+
     return lines.length > 3; // Require more than basic structure
   };
 
@@ -349,9 +354,9 @@ const SolutionSection = ({
   const handleLanguageChange = (newLanguage) => {
     // If there are unsaved changes, show confirmation modal
     if (hasUnsavedChanges && hasValidCode(answer)) {
-      showConfirmationModal('languageChange', { 
-        oldLanguage: selectedLanguage, 
-        newLanguage: newLanguage 
+      showConfirmationModal('languageChange', {
+        oldLanguage: selectedLanguage,
+        newLanguage: newLanguage
       });
     } else {
       // No unsaved changes, proceed with language change
@@ -403,7 +408,7 @@ const SolutionSection = ({
     try {
       setLastActionType('runCode'); // Mark this as run code action
       const result = await executeCode(answer, selectedLanguage, customInput);
-      
+
       // For "Run Code" button, always show "Compiled" status if execution was successful
       if (result.status?.description === 'Accepted') {
         result.status.description = 'Compiled';
@@ -416,7 +421,7 @@ const SolutionSection = ({
       } else {
         showNotification('error', 'Code compilation or execution failed');
       }
-      
+
       setJudge0Results(result);
     } catch (error) {
       setJudge0Results({
@@ -477,7 +482,7 @@ const SolutionSection = ({
       // Update tracking after successful save in test cases
       setLastSavedCode(answer);
       setHasUnsavedChanges(false);
-      
+
       // DON'T reset timer after test cases save - keep accumulating time like QuizQuestion
       // setStartTime(Date.now()); // Removed - timer continues running
 
@@ -509,7 +514,7 @@ const SolutionSection = ({
 
       try {
         const response = await runSampleTestCases(currentQuestionId, testPayload);
-        
+
         // Process test results and determine status
         let testResults = null;
         if (response.sample_results && Array.isArray(response.sample_results)) {
@@ -523,27 +528,27 @@ const SolutionSection = ({
         }
 
         if (testResults && testResults.length > 0) {
-          const passedCount = testResults.filter(result => 
+          const passedCount = testResults.filter(result =>
             result.status === 'PASSED' || result.status === 'Accepted' || result.passed === true
           ).length;
           const totalCount = testResults.length;
-          
+
           // Set status based on test results
           const allPassed = passedCount === totalCount;
           const statusDescription = allPassed ? 'Correct' : 'Incorrect';
-          
+
           setJudge0Results({
             testResults: testResults,
             status: { description: statusDescription },
             message: `Test cases completed: ${passedCount}/${totalCount} passed`
           });
-          
+
           if (allPassed) {
             showNotification('success', `All test cases passed! (${passedCount}/${totalCount})`);
           } else {
             showNotification('error', `Some test cases failed. (${passedCount}/${totalCount} passed)`);
           }
-          
+
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 3000);
         } else {
@@ -611,11 +616,11 @@ const SolutionSection = ({
 
       setSaveStatus('saved');
       showNotification('success', 'Answer saved successfully!');
-      
+
       // Update tracking after successful save
       setLastSavedCode(answer);
       setHasUnsavedChanges(false);
-      
+
       setTimeout(() => setSaveStatus('idle'), 3000);
 
       return response;
@@ -626,7 +631,7 @@ const SolutionSection = ({
         if (
           error.response.status === 400 &&
           (error.response.data.message.includes("cannot update a coding questions answer") ||
-           error.response.data.message.includes("Once it is submitted, it cannot be changed"))
+            error.response.data.message.includes("Once it is submitted, it cannot be changed"))
         ) {
           // This question was already submitted - save this state for future reference
           saveSubmissionState(question._id, currentSubmissionId, true);
@@ -655,7 +660,7 @@ const SolutionSection = ({
 
     try {
       res = await handleSaveAnswer();
-    } catch (error) {
+    } catch {
       showNotification('error', 'Failed to save answer before submitting');
       return;
     }
@@ -704,10 +709,10 @@ const SolutionSection = ({
 
       await evaluateCodingSubmission(currentSubmissionId, payload);
       setSubmitStatus("success");
-      
+
       // Save submission state to localStorage for persistence
       saveSubmissionState(currentQuestionId, currentSubmissionId, true);
-      
+
       showNotification('success', 'Code submitted successfully!');
 
     } catch (error) {
@@ -723,7 +728,7 @@ const SolutionSection = ({
 
   const getStatusIcon = (status) => {
     const description = status?.description;
-    
+
     if (description === 'Compiled' || description === 'Accepted') {
       return <CheckCircle className="w-4 h-4 text-blue-500" />;
     } else if (description === 'Correct') {
@@ -748,13 +753,13 @@ const SolutionSection = ({
   return (
     <div className=" space-y-6">
       {notification && (
-        <NotificationMessage 
-          type={notification.type} 
-          message={notification.message} 
+        <NotificationMessage
+          type={notification.type}
+          message={notification.message}
           onClose={() => setNotification(null)}
         />
       )}
-      
+
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
           <Code2 className="w-6 h-6 text-indigo-500" />
@@ -762,10 +767,7 @@ const SolutionSection = ({
         </h2>
 
         {/* API Status Indicator */}
-        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-sm font-medium text-green-700">Ready</span>
-        </div>
+
       </div>
 
       {/* Template Reload Notification */}
@@ -777,78 +779,122 @@ const SolutionSection = ({
       )}
 
       {/* Language Selection */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4  ">
+        {/* Language Selector */}
+        <div className="w-full md:w-1/2 space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <FileCode className="w-4 h-4" />
             Programming Language
           </label>
+          <select
+            value={selectedLanguage}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
+          >
+            {availableLanguages.length > 0 ? (
+              availableLanguages.map((lang) => (
+                <option key={lang.language} value={lang.language}>
+                  {lang.language.toUpperCase()} - {
+                    lang.name || (
+                      lang.language === 'javascript' ? 'JavaScript (Node.js)' :
+                        lang.language === 'python' ? 'Python 3' :
+                          lang.language === 'java' ? 'Java 11+' :
+                            lang.language === 'cpp' ? 'C++ (GCC)' :
+                              lang.language === 'c' ? 'C (GCC)' :
+                                lang.language === 'csharp' ? 'C# (.NET)' :
+                                  lang.language === 'php' ? 'PHP 8+' :
+                                    lang.language === 'ruby' ? 'Ruby 3+' :
+                                      lang.language === 'go' ? 'Go 1.19+' :
+                                        lang.language === 'rust' ? 'Rust 1.60+' :
+                                          lang.language === 'swift' ? 'Swift 5+' :
+                                            lang.language === 'kotlin' ? 'Kotlin 1.7+' :
+                                              lang.language === 'typescript' ? 'TypeScript 4+' :
+                                                lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
+                    )
+                  }
+                </option>
+              ))
+            ) : (
+              <option value="javascript">No languages available - using JavaScript</option>
+            )}
+          </select>
         </div>
-        <select
-          value={selectedLanguage}
-          onChange={(e) => {
-            const newLanguage = e.target.value;
-            handleLanguageChange(newLanguage);
-          }}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
-        >
-          {availableLanguages.length > 0 ? (
-            availableLanguages.map((lang) => (
-              <option key={lang.language} value={lang.language}>
-                {lang.language.toUpperCase()} - {
-                  lang.name || (
-                    lang.language === 'javascript' ? 'JavaScript (Node.js)' :
-                      lang.language === 'python' ? 'Python 3' :
-                        lang.language === 'java' ? 'Java 11+' :
-                          lang.language === 'cpp' ? 'C++ (GCC)' :
-                            lang.language === 'c' ? 'C (GCC)' :
-                              lang.language === 'csharp' ? 'C# (.NET)' :
-                                lang.language === 'php' ? 'PHP 8+' :
-                                  lang.language === 'ruby' ? 'Ruby 3+' :
-                                    lang.language === 'go' ? 'Go 1.19+' :
-                                      lang.language === 'rust' ? 'Rust 1.60+' :
-                                        lang.language === 'swift' ? 'Swift 5+' :
-                                          lang.language === 'kotlin' ? 'Kotlin 1.7+' :
-                                            lang.language === 'typescript' ? 'TypeScript 4+' :
-                                              lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
-                  )
-                }
-              </option>
-            ))
-          ) : (
-            <option value="javascript">No languages available - using JavaScript</option>
-          )}
-        </select>
+
+        {/* Buttons */}
+
+
+        <div className="flex gap-2 flex-wrap md:flex-nowrap items-center mt-6">
+          {/* Reload Template */}
+          <button
+            onClick={handleReloadTemplate}
+            className="px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-md text-sm font-medium flex items-center gap-1"
+            title="Reload template for current language"
+          >
+            <Code2 className="w-4 h-4" />
+            Reload
+          </button>
+
+          {/* Reset All */}
+          <button
+            onClick={handleResetCode}
+            className="px-3 py-2 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 rounded-md text-sm font-medium flex items-center gap-1"
+            title="Reset to template and clear custom input"
+          >
+            <Settings className="w-4 h-4" />
+            Reset
+          </button>
+
+          {/* Save Answer */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSaveAnswer}
+              disabled={saveStatus === 'saving' || submitStatus === 'success'}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all focus:outline-none focus:ring-2 ${saveStatus === 'saving'
+                ? 'bg-cyan-400 text-white cursor-not-allowed'
+                : submitStatus === 'success'
+                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                  : saveStatus === 'saved'
+                    ? 'bg-green-100 text-green-800 border border-green-300'
+                    : saveStatus === 'error'
+                      ? 'bg-red-100 text-red-800 border border-red-300'
+                      : 'bg-cyan-50 text-cyan-700  border border-cyan-300 hover:bg-cyan-100 '
+                }`}
+            >
+              {submitStatus === 'success' ? (
+                <>
+                  <FileCheck2 className="w-4 h-4" />
+                  Submitted
+                </>
+              ) : saveStatus === 'saving' ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : saveStatus === 'saved' ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  Saved!
+                </>
+              ) : saveStatus === 'error' ? (
+                <>
+                  <XCircle className="w-4 h-4" />
+                  Error Saving
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* Enhanced Code Editor Section */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <label className="text-lg font-medium text-gray-800">Code Editor</label>
-            <div className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
-              {selectedLanguage.toUpperCase()}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleReloadTemplate}
-              className="px-3 py-1 bg-blue-50 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-100 border border-blue-200 flex items-center gap-1"
-              title="Reload template for current language"
-            >
-              <Code2 className="w-4 h-4" />
-              Reload Template
-            </button>
-            <button
-              onClick={handleResetCode}
-              className="px-3 py-1 bg-orange-50 text-orange-600 rounded-md text-sm font-medium hover:bg-orange-100 border border-orange-200 flex items-center gap-1"
-              title="Reset to template and clear custom input"
-            >
-              <Settings className="w-4 h-4" />
-              Reset All
-            </button>
-          </div>
-        </div>
 
         <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm bg-gray-50">
           <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
@@ -882,7 +928,7 @@ const SolutionSection = ({
           </div>
 
           <Editor
-            height="600px"
+            height="400px"
             language={
               selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
                 selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
@@ -938,337 +984,336 @@ const SolutionSection = ({
           />
         </div>
       </div>
+      <div className="space-y-6">
+        {/* Button Row */}
+{/* Button Row */}
+{submitStatus === "success" ? (
+  <div className="w-full flex items-center justify-center mt-4">
+    <button
+      type="button"
+      disabled
+      className="px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm cursor-not-allowed"
+    >
+      <CheckCircle className="w-5 h-5" />
+      You have already submitted your answer
+    </button>
+  </div>
+) : (
+  <div className="flex flex-wrap items-center justify-between gap-4">
+    {/* Toggle Custom Input */}
+    <button
+      type="button"
+      onClick={() => setShowCustomInput(!showCustomInput)}
+      className="text-sm text-gray-700 hover:text-indigo-600 font-medium flex items-center gap-1"
+    >
+      {showCustomInput ? (
+        <ChevronDown className="w-4 h-4" />
+      ) : (
+        <ChevronRight className="w-4 h-4" />
+      )}
+      {showCustomInput ? "Hide Custom Input" : "Show Custom Input"}
+    </button>
 
-      {/* Judge0 Execution Results */}
-      {judge0Results && (
-        <div>
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-500" />
-            Execution Results
-          </h3>
+    <div className="flex flex-wrap gap-3">
+      {/* Run Code */}
+      <button
+        type="button"
+        onClick={handleRunWithAPI}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
+      >
+        <Play className="w-4 h-4" />
+        Run Code
+      </button>
 
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-white p-3 rounded-lg border border-gray-300">
-              <div className="flex items-center gap-2 mb-1">
-                {getStatusIcon(judge0Results.status)}
-                <p className="text-sm font-medium text-gray-600">Status</p>
+      {/* Run Test Cases */}
+      <button
+        type="button"
+        onClick={handleRunTestCases}
+        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:bg-purple-700 focus:ring-2 focus:ring-purple-500"
+      >
+        <FlaskConical className="w-4 h-4" />
+        Run Test Cases
+      </button>
+
+      {/* Submit */}
+      <button
+        type="button"
+        onClick={handleSubmitCode}
+        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500"
+      >
+        <Terminal className="w-4 h-4" />
+        Submit Answer
+      </button>
+    </div>
+  </div>
+)}
+
+
+
+
+      </div>
+      {/* Custom Input Section */}
+      {showCustomInput && (
+        <div className="border-t border-gray-200 pt-6">
+          <div className="space-y-3">
+            <label className="flex items-center gap-2 text-base font-medium text-gray-800">
+              <Terminal className="w-5 h-5" />
+              Custom Input (stdin)
+            </label>
+            <div className="bg-gray-50 rounded-lg shadow-sm">
+              <textarea
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                placeholder={`Enter input for your program (one value per line)...\nExample:\n5\n3\nHello World`}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none font-mono"
+                rows={6}
+              />
+              <div className="flex items-center justify-between mt-2 px-2 pb-1 text-xs text-gray-500">
+                <div>This input will be passed to your program via stdin</div>
+                <div>
+                  Characters: {customInput.length} | Lines:{" "}
+                  {customInput.split("\n").length}
+                </div>
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                judge0Results.status?.description === 'Compiled' || judge0Results.status?.description === 'Accepted' 
+            </div>
+          </div>
+        </div>
+      )}
+      <div>
+
+        {/* Judge0 Execution Results */}
+        {judge0Results && (
+          <div>
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-blue-500" />
+              Execution Results
+            </h3>
+
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white p-3 rounded-lg border border-gray-300">
+                <div className="flex items-center gap-2 mb-1">
+                  {getStatusIcon(judge0Results.status)}
+                  <p className="text-sm font-medium text-gray-600">Status</p>
+                </div>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${judge0Results.status?.description === 'Compiled' || judge0Results.status?.description === 'Accepted'
                   ? 'bg-blue-100 text-blue-800'
                   : judge0Results.status?.description === 'Correct'
                     ? 'bg-green-100 text-green-800'
                     : judge0Results.status?.description === 'Incorrect'
                       ? 'bg-red-100 text-red-800'
                       : 'bg-gray-100 text-gray-800'
-                }`}>
-                {judge0Results.status?.description || 'Unknown'}
-              </span>
-            </div>
-
-            <div className="bg-white p-3 rounded-lg border border-gray-300">
-              <div className="flex items-center gap-2 mb-1">
-                <Clock className="w-4 h-4 text-blue-500" />
-                <p className="text-sm font-medium text-gray-600">Execution Time</p>
-              </div>
-              <span className="text-sm text-gray-800 font-mono">
-                {judge0Results.time ? `${judge0Results.time}s` : 'N/A'}
-              </span>
-            </div>
-
-            <div className="bg-white p-3 rounded-lg border border-gray-300">
-              <div className="flex items-center gap-2 mb-1">
-                <MemoryStick className="w-4 h-4 text-purple-500" />
-                <p className="text-sm font-medium text-gray-600">Memory Used</p>
-              </div>
-              <span className="text-sm text-gray-800 font-mono">
-                {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
-              </span>
-            </div>
-          </div>
-
-          {/* Show output for Run Code without comparison */}
-          {lastActionType === 'runCode' && judge0Results?.stdout && (
-            <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-                <Terminal className="w-5 h-5 text-blue-600" />
-                <span>Program Output</span>
+                  }`}>
+                  {judge0Results.status?.description || 'Unknown'}
+                </span>
               </div>
 
-              <div className="text-sm font-mono space-y-2">
-                <div className="flex items-start gap-2">
-                  <Upload className="w-4 h-4 text-indigo-500 mt-1" />
-                  <div className="flex-1">
-                    <span className="font-semibold">Output:</span>
-                    <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
-                      {judge0Results.stdout}
-                    </pre>
+              <div className="bg-white p-3 rounded-lg border border-gray-300">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <p className="text-sm font-medium text-gray-600">Execution Time</p>
+                </div>
+                <span className="text-sm text-gray-800 font-mono">
+                  {judge0Results.time ? `${judge0Results.time}s` : 'N/A'}
+                </span>
+              </div>
+
+              <div className="bg-white p-3 rounded-lg border border-gray-300">
+                <div className="flex items-center gap-2 mb-1">
+                  <MemoryStick className="w-4 h-4 text-purple-500" />
+                  <p className="text-sm font-medium text-gray-600">Memory Used</p>
+                </div>
+                <span className="text-sm text-gray-800 font-mono">
+                  {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            {/* Show output for Run Code without comparison */}
+            {lastActionType === 'runCode' &&
+              customInput?.trim() &&
+              judge0Results?.stdout && (
+                <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                    <Terminal className="w-5 h-5 text-blue-600" />
+                    <span>Program Output</span>
+                  </div>
+
+                  <div className="text-sm font-mono space-y-2">
+                    <div className="flex items-start gap-2">
+                      <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+                      <div className="flex-1">
+                        <span className="font-semibold">Output:</span>
+                        <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
+                          {judge0Results.stdout}
+                        </pre>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {shouldShowSampleComparison && (
-            <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-                {isSampleTestPassed ? (
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-red-500" />
-                )}
-                <span>Sample Test Case Result</span>
-              </div>
 
-              <div className="text-sm font-mono space-y-2">
-                <div className="flex items-start gap-2">
-                  <Download className="w-4 h-4 text-blue-500 mt-1" />
-                  <div>
-                    <span className="font-semibold">Expected:</span>{" "}
-                    {fullDetails.sample_test_cases[0].output}
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <Upload className="w-4 h-4 text-indigo-500 mt-1" />
-                  <div>
-                    <span className="font-semibold">Your Output:</span>{" "}
-                    {judge0Results.stdout}
-                  </div>
-                </div>
-
-                <div
-                  className={`mt-3 font-semibold flex items-center gap-1 ${isSampleTestPassed ? "text-green-600" : "text-red-600"
-                    }`}
-                >
+            {/* {shouldShowSampleComparison && (
+              <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                   {isSampleTestPassed ? (
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="w-5 h-5 text-green-600" />
                   ) : (
-                    <XCircle className="w-4 h-4" />
+                    <XCircle className="w-5 h-5 text-red-500" />
                   )}
-                  {isSampleTestPassed ? "Passed" : "Failed"}
+                  <span>Sample Test Case Result</span>
+                </div>
+
+                <div className="text-sm font-mono space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Download className="w-4 h-4 text-blue-500 mt-1" />
+                    <div>
+                      <span className="font-semibold">Expected:</span>{" "}
+                      {fullDetails.sample_test_cases[0].output}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+                    <div>
+                      <span className="font-semibold">Your Output:</span>{" "}
+                      {judge0Results.stdout}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mt-3 font-semibold flex items-center gap-1 ${isSampleTestPassed ? "text-green-600" : "text-red-600"
+                      }`}
+                  >
+                    {isSampleTestPassed ? (
+                      <CheckCircle className="w-4 h-4" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
+                    {isSampleTestPassed ? "Passed" : "Failed"}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )} */}
 
-          {judge0Results.stderr && (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                <XCircle className="w-4 h-4 text-red-500" />
-                Error Output
-              </p>
-              <pre className="bg-red-950 text-red-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                {judge0Results.stderr}
-              </pre>
-            </div>
-          )}
+            {judge0Results.stderr && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
+                  <XCircle className="w-4 h-4 text-red-500" />
+                  Error Output
+                </p>
+                <pre className="bg-red-950 text-red-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
+                  {judge0Results.stderr}
+                </pre>
+              </div>
+            )}
 
-          {judge0Results.compile_output && (
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                <Cpu className="w-4 h-4 text-yellow-500" />
-                Compile Output
-              </p>
-              <pre className="bg-yellow-950 text-yellow-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                {judge0Results.compile_output}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
+            {judge0Results.compile_output && (
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
+                  <Cpu className="w-4 h-4 text-yellow-500" />
+                  Compile Output
+                </p>
+                <pre className="bg-yellow-950 text-yellow-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
+                  {judge0Results.compile_output}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
 
-      {/* Test Results Display */}
-      {(testResults || judge0Results?.testResults) && (
-        <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            Sample Test Case Results
-          </h3>
+        {/* Test Results Display */}
+        {(testResults || judge0Results?.testResults) && (
+          <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              Sample Test Case Results
+            </h3>
 
-          {/* Display sample test results from judge0Results */}
-          {judge0Results?.testResults && (
-            <div className="mb-4">
-              <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
-              <div className="space-y-3">
-                {judge0Results.testResults.map((result, index) => (
-                  <div key={index} className={`p-3 rounded-lg border bg-white ${result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
-                    }`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Test Case {index + 1}</span>
-                      <span className={`px-2 py-1 rounded text-xs ${result.status === 'PASSED'
+            {/* Display sample test results from judge0Results */}
+            {judge0Results?.testResults && (
+              <div className="mb-4">
+                <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
+                <div className="space-y-3">
+                  {judge0Results.testResults.map((result, index) => (
+                    <div key={index} className={`p-3 rounded-lg border bg-white ${result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
+                      }`}>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Test Case {index + 1}</span>
+                        <span className={`px-2 py-1 rounded text-xs ${result.status === 'PASSED'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                        }`}>
-                        {result.status || 'COMPLETED'}
-                      </span>
+                          }`}>
+                          {result.status || 'COMPLETED'}
+                        </span>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Display existing testResults */}
+            {testResults && (
+              <div className="space-y-4">
+                {testResults.map((result, index) => (
+                  <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
+                    ? 'border-green-200'
+                    : 'border-red-200'
+                    }`}>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-semibold text-lg">Test Case {index + 1}</span>
+                      <div className="flex items-center gap-2">
+                        {result.status === 'PASSED' ? (
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-red-500" />
+                        )}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}>
+                          {result.status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
+                        <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                          {result.input}
+                        </pre>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
+                        <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                          {result.actual_output}
+                        </pre>
+                      </div>
+                    </div>
+                    {result.expected_output && (
+                      <div className="mt-3">
+                        <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
+                        <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                          {result.expected_output}
+                        </pre>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Display existing testResults */}
-          {testResults && (
-            <div className="space-y-4">
-              {testResults.map((result, index) => (
-                <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
-                    ? 'border-green-200'
-                    : 'border-red-200'
-                  }`}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-lg">Test Case {index + 1}</span>
-                    <div className="flex items-center gap-2">
-                      {result.status === 'PASSED' ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500" />
-                      )}
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                        }`}>
-                        {result.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
-                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                        {result.input}
-                      </pre>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
-                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                        {result.actual_output}
-                      </pre>
-                    </div>
-                  </div>
-                  {result.expected_output && (
-                    <div className="mt-3">
-                      <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
-                      <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                        {result.expected_output}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Custom Input Section */}
-      <div className="border-t border-gray-200 pt-6">
-        <div className="space-y-3">
-          <label className="flex items-center gap-2 text-lg font-medium text-gray-800">
-            <Terminal className="w-5 h-5" />
-            Custom Input (stdin)
-          </label>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <textarea
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              placeholder="Enter input for your program (one value per line)...&#10;Example:&#10;5&#10;3&#10;Hello World"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none shadow-sm font-mono"
-              rows={4}
-            />
-            <div className="flex items-center justify-between mt-2">
-              <div className="text-xs text-gray-500">
-                This input will be passed to your program via stdin
-              </div>
-              <div className="text-xs text-gray-500">
-                Characters: {customInput.length} | Lines: {customInput.split('\n').length}
-              </div>
-            </div>
+            )}
           </div>
-        </div>
+        )}
+
+        {/* Custom Input Section */}
+
       </div>
 
       {/* Action Buttons */}
-      <div className="border-t border-gray-200 pt-6">
-        <div className="flex flex-wrap justify-between gap-3">
-          {/* Left side buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleSaveAnswer}
-              disabled={saveStatus === 'saving' || submitStatus === 'success'}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 transition-all ${
-                saveStatus === 'saving'
-                  ? 'bg-cyan-400 text-white cursor-not-allowed'
-                  : submitStatus === 'success'
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                    : saveStatus === 'saved'
-                      ? 'bg-green-100 text-green-800 border-2 border-green-200'
-                      : saveStatus === 'error'
-                        ? 'bg-red-100 text-red-800 border-2 border-red-200'
-                        : 'bg-cyan-600 text-white hover:bg-cyan-700 focus:ring-cyan-500 shadow-sm'
-              }`}
-            >
-                {submitStatus === 'success' ? 'Submitted' :
-                  saveStatus === 'saving' ? 'Saving...' :
-                    saveStatus === 'saved' ? '✓ Saved!' :
-                      saveStatus === 'error' ? '✗ Error Saving' :
-                        'Save Answer'}
-            </button>
 
-
-
-
-          </div>
-
-          {/* Right side buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={handleRunWithAPI}
-              disabled={isExecuting || submitStatus === 'success'}
-              className={`px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm flex items-center gap-2 ${
-                isExecuting || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
-              }`}
-            >
-              <Play className="w-4 h-4" />
-              {submitStatus === 'success' ? 'Submitted' : 
-                isExecuting ? 'Executing...' : 'Run Code'}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleRunTestCases}
-              disabled={isRunningTests || submitStatus === 'success'}
-              className={`px-5 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm flex items-center gap-2 ${
-                isRunningTests || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
-              }`}
-            >
-              <FlaskConical className="w-4 h-4" />
-              {submitStatus === 'success' ? 'Submitted' : 
-                isRunningTests ? 'Running Tests...' : 'Run Test Cases'}
-            </button>
-
-
-            <button
-              type="button"
-              onClick={handleSubmitCode}
-              disabled={isSubmitting || submitStatus === 'success'}
-              className={`px-5 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm flex items-center gap-2 ${
-                isSubmitting || submitStatus === 'success' ? 'opacity-70 cursor-not-allowed bg-gray-400' : ''
-              }`}
-            >
-              <Terminal className="w-4 h-4" />
-              {submitStatus === 'success' ? 'Submitted' : 
-                isSubmitting ? 'Submitting...' : 'Submit Answer'}
-            </button>
-
-          </div>
-        </div>
-      </div>
-      {submitStatus === "success" && (
+      {/* {submitStatus === "success" && (
         <p className="text-green-600 mt-4">Submitted successfully!</p>
-      )}
+      )} */}
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
@@ -1280,10 +1325,10 @@ const SolutionSection = ({
                 Confirm Action
               </h3>
             </div>
-            
+
             <div className="mb-6">
               <p className="text-gray-700">
-                {pendingAction?.type === 'languageChange' 
+                {pendingAction?.type === 'languageChange'
                   ? `You have unsaved changes. Changing from ${pendingAction.data.oldLanguage?.toUpperCase()} to ${pendingAction.data.newLanguage?.toUpperCase()} will replace your current code with the template. Do you want to continue?`
                   : 'You have unsaved changes. Switching to a different question will lose your current work. Do you want to continue?'
                 }
@@ -1292,7 +1337,7 @@ const SolutionSection = ({
                 This action cannot be undone. Consider saving your work first.
               </p>
             </div>
-            
+
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => handleConfirmAction(false)}
