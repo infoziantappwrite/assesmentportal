@@ -13,6 +13,7 @@ import {
   Filter,
   XCircle,
 } from "lucide-react";
+import { useUser } from '../../../context/UserContext';
  
 const ManageAssignments = () => {
   const [assignments, setAssignments] = useState([]);
@@ -35,9 +36,10 @@ const ManageAssignments = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-const [assignedByUsers, setAssignedByUsers] = useState([]);
+  const [assignedByUsers, setAssignedByUsers] = useState([]);
  
   const navigate = useNavigate();
+  const { role } = useUser();
  
   useEffect(() => {
     getAllColleges().then((res) => setColleges(res || []));
@@ -135,7 +137,7 @@ useEffect(() => {
       label: "Action",
       render: (row) => (
         <button
-          onClick={() => navigate(`/admin/assignments/${row._id}`)}
+          onClick={() => navigate(`/${role}/assignments/${row._id}`)}
           className="text-blue-600 hover:underline text-sm"
         >
           View

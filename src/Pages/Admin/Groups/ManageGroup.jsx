@@ -17,6 +17,7 @@ import { getAllColleges } from "../../../Controllers/CollegeController";
 import CreateGroupModal from "./CreateGroupModal";
 import Table from "../../../Components/Table";
 import Loader from "../../../Components/Loader";
+import { useUser } from '../../../context/UserContext';
 
 const ManageGroup = () => {
   const [groups, setGroups] = useState([]);
@@ -28,6 +29,7 @@ const ManageGroup = () => {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const navigate = useNavigate();
+    const { role } = useUser();
 
   // ✅ Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -136,7 +138,7 @@ const ManageGroup = () => {
         <div className="flex items-center gap-3">
           <button
             className="text-blue-600 hover:underline text-sm flex items-center gap-1"
-            onClick={() => navigate(`/admin/groups/${row._id}`)}
+            onClick={() => navigate(`/${role}/groups/${row._id}`)}
           >
             <Eye size={16} />
             View

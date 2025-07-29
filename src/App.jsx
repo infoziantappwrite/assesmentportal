@@ -103,7 +103,7 @@ const App = () => {
 
 
       {/* Private College Routes */}
-      <Route element={<PrivateRoute allowedRoles={['college']} />}>
+      <Route element={<PrivateRoute allowedRoles={['college_rep']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more college-specific routes here */}
           <Route path="/college/dashboard" element={<CollegeDashboard />} />
@@ -170,10 +170,17 @@ const App = () => {
         <Route element={<ProtectedLayout />}>
           {/* Add more trainer-specific routes here */}
           <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
-          <Route path="/trainer/groups" element={<div>Trainer Groups</div>} />
-          <Route path="/trainer/assessments" element={<TrainerAssesment />} />
+          <Route path="/trainer/groups" element={<ManageGroup />} />
+          <Route path="/trainer/groups/:id" element={<ViewGroup />} />
+          <Route path="/trainer/groups/edit/:id" element={<EditGroup />} />
+          <Route path="/trainer/assessments" element={<ManageAssesment />} />
+          <Route path="/trainer/assessments/create" element={<CreateAssesment />} />
+          <Route path="/trainer/assessments/edit/:id" element={<EditAssessment />} />
+          <Route path="/trainer/assessments/:id" element={<ViewAssesment />} />
           <Route path="/trainer/create-test" element={<CreateTest />} />
-          <Route path="/trainer/assignments" element={<Assignments />} />
+          <Route path="/trainer/assignments" element={<ManageAssignments />} />
+          <Route path="/trainer/assignments/:id" element={<ViewAssignment />} />
+          <Route path="/trainer/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/trainer/submissions" element={<TrainerCandidateList />} />
           <Route path="/trainer/students" element={<StudentTable />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
