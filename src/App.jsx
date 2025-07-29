@@ -108,10 +108,19 @@ const App = () => {
           {/* Add more college-specific routes here */}
           <Route path="/college_rep/dashboard" element={<CollegeDashboard />} />
           <Route path="/college_rep/students" element={<StudentTable />} />
-          <Route path="/college_rep/assessments" element={<CollegeTestList />} />
+          <Route path="/college_rep/assessments" element={<ManageAssesment />} />
+          <Route path="/college_rep/assessments/create" element={<CreateAssesment />} />
+          <Route path="/college_rep/assessments/edit/:id" element={<EditAssessment />} />
+          <Route path="/college_rep/assessments/:id" element={<ViewAssesment />} />
+          <Route path="/college_rep/assessments/:id/create-section" element={<CreateSection />} />
+          <Route path="/college_rep/assessments/:id/sections" element={<ViewSections />} />
+          <Route path="/college_rep/sections/:id" element={<SinglePageViewSection />} />
+          <Route path="/college_rep/sections/edit/:id" element={<EditSection />} />
+          <Route path="/college_rep/sections/:id/add-question" element={<AddQuestionToSection />} />
+          <Route path="/college_rep/sections/:id/add-question-code" element={<AddQuestionToSectionCode />} />
           <Route path="/college_rep/assignments" element={<ManageAssignments />} />
           <Route path="/college_rep/submissions" element={<CandidateList />} />
-          <Route path="/college_rep/groups" element={<Groups />} />
+          <Route path="/college_rep/groups" element={<ManageGroup />} />
           <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
           <Route path="/college_rep/reports" element={<CollegeReports />} />
           <Route path="/college_rep/profile" element={<CollegeProfile />} />
