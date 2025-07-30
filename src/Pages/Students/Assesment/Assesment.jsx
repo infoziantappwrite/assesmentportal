@@ -7,23 +7,30 @@ import CodingQuestion from './QuestionTypes/CodingQuestion';
 import DescriptiveQuestion from './QuestionTypes/DescriptiveQuestion';
 import { getSectionWiseStatus } from '../../../Controllers/SubmissionController';
 import AssessmentSection from './AssessmentSection';
+import { useUser } from '../../../context/UserContext';
+import useProctoringEvents from '../Proctoring/useProctoringEvents';
 
 const Assessment = () => {
   const { state } = useLocation();
+  const {user}=useUser();
   const navigate = useNavigate();
   const { sections,submission } = state;
-  //console.log()
-  //const submissionId1 = localStorage.getItem('submission_id');
   const submissionId = submission._id;
   const assignmentId=submission.assignment_id;
+  const studentId=user._id
+  //console.log(student_id)
   
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
   const [answerStatusMap, setAnswerStatusMap] = useState({});
-  const [layout, setLayout] = useState('top-info-nav');
   const development =true;
+  useProctoringEvents({
+    submission_id: submissionId,
+    assignment_id: assignmentId,
+    student_id: studentId,
+  });
 
   const activeSection = sections[sectionIndex];
   const question = activeSection.questions[questionIndex];
@@ -179,7 +186,7 @@ const Assessment = () => {
       </div>
 
       <AssessmentSection
-        layout={layout}
+        layout="top-info-nav"
         activeSection={activeSection}
         sections={sections}
         sectionIndex={sectionIndex}
