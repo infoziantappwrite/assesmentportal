@@ -11,15 +11,19 @@ import AssessmentSection from './AssessmentSection';
 const Assessment = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { sections } = state;
-  const submissionId = localStorage.getItem('submission_id');
+  const { sections,submission } = state;
+  //console.log()
+  //const submissionId1 = localStorage.getItem('submission_id');
+  const submissionId = submission._id;
+  const assignmentId=submission.assignment_id;
+  
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
   const [answerStatusMap, setAnswerStatusMap] = useState({});
   const [layout, setLayout] = useState('top-info-nav');
-  const development =false;
+  const development =true;
 
   const activeSection = sections[sectionIndex];
   const question = activeSection.questions[questionIndex];
@@ -186,6 +190,9 @@ const Assessment = () => {
         renderQuestion={renderQuestion}
         getQuestionStatusClass={getQuestionStatusClass}
         refreshSectionStatus={refreshSectionStatus}
+        assignmentID={assignmentId}
+        submissionID={submissionId}
+        
       />
 
       {showExitConfirm && (

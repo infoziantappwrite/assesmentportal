@@ -70,7 +70,7 @@ const Header = () => {
           {timeLeft !== null && (
             <div className="flex items-center gap-2 border border-blue-200 rounded-md px-3 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm">
               <AlarmClock className="w-5 h-5 text-blue-600" />
-              <span className='md:hidden' >{formatTime(timeLeft)}</span>
+              <span className='sm:hidden' >{formatTime(timeLeft)}</span>
               <span className="hidden sm:inline">Time Left: {formatTime(timeLeft)}</span>
             </div>
           )}
