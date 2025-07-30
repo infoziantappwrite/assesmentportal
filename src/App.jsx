@@ -119,10 +119,12 @@ const App = () => {
           <Route path="/college_rep/sections/:id/add-question" element={<AddQuestionToSection />} />
           <Route path="/college_rep/sections/:id/add-question-code" element={<AddQuestionToSectionCode />} />
           <Route path="/college_rep/assignments" element={<ManageAssignments />} />
+          <Route path="/college_rep/assignments/:id" element={<ViewAssignment />} />
+          <Route path="/college_rep/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/college_rep/submissions" element={<CandidateList />} />
           <Route path="/college_rep/groups" element={<ManageGroup />} />
           <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
-          <Route path="/college_rep/reports" element={<CollegeReports />} />
+          <Route path="/college_rep/reports" element={<div>College Reports</div>} />
           <Route path="/college_rep/profile" element={<CollegeProfile />} />
           <Route path="college_rep/test/:testId/candidates" element={<CandidateList />} />
           <Route path="college_rep/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />

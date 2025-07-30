@@ -70,6 +70,7 @@ const ViewSections = () => {
                   <button
                     onClick={() => navigate(`/${role}/sections/edit/${section._id}`)}
                     className="flex items-center gap-1 text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
+                    style={{ display: role === 'college_rep' ? 'none' : 'flex' }}
                   >
                     <Edit className="w-4 h-4" /> Edit
                   </button>
