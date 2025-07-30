@@ -145,6 +145,7 @@ const ManageGroup = () => {
           </button>
           <button
             className="text-red-600 hover:underline text-sm flex items-center gap-1"
+            style={{ display: role === 'trainer' ? 'none' : 'flex' }}
             onClick={() => handleDelete(row._id)}
           >
             <Trash2 size={16} />
@@ -200,6 +201,7 @@ const ManageGroup = () => {
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg shadow bg-green-600 text-white hover:bg-green-700 text-sm whitespace-nowrap"
+                style={{ display: role === 'trainer' ? 'none' : 'flex' }}
               >
                 <PlusCircle size={16} />
                 Create Group
