@@ -118,6 +118,7 @@ const ViewAssessment = () => {
             <button
               onClick={handleToggleStatus}
               className={`relative w-16 h-8 flex items-center rounded-full transition-colors duration-300 ${is_active ? "bg-green-500" : "bg-gray-400"}`}
+              style={{ display: role === 'college_rep' ? 'none' : 'flex' }}
             >
               <span
                 className={`absolute left-1 w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${is_active ? "translate-x-8" : "translate-x-0"}`}
@@ -125,15 +126,21 @@ const ViewAssessment = () => {
             </button>
 
             <button onClick={() => navigate(`/${role}/assessments/edit/${id}`)}
-              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm shadow">
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm shadow"
+              style={{ display: role === 'college_rep' ? 'none' : 'flex' }}
+              >
               <Pencil className="w-4 h-4" /> Edit
             </button>
             <button onClick={handleDelete}
-              className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm shadow">
+              className="flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm shadow"
+              style={{ display: role === 'college_rep' ? 'none' : 'flex' }}
+              >
               <Trash2 className="w-4 h-4" /> Delete
             </button>
             <button onClick={handleClone}
-              className="flex items-center gap-2 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm shadow">
+              className="flex items-center gap-2 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm shadow"
+              style={{ display: role === 'college_rep' ? 'none' : 'flex' }}
+              >
               <Copy className="w-4 h-4" /> Clone
             </button>
             <button onClick={handlePreview}
@@ -218,6 +225,7 @@ const ViewAssessment = () => {
           onClick={() => navigate(`/${role}/assessments/${id}/create-section`)}
           disabled={remainingMarks <= 0}
           className={`mt-4 px-4 py-2 text-sm font-medium rounded-lg shadow ${remainingMarks <= 0 ? "bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-green-600 text-white hover:bg-green-700"}`}
+          style={{ display: role === 'college_rep' ? 'none' : 'inline' }}
         >
           + Create Section
         </button>
