@@ -174,3 +174,10 @@ export const questionVisited = async (payload) => {
   });
   return response.data;
 };
+
+export const saveTimeTaken = async (payload) => {
+  const response = await axiosClient.post(`/submissions/save-time-taken`, payload, {
+    withCredentials: true,
+  });
+  return response.data;
+};

@@ -3,11 +3,10 @@ import debounce from 'lodash.debounce';
 import {
   saveAnswer,
   questionVisited,
-
 } from '../../../../Controllers/SubmissionController';
 import NotificationMessage from '../../../../Components/NotificationMessage';
 
-const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionIndex }) => {
+const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIndex }) => {
   const submissionId = localStorage.getItem('submission_id');
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [isMarkedForReview, setIsMarkedForReview] = useState(false);
@@ -61,7 +60,6 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionInd
     }
   }, [submissionId, question._id]);
 
-  // Debounced Save
   const debouncedSaveAnswer = useCallback(
     debounce(async (opts, marked) => {
       setIsSaving(true);
@@ -91,33 +89,38 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionInd
 
   debounceRef.current = debouncedSaveAnswer;
 
-  const handleOptionClick = (optionId) => {
-    let updatedOptions;
-    if (question.type === 'single_correct') {
-      updatedOptions = [optionId];
-    } else {
-      updatedOptions = selectedOptions.includes(optionId)
-        ? selectedOptions.filter((opt) => opt !== optionId)
-        : [...selectedOptions, optionId];
-    }
+ const handleOptionClick = (optionId) => {
+  let updatedOptions;
+  if (question.type === 'single_correct') {
+    updatedOptions = [optionId];
+  } else {
+    updatedOptions = selectedOptions.includes(optionId)
+      ? selectedOptions.filter((opt) => opt !== optionId)
+      : [...selectedOptions, optionId];
+  }
 
-    setSelectedOptions(updatedOptions);
-    setIsMarkedForReview(false);
-    debounceRef.current?.cancel(); // Cancel previous call
-    debouncedSaveAnswer(updatedOptions, false); // Trigger new call
-  };
+  setSelectedOptions(updatedOptions);
+  setIsMarkedForReview(false); 
+  
+};
+
 
   const handleMarkForReview = (e) => {
-    const checked = e.target.checked;
+  const checked = e.target.checked;
 
-    if (selectedOptions.length === 0 && checked) {
-      showNotification('warning', 'Please select an option before marking for review');
-      return;
-    }
+  if (selectedOptions.length === 0 && checked) {
+    showNotification('warning', 'Please select an option before marking for review');
+    return;
+  }
 
-    setIsMarkedForReview(checked);
-    debounceRef.current?.cancel();
-    debouncedSaveAnswer(selectedOptions, checked);
+  setIsMarkedForReview(checked);
+  // 🚫 no save triggered here
+};
+
+
+  const handleManualSave = () => {
+    debouncedSaveAnswer.cancel(); // cancel any debounced call
+    debouncedSaveAnswer(selectedOptions, isMarkedForReview); // trigger save immediately
   };
 
   return (
@@ -127,7 +130,7 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionInd
         <NotificationMessage type={notification.type} message={notification.message} />
       )}
 
-      {/* 📷 Question Images */}
+      {/* 📷 Images */}
       {question.content?.images?.length > 0 && (
         <div className="mb-4 space-x-2">
           {question.content.images.map((imgUrl, idx) => (
@@ -140,11 +143,13 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionInd
           ))}
         </div>
       )}
+
+      {/* 🧾 Question Text */}
       <h2 className="mb-4 font-semibold text-lg text-gray-800">
         Q{questionIndex + 1}. {question.content.question_text}
       </h2>
 
-      {/* ✅ Options List */}
+      {/* ✅ Options */}
       <div className="space-y-3 mb-6">
         {question.options.map((opt) => {
           const selected = selectedOptions.includes(opt.option_id);
@@ -165,25 +170,38 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus,questionInd
         })}
       </div>
 
-      {/* 🟣 Mark for Review */}
-      <div className="flex items-center justify-between">
-        <label className="flex items-center text-sm text-gray-700">
-          <input
-            type="checkbox"
-            className="mr-2"
-            checked={isMarkedForReview}
-            onChange={handleMarkForReview}
-            disabled={isSaving}
-          />
-          Mark for Review
-        </label>
+     {/* 🟣 Mark for Review + Save Button */}
+<div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+  {/* 🔘 Mark for Review Checkbox */}
+  <label className="flex items-center text-sm text-gray-700">
+    <input
+      type="checkbox"
+      className="mr-2"
+      checked={isMarkedForReview}
+      onChange={handleMarkForReview}
+      disabled={isSaving}
+    />
+    Mark for Review
+  </label>
 
-        {isMarkedForReview && (
-          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
-            🟣 Marked for Review
-          </span>
-        )}
-      </div>
+  {/* 🟣 Status (Optional – shows only if marked) */}
+  {isMarkedForReview && (
+    <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
+      🟣 Marked for Review
+    </span>
+  )}
+
+  {/* ✅ Save Button */}
+  <button
+    onClick={handleManualSave}
+    disabled={isSaving}
+    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md transition"
+  >
+    {isSaving ? 'Submitting...' : 'Save Answer'}
+  </button>
+</div>
+
+      
     </div>
   );
 };
