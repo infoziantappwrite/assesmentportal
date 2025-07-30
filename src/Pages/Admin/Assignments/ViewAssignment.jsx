@@ -4,7 +4,6 @@ import { getAssignmentById, getAssignmentResults } from '../../../Controllers/As
 import Loader from '../../../Components/Loader';
 import { ArrowLeft, Pencil } from 'lucide-react';
 import AssignmentActions from './AssignmentActions';
-import EligibleStudents from './EligibleStudents';
 import Submissions from './Submissions';
  
 const ViewAssignment = () => {
@@ -174,8 +173,6 @@ const fetchAssignment = async () => {
     <span>No targets assigned.</span>
   )}
 </Section>
-
-      <EligibleStudents id={assignment._id} />
       <Submissions id={assignment._id} />
     </div>
   );
