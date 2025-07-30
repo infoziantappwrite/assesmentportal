@@ -7,10 +7,12 @@ import {
   ArrowLeft, FileText, Clock, List, Settings2,
   ShieldCheck, LayoutList, PlusCircle, Pencil
 } from 'lucide-react';
+import { useUser } from '../../../context/UserContext';
 
 const SinglePageViewSection = () => {
   const { id } = useParams(); // section ID from URL
   const navigate = useNavigate();
+  const { role } = useUser();
   const [section, setSection] = useState(null);
   console.log(section);
 
@@ -101,6 +103,7 @@ const SinglePageViewSection = () => {
             <button
               onClick={() => navigate(`/admin/sections/edit/${id}`)}
               className="px-4 py-2 text-sm font-medium bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg shadow"
+              style={{ display: role === 'college_rep' ? 'none' : 'inline' }}
             >
               <Pencil className="w-4 h-4 inline-block mr-1" />
               Edit Section
@@ -114,12 +117,15 @@ const SinglePageViewSection = () => {
                 )
               }
               className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
+              style={{ display: role === 'college_rep' ? 'none' : 'inline' }}
             >
               <PlusCircle className="w-4 h-4 inline-block mr-1" />
               Add Questions
             </button>
 
-            <label className="relative inline-flex items-center px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow cursor-pointer">
+            <label className="relative inline-flex items-center px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow cursor-pointer"
+              style={{ display: role === 'college_rep' ? 'none' : 'inline-flex' }}
+            >
               <UploadCloud className="w-4 h-4 mr-1" />
               {uploading ? "Uploading..." : "Bulk Upload"}
               <input
@@ -128,6 +134,7 @@ const SinglePageViewSection = () => {
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 onChange={handleFileUpload}
                 disabled={uploading}
+                
               />
 
             </label>
