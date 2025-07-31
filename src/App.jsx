@@ -126,7 +126,7 @@ const App = () => {
           <Route path="/college_rep/submissions" element={<CandidateList />} />
           <Route path="/college_rep/groups" element={<ManageGroup />} />
           <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
-          <Route path="/college_rep/reports" element={<div>College Reports</div>} />
+          <Route path="/college_rep/reports" element={<ReportsPage />} />
           <Route path="/college_rep/profile" element={<CollegeProfile />} />
           <Route path="college_rep/test/:testId/candidates" element={<CandidateList />} />
           <Route path="college_rep/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
