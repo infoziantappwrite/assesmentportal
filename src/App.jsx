@@ -19,8 +19,8 @@ import SubmissionList from './Pages/Students/Dashboard/SubmissionList';
 import Result from './Pages/Students/Assesment/Result';
 
 //import Trainer routes
-import TrainerDashboard from "./Pages/Trainer/Dashboard"
-import TrainerAssesment from "./Pages/Trainer/ViewTest"
+import TrainerDashboard from "./Pages/Trainer/TrainerDashboard"
+
 import TrainerCandidateList from './Pages/Trainer/CandidateList';
 
 //common route for Trainer and admin
