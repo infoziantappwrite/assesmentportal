@@ -72,6 +72,8 @@ import EditAssignment from './Pages/Admin/Assignments/EditAssignment';
 import AddQuestionToSectionCode from './Pages/Common/Section/AddQuestionToSectionCode';
 import ViewCodingQuestionsInSection from './Pages/Common/Section/ViewCodingQuestionsInSection';
 import ViewFullSubmission from './Pages/Admin/Assignments/ViewFullSubmission';
+import ReportsPage from './Pages/Admin/Reports/ReportsPage';
+import ReportHistoryPage from './Pages/Admin/Reports/ReportHistoryPage';
 // import AddQuestionToSectionAssignment from "./Pages/Common/Section/AddQuestionToSectionAssignment"
 // import AddQuestionToSectionSurvey from './Pages/Common/Section/AddQuestionToSectionSurvey';
 
@@ -163,13 +165,14 @@ const App = () => {
           <Route path="/admin/sections/:id/questions" element={<ViewQuestionsInSection />} />
           <Route path="/admin/sections/question/coding/:id" element={<ViewCodingQuestionsInSection />} />
           <Route path="/admin/sections/question/:id/" element={<ViewSingleQuestion />} />
-          <Route path="/admin/reports" element={<div>Reports</div>} />
+          <Route path="/admin/reports" element={<ReportsPage />} />
           <Route path="/admin/settings" element={<div>Settings</div>} />
           <Route path="/admin/assignments/create" element={<CreateAssignments />} />
           <Route path="/admin/assignments" element={<ManageAssignments />} />
           <Route path="/admin/assignments/:id" element={<ViewAssignment />} />
           <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/submissions/:submissionId" element={<ViewFullSubmission />} />
+          <Route path="/reports/history" element={<ReportHistoryPage />} />
 
 
         </Route>

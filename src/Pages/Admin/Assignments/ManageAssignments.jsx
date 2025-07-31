@@ -52,6 +52,8 @@ const ManageAssignments = () => {
 useEffect(() => {
   getAllAssignments(filters)
     .then((res) => {
+      console.log('Assignments API response:', res);
+      
       const fetchedAssignments = res.data.assignments;
       setAssignments(fetchedAssignments);
       //console.log(fetchedAssignments)
