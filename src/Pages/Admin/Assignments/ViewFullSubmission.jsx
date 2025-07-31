@@ -29,7 +29,7 @@ const ViewFullSubmission = () => {
   }, [submissionId]);
 
   if (loading) return <Loader />;
-  
+
   if (error) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-md p-8 text-center max-w-md border border-gray-200">
@@ -82,7 +82,7 @@ const ViewFullSubmission = () => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-800">Submission Details</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
                   <div className="flex items-center mb-2">
@@ -93,7 +93,7 @@ const ViewFullSubmission = () => {
                     {submission?._id}
                   </p>
                 </div>
-                
+
                 <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-100">
                   <div className="flex items-center mb-2">
                     <CheckCircle className="w-4 h-4 text-emerald-600 mr-2" />
@@ -103,7 +103,7 @@ const ViewFullSubmission = () => {
                     {submission?.status?.charAt(0)?.toUpperCase() + submission?.status?.slice(1)}
                   </span>
                 </div>
-                
+
                 <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
                   <div className="flex items-center mb-2">
                     <Clock className="w-4 h-4 text-purple-600 mr-2" />
@@ -124,7 +124,7 @@ const ViewFullSubmission = () => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-800">Section-wise Performance</h3>
               </div>
-              
+
               <div className="grid gap-4">
                 {scores?.section_wise_scores?.map((section, index) => (
                   <div key={index} className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-sm transition-shadow">
@@ -134,7 +134,7 @@ const ViewFullSubmission = () => {
                         {section.section_id}
                       </span>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
                         <Target className="w-5 h-5 text-blue-600 mx-auto mb-1" />
@@ -170,7 +170,7 @@ const ViewFullSubmission = () => {
                 </div>
                 <h3 className="text-xl font-bold text-gray-800">Submitted Answers</h3>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {submission?.answers?.map((ansId, i) => (
                   <div key={i} className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 hover:shadow-sm transition-shadow">
@@ -178,7 +178,8 @@ const ViewFullSubmission = () => {
                       <span className="w-6 h-6 bg-indigo-500 text-white text-xs rounded-full flex items-center justify-center mr-2 font-medium">
                         {i + 1}
                       </span>
-                      <span className="text-gray-700 font-mono text-xs truncate">{ansId}</span>
+                      <span className="text-gray-700 font-mono text-xs truncate">{ansId._id}</span>
+
                     </div>
                   </div>
                 ))}
@@ -202,7 +203,7 @@ const ViewFullSubmission = () => {
                     {scores?.percentage?.toFixed(2)}%
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                     <div className="flex justify-between items-center">
@@ -210,7 +211,7 @@ const ViewFullSubmission = () => {
                       <span className="text-xl font-bold text-blue-600">{scores?.total_marks}</span>
                     </div>
                   </div>
-                  
+
                   <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 text-sm">Obtained</span>
@@ -221,12 +222,12 @@ const ViewFullSubmission = () => {
 
                 {/* Progress Bar */}
                 <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-indigo-500 rounded-full"
                     style={{ width: `${scores?.percentage || 0}%` }}
                   ></div>
                 </div>
-                
+
                 <div className="text-center text-xs text-gray-500">
                   Performance Score
                 </div>
