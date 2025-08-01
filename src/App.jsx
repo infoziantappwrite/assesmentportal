@@ -77,6 +77,8 @@ import ReportHistoryPage from './Pages/Admin/Reports/ReportHistoryPage';
 // import AddQuestionToSectionAssignment from "./Pages/Common/Section/AddQuestionToSectionAssignment"
 // import AddQuestionToSectionSurvey from './Pages/Common/Section/AddQuestionToSectionSurvey';
 
+import AdminDashboard from './Pages/Admin/Dashboard/Dashboard';
+
 
 const App = () => {
   return (
@@ -139,7 +141,7 @@ const App = () => {
       <Route element={<PrivateRoute allowedRoles={['admin']} />}>
         <Route element={<ProtectedLayout />}>
           {/* Add more admin-specific routes here */}
-          <Route path="/admin/dashboard" element={<div>Super Admin Dashboard</div>} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/colleges" element={<ManageColleges />} />
           <Route path="/admin/colleges/:id" element={<ViewCollege />} />
           <Route path="/admin/colleges/edit/:id" element={<EditCollege />} />

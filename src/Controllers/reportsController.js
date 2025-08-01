@@ -38,17 +38,46 @@ export const generateReviewReport = async (submissionId) => {
   return response.data;
 };
 
-// ✅ POST /reports/college/:collegeId
-export const generateCollegeReport = async (collegeId, format = 'excel') => {
-  const response = await axiosClient.post(`/reports/college/${collegeId}`, {
+  // ✅ POST /reports/college/:collegeId
+  export const generateCollegeReport = async (collegeId, format = 'excel') => {
+    const response = await axiosClient.post(`/reports/college/${collegeId}`, {
+      format,
+      filters: {},
+      includeDetails: true,
+    }, {
+      withCredentials: true,
+    });
+    return response.data;
+  };
+
+  // POST /reports/user/:userId
+  export const generateUserReport = async (userId, format = 'excel') => {
+  const response = await axiosClient.post(
+    `/reports/user/${userId}`,
+    {
+      format,
+      filters: {},           // Customize if needed
+      includeDetails: true,  // Include detailed data in report
+    },
+    {
+      withCredentials: true, // For session/cookie-based auth
+    }
+  );
+  return response.data;
+};
+
+
+export const generateUserActivityReport = async (submissionId, format = 'excel') => {
+  const response = await axiosClient.post(`/reports/user-activity/${submissionId}`, {
     format,
-    filters: {},
+    filters: {}, // You can extend this later if you want filtering
     includeDetails: true,
   }, {
     withCredentials: true,
   });
   return response.data;
 };
+
 
 
 // ✅ GET /reports/status/:exportLogId
