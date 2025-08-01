@@ -55,7 +55,7 @@ const ViewFullSubmission = () => {
   };
 
   const getStatusColor = (status) => {
-    if (status === "completed") return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    if (status === "submitted") return "bg-emerald-100 text-emerald-800 border-emerald-200";
     if (status === "in_progress") return "bg-blue-100 text-blue-800 border-blue-200";
     return "bg-gray-100 text-gray-800 border-gray-200";
   };
@@ -161,82 +161,112 @@ const ViewFullSubmission = () => {
                 </div>
 
                 <div className="space-y-6">
-                  {submission?.answers?.map((ans, index) => {
-                    const question = ans.question_id;
-                    const selectedOptionIds = ans.selected_options || [];
-                    const isCorrect = ans.evaluation?.is_correct;
-                    const marksObtained = ans.evaluation?.marks_obtained ?? 0;
-                    const totalMarks = ans.evaluation?.total_marks ?? question?.marks ?? 0;
+                {submission?.answers?.map((ans, index) => {
+                  const question = ans.question_id;
+                  const selectedOptionIds = ans.selected_options || [];
+                  const isCorrect = ans.evaluation?.is_correct;
+                  const marksObtained = ans.evaluation?.marks_obtained ?? 0;
+                  const totalMarks = ans.evaluation?.total_marks ?? question?.marks ?? 0;
+                  const isCoding = ans.question_type === "coding";
 
-                    return (
-                      <div
-                        key={ans._id}
-                        className="border rounded-xl p-5 bg-white border-gray-200 shadow-sm"
-                      >
-                        {/* Question Header */}
-                        <div className="mb-2">
-                          <h4 className="text-md font-semibold text-indigo-700">
-                            Q{index + 1}. {question?.content?.question_text}
-                          </h4>
-                          <p className="text-xs text-gray-500 italic mb-1">
-                            Marks: {marksObtained}/{totalMarks}
-                          </p>
-                          <span
-                            className={`inline-block text-xs px-2 py-1 rounded font-medium ${
-                              isCorrect
-                                ? "bg-green-100 text-green-700"
-                                : "bg-rose-100 text-rose-700"
-                            }`}
-                          >
-                            {isCorrect ? "Correct" : "Incorrect"}
-                          </span>
-                        </div>
-
-                        {/* Options List */}
-                        <ul className="space-y-2 mt-3">
-                          {question?.options.map((opt) => {
-                            const isSelected = selectedOptionIds.includes(opt.option_id);
-                            const isCorrectOption = opt.is_correct;
-
-                            let bgColor = "bg-white border-gray-200 text-gray-700";
-                            let label = null;
-
-                            if (isCorrectOption && isSelected) {
-                              bgColor = "bg-green-50 border-green-200 text-green-700";
-                              label = "Correct & Selected";
-                            } else if (isCorrectOption) {
-                              bgColor = "bg-green-50 border-green-200 text-green-700";
-                              label = "Correct";
-                            } else if (isSelected) {
-                              bgColor = "bg-rose-50 border-rose-200 text-rose-700";
-                              label = "Your Answer";
-                            }
-
-                            return (
-                              <li
-                                key={opt.option_id}
-                                className={`p-2 rounded border text-sm ${bgColor}`}
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span>{opt.text}</span>
-                                  {label && (
-                                    <span className="text-xs font-medium">{label}</span>
-                                  )}
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-
-                        {/* Explanation */}
-                        {question?.explanation && (
-                          <div className="mt-4 text-sm text-gray-600">
-                            <strong>Explanation:</strong> {question.explanation}
-                          </div>
-                        )}
+                  return (
+                    <div
+                      key={ans._id}
+                      className="border rounded-xl p-5 bg-white border-gray-200 shadow-sm"
+                    >
+                      {/* Question Header */}
+                      <div className="mb-2">
+                        <h4 className="text-md font-semibold text-indigo-700">
+                          Q{index + 1}. {question?.content?.question_text}
+                        </h4>
+                        <p className="text-xs text-gray-500 italic mb-1">
+                          Marks: {marksObtained}/{totalMarks}
+                        </p>
+                        <span
+                          className={`inline-block text-xs px-2 py-1 rounded font-medium ${
+                            isCorrect ? "bg-green-100 text-green-700" : "bg-rose-100 text-rose-700"
+                          }`}
+                        >
+                          {isCorrect ? "Correct" : "Incorrect"}
+                        </span>
                       </div>
-                    );
-                  })}
+
+                      {/* CODING QUESTION */}
+                      {isCoding ? (
+                        <div className="space-y-4 mt-3">
+                          <div className="text-sm text-gray-600">
+                            <strong>Language:</strong> {ans.programming_language?.toUpperCase() || "N/A"}
+                          </div>
+
+                          {ans.code_solution ? (
+                            <div className="bg-gray-100 border border-gray-300 rounded-md p-4 overflow-x-auto text-sm font-mono whitespace-pre-wrap text-gray-800">
+                              {ans.code_solution}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-red-500">No code submitted.</p>
+                          )}
+
+                          {question?.explanation && (
+                            <div className="text-sm text-gray-600">
+                              <strong>Explanation:</strong> {question.explanation}
+                            </div>
+                          )}
+
+                          <div className="text-xs text-gray-500">
+                            <p>Time Taken: {ans.timing?.time_taken_seconds || 0}s</p>
+                            <p>Attempts: {ans.timing?.attempt_count || 1}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {/* NON-CODING OPTIONS */}
+                          <ul className="space-y-2 mt-3">
+                            {question?.options.map((opt) => {
+                              const isSelected = selectedOptionIds.includes(opt.option_id);
+                              const isCorrectOption = opt.is_correct;
+
+                              let bgColor = "bg-white border-gray-200 text-gray-700";
+                              let label = null;
+
+                              if (isCorrectOption && isSelected) {
+                                bgColor = "bg-green-50 border-green-200 text-green-700";
+                                label = "Correct & Selected";
+                              } else if (isCorrectOption) {
+                                bgColor = "bg-green-50 border-green-200 text-green-700";
+                                label = "Correct";
+                              } else if (isSelected) {
+                                bgColor = "bg-rose-50 border-rose-200 text-rose-700";
+                                label = "Your Answer";
+                              }
+
+                              return (
+                                <li
+                                  key={opt.option_id}
+                                  className={`p-2 rounded border text-sm ${bgColor}`}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <span>{opt.text}</span>
+                                    {label && (
+                                      <span className="text-xs font-medium">{label}</span>
+                                    )}
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+
+                          {/* Explanation for non-coding */}
+                          {question?.explanation && (
+                            <div className="mt-4 text-sm text-gray-600">
+                              <strong>Explanation:</strong> {question.explanation}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+
                 </div>
               </div>
             </div>
