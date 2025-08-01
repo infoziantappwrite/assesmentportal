@@ -102,7 +102,7 @@ export const getAssignmentResults = async (assignmentId) => {
   const response = await axiosClient.get(`/results/assignment/${assignmentId}`, {
     withCredentials: true,
   });
-  console.log(response);
+  //console.log(response);
   
   return response.data;
 };

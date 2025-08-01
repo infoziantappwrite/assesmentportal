@@ -19,8 +19,8 @@ import SubmissionList from './Pages/Students/Dashboard/SubmissionList';
 import Result from './Pages/Students/Assesment/Result';
 
 //import Trainer routes
-import TrainerDashboard from "./Pages/Trainer/Dashboard"
-import TrainerAssesment from "./Pages/Trainer/ViewTest"
+import TrainerDashboard from "./Pages/Trainer/TrainerDashboard"
+
 import TrainerCandidateList from './Pages/Trainer/CandidateList';
 
 //common route for Trainer and admin
@@ -76,6 +76,9 @@ import ReportsPage from './Pages/Admin/Reports/ReportsPage';
 import ReportHistoryPage from './Pages/Admin/Reports/ReportHistoryPage';
 // import AddQuestionToSectionAssignment from "./Pages/Common/Section/AddQuestionToSectionAssignment"
 // import AddQuestionToSectionSurvey from './Pages/Common/Section/AddQuestionToSectionSurvey';
+
+import Results from './Pages/Common/Results/Results';
+import ViewResult from './Pages/Common/Results/ViewResult';
 
 
 const App = () => {
@@ -173,7 +176,8 @@ const App = () => {
           <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/submissions/:submissionId" element={<ViewFullSubmission />} />
           <Route path="/reports/history" element={<ReportHistoryPage />} />
-
+          <Route path='/admin/results' element={<Results/>}/>
+          <Route path="/admin/result/:id" element={<ViewResult />} />
 
         </Route>
       </Route>
