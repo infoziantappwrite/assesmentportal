@@ -14,7 +14,7 @@ const AssignmentResults = ({ results = [] }) => {
   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
     <div className="flex items-center space-x-3 mb-3 sm:mb-0">
       <div className="w-2 h-5 rounded-full bg-green-600"></div>
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Assignment Results</h2>
+      <h2 className="text-lg sm:text-xl font-bold text-gray-900">Assignment Results</h2>
     </div>
 
     <input
@@ -32,7 +32,7 @@ const AssignmentResults = ({ results = [] }) => {
         <div className="text-gray-500 text-center py-8 px-4">No results available.</div>
       ) : (
         <div className='p-4'>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[400px] overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[580px] overflow-y-auto pr-1">
           {filteredResults.map((res) => (
             <div
               key={res.id}
