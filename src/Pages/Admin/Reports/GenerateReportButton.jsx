@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FileBarChart, ChevronDown, Check } from 'lucide-react';
-import { generateAssignmentReport, generateCollegeReport } from '../../../Controllers/reportsController';
+import { generateAssignmentReport, generateCollegeReport, generateUserReport } from '../../../Controllers/reportsController';
 
 const exportFormats = Object.freeze({
     PDF: 'pdf',
@@ -26,7 +26,8 @@ const GenerateReportButton = ({ reportType, payload }) => {
                 const result = await generateCollegeReport(payload._id, selectedFormat);
                 console.log('College report generated:', result);
             } else if (reportType === 'user_activity') {
-                console.warn('User report generation not implemented yet.');
+                const result = await generateUserReport(payload._id, selectedFormat);
+                console.log('User report generated:', result);
             } else {
                 console.error('Unknown report type');
             }

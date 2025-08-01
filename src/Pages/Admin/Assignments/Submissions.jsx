@@ -3,6 +3,10 @@ import { getSubmissions } from "../../../Controllers/AssignmentControllers";
 import Loader from "../../../Components/Loader";
 import { TimerIcon, UserIcon, CheckCircle2, XCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  generateUserActivityReport,
+  downloadReport
+} from "../../../Controllers/reportsController";
 
 const Submissions = ({ id }) => {
   const [submissions, setSubmissions] = useState([]);
@@ -10,6 +14,7 @@ const Submissions = ({ id }) => {
   const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 });
   const [loading, setLoading] = useState(true);
+  const [selectedFormats, setSelectedFormats] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,6 +43,28 @@ const Submissions = ({ id }) => {
   }, [search, submissions]);
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
+
+  const handleDownloadReport = async (submissionId, format = "excel") => {
+    try {
+      const res = await generateUserActivityReport(submissionId, format);
+      const exportLogId = res.data?.exportLogId;
+      if (res?.data?.exportLogId) {
+        setTimeout(async () => {
+          try {
+            await downloadReport(exportLogId);
+          } catch (err) {
+            console.error("Download failed:", err.message);
+            alert("Report generation started. Try downloading again in a few seconds.");
+          }
+        }, 3000);
+      } else {
+        alert("Report queued. Try again in a few seconds.");
+      }
+    } catch (err) {
+      console.error("Report generation failed:", err.response?.data || err.message);
+      alert("Failed to generate report. Please try again.");
+    }
+  };
 
   return (
     <div className="bg-gradient-to-br from-pruple-50 to-white rounded-xl border border-purple-200  shadow-l overflow-hidden">
@@ -113,12 +140,38 @@ const Submissions = ({ id }) => {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => navigate(`/submissions/${s._id}`)}
-                  className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-md hover:opacity-90 transition-all"
-                >
-                  View Full Submission
-                </button>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <button
+                    onClick={() => navigate(`/submissions/${s._id}`)}
+                    className="text-xs px-3 py-1.5 bg-white border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition-colors font-medium"
+                  >
+                    View Full Submission
+                  </button>
+
+                  <select
+                    value={selectedFormats[s._id] || "excel"}
+                    onChange={(e) =>
+                      setSelectedFormats((prev) => ({
+                        ...prev,
+                        [s._id]: e.target.value,
+                      }))
+                    }
+                    className="text-xs border border-gray-300 rounded-md px-2 py-1 text-gray-700"
+                  >
+                    <option value="excel">Excel (.xlsx)</option>
+                    <option value="csv">CSV (.csv)</option>
+                    <option value="pdf">PDF (.pdf)</option>
+                  </select>
+
+                  <button
+                    onClick={() =>
+                      handleDownloadReport(s._id, selectedFormats[s._id] || "excel")
+                    }
+                    className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                  >
+                    Generate Report
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -129,16 +182,27 @@ const Submissions = ({ id }) => {
         <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
           <div className="flex justify-center gap-1">
             <button
-              onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+              onClick={() =>
+                setPagination((prev) => ({
+                  ...prev,
+                  page: Math.max(1, prev.page - 1),
+                }))
+              }
               disabled={pagination.page === 1}
               className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
               Previous
             </button>
+
             {[...Array(totalPages)].map((_, i) => (
               <button
                 key={i}
-                onClick={() => setPagination(prev => ({ ...prev, page: i + 1 }))}
+                onClick={() =>
+                  setPagination((prev) => ({
+                    ...prev,
+                    page: i + 1,
+                  }))
+                }
                 className={`px-3 py-1.5 rounded border text-sm font-medium ${pagination.page === i + 1
                   ? "bg-purple-600 border-purple-600 text-white"
                   : "border-gray-300 text-gray-700 hover:bg-gray-100"
@@ -147,8 +211,14 @@ const Submissions = ({ id }) => {
                 {i + 1}
               </button>
             ))}
+
             <button
-              onClick={() => setPagination(prev => ({ ...prev, page: Math.min(totalPages, prev.page + 1) }))}
+              onClick={() =>
+                setPagination((prev) => ({
+                  ...prev,
+                  page: Math.min(totalPages, prev.page + 1),
+                }))
+              }
               disabled={pagination.page === totalPages}
               className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
