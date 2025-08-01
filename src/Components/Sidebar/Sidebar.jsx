@@ -6,6 +6,7 @@ import {
   Users,
   GraduationCap,
   BookOpen,
+   FileCheck2,
   FileText,
   UserCheck,
   School,
@@ -48,6 +49,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { label: 'Manage Groups', to: '/admin/groups', icon: UserSquare, gradient: 'from-yellow-200 to-amber-100', },
       { label: 'Assessments', to: '/admin/assessments', icon: ClipboardList, gradient: 'from-teal-200 to-lime-100' },
       { label: 'Assignments', to: '/admin/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Results', to: '/admin/results', icon: FileCheck2,gradient: 'from-yellow-200 to-red-100' },
       { label: 'Reports', to: '/admin/reports', icon: FileText, gradient: 'from-orange-200 to-red-100' },
       //{ label: 'Settings', to: '/admin/settings', icon: UserCheck, gradient: 'from-indigo-200 to-purple-100' },
     ],
@@ -60,6 +62,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       { label: 'Groups', to: '/college_rep/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
       { label: 'Assessments', to: '/college_rep/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
       { label: 'Assignments', to: '/college_rep/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
+      { label: 'Results', to: '/college_rep/results', icon: FileCheck2,gradient: 'from-yellow-200 to-red-100' },
       { label: 'Reports', to: '/college_rep/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
     ],
     trainer: [
@@ -70,6 +73,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       // { label: 'Submissions', to: '/trainer/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
       // { label: 'Students', to: '/trainer/students', icon: GraduationCap, gradient: 'from-orange-200 to-red-100' },
       // { label: 'Analytics', to: '/trainer/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
+      { label: 'Results', to: '/trainer/results', icon: FileCheck2,gradient: 'from-yellow-200 to-red-100' },
       { label: 'Reports', to: '/trainer/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
     ]
   };

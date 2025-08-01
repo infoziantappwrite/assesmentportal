@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getSubmissions } from "../../../Controllers/AssignmentControllers";
 import Loader from "../../../Components/Loader";
-import { TimerIcon, UserIcon, CheckCircle2, XCircle } from "lucide-react";
+import { TimerIcon, UserIcon, CheckCircle2, XCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   generateUserActivityReport,
@@ -10,8 +10,9 @@ import {
 
 const Submissions = ({ id }) => {
   const [submissions, setSubmissions] = useState([]);
+  const [filtered, setFiltered] = useState([]);
+  const [search, setSearch] = useState("");
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 });
-  const [statistics, setStatistics] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedFormats, setSelectedFormats] = useState({});
   const navigate = useNavigate();
@@ -22,14 +23,24 @@ const Submissions = ({ id }) => {
       .then((res) => {
         const stats = res.data.statistics || {};
         const subs = res.data.submissions || [];
-
         setSubmissions(subs);
-        setStatistics(stats);
+        setFiltered(subs);
         setPagination((prev) => ({ ...prev, total: stats.total || 0 }));
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [id, pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    if (!search) {
+      setFiltered(submissions);
+    } else {
+      const filteredList = submissions.filter((s) =>
+        s.student_id?.name?.toLowerCase().includes(search.toLowerCase())
+      );
+      setFiltered(filteredList);
+    }
+  }, [search, submissions]);
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
@@ -56,46 +67,57 @@ const Submissions = ({ id }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-          <span className="w-2 h-5 bg-purple-600 rounded-full mr-3"></span>
+    <div className="bg-gradient-to-br from-pruple-50 to-white rounded-xl border border-purple-200  shadow-l overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 className="text-xl font-bold text-gray-800 flex items-center">
+          <span className="w-2 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mr-3"></span>
           Submissions
         </h3>
+        <div className="relative">
+          <input
+            type="text"
+      placeholder="Search by name or email..."
+      className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 w-full sm:w-80"
+      value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            
+          />
+          
+        </div>
       </div>
 
       {loading ? (
         <div className="p-8 flex justify-center">
           <Loader />
         </div>
-      ) : submissions.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="p-6 text-center">
           <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-            <XCircle className="h-5 w-5 text-gray-400" />
+            <XCircle className="h-6 w-6 text-gray-400" />
           </div>
-          <p className="text-gray-600">No submissions found</p>
+          <p className="text-gray-600 text-sm">No submissions found</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-200">
-          {submissions.map((s) => (
+        <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
+          {filtered.map((s) => (
             <div
               key={s._id}
-              className="px-5 py-4 hover:bg-gray-50 transition-colors"
+              className="px-5 py-4 hover:bg-gradient-to-br from-purple-50 to-indigo-50 transition-all duration-200"
             >
               <div className="flex justify-between items-start mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <UserIcon size={16} className="text-purple-600" />
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <UserIcon size={18} className="text-purple-700" />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-800">
+                    <h4 className="text-base font-semibold text-gray-800">
                       {s.student_id?.name || "Unknown Student"}
                     </h4>
                     <p className="text-xs text-gray-500">Attempt #{s.attempt_number}</p>
                   </div>
                 </div>
                 <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${s.status === "submitted"
+                  className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${s.status === "submitted"
                     ? "bg-green-100 text-green-800"
                     : "bg-yellow-100 text-yellow-800"
                     }`}
@@ -105,11 +127,11 @@ const Submissions = ({ id }) => {
               </div>
 
               <div className="ml-11 pl-1">
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 mb-3">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-700 mb-3">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 size={14} className="text-green-500" />
-                    <span>
-                      {s.scores?.obtained_marks ?? 0}/{s.scores?.total_marks ?? 0} points
+                    <span className="font-medium">
+                      {s.scores?.obtained_marks ?? 0}/{s.scores?.total_marks ?? 0} pts
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -157,7 +179,7 @@ const Submissions = ({ id }) => {
       )}
 
       {totalPages > 1 && (
-        <div className="px-5 py-4 border-t border-gray-200">
+        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50">
           <div className="flex justify-center gap-1">
             <button
               onClick={() =>
@@ -167,7 +189,7 @@ const Submissions = ({ id }) => {
                 }))
               }
               disabled={pagination.page === 1}
-              className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
               Previous
             </button>
@@ -183,7 +205,7 @@ const Submissions = ({ id }) => {
                 }
                 className={`px-3 py-1.5 rounded border text-sm font-medium ${pagination.page === i + 1
                   ? "bg-purple-600 border-purple-600 text-white"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-100"
                   }`}
               >
                 {i + 1}
@@ -198,7 +220,7 @@ const Submissions = ({ id }) => {
                 }))
               }
               disabled={pagination.page === totalPages}
-              className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
               Next
             </button>
