@@ -77,6 +77,9 @@ import ReportHistoryPage from './Pages/Admin/Reports/ReportHistoryPage';
 // import AddQuestionToSectionAssignment from "./Pages/Common/Section/AddQuestionToSectionAssignment"
 // import AddQuestionToSectionSurvey from './Pages/Common/Section/AddQuestionToSectionSurvey';
 
+import Results from './Pages/Common/Results/Results';
+import ViewResult from './Pages/Common/Results/ViewResult';
+
 
 const App = () => {
   return (
@@ -173,7 +176,8 @@ const App = () => {
           <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/submissions/:submissionId" element={<ViewFullSubmission />} />
           <Route path="/reports/history" element={<ReportHistoryPage />} />
-
+          <Route path='/admin/results' element={<Results/>}/>
+          <Route path="/admin/result/:id" element={<ViewResult />} />
 
         </Route>
       </Route>
