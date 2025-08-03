@@ -2,11 +2,11 @@
 class Judge0Service {
   constructor() {
     this.apiUrl = import.meta.env.VITE_JUDGE0_API_URL || 'https://judge0-ce.p.rapidapi.com';
-    this.apiKey = import.meta.env.VITE_JUDGE0_API_KEY;
+    // this.apiKey = import.meta.env.VITE_JUDGE0_API_KEY;
     this.headers = {
       'Content-Type': 'application/json',
-      'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-      'X-RapidAPI-Key': this.apiKey
+      // 'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+      // 'X-RapidAPI-Key': this.apiKey
     };
   }
 
