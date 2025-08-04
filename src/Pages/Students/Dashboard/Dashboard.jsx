@@ -6,6 +6,7 @@ import {
   Hourglass,
   XCircle,
   PlayCircle,
+  AlertTriangle
 } from 'lucide-react';
 import Header from '../../../Components/Header/Header';
 import { useNavigate } from 'react-router-dom';
@@ -49,10 +50,57 @@ const formatDuration = (minutes) => {
   return `${hrs > 0 ? `${hrs} hr ` : ''}${mins} min`;
 };
 
+// Popup Component
+const WarningPopup = ({ onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+        {/* Icon */}
+        <div className="flex justify-center mb-4">
+          <div className="bg-red-100 p-4 rounded-full">
+            <AlertTriangle className="w-10 h-10 text-red-600" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h2 className="text-2xl font-bold text-red-600">Access Blocked</h2>
+
+        {/* Message */}
+        <p className="text-gray-700 mt-3">
+          You have been blocked from attempting this test.
+        </p>
+
+        {/* Additional details */}
+        <div className="bg-gray-50 p-4 rounded-lg mt-4 text-left text-sm text-gray-600">
+          <p><strong>Possible reasons:</strong></p>
+          <ul className="list-disc pl-5 mt-1 space-y-1">
+            <li>Violation of test guidelines.</li>
+            <li>Technical issues detected by the system.</li>
+            <li>Administrative decision by your staff.</li>
+          </ul>
+          <p className="mt-3">
+            Please contact your respective staff for clarification and further instructions.
+          </p>
+        </div>
+
+        {/* Action Button */}
+        <button
+          onClick={onClose}
+          className="mt-6 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};;
+
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showWarning, setShowWarning] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,7 +108,6 @@ const Dashboard = () => {
       try {
         const res = await getMyAssignments();
         const all = res.data || [];
-        console.log(all)
 
         const formatted = all.map((assignment) => {
           let displayStatus = assignment.status;
@@ -142,13 +189,12 @@ const Dashboard = () => {
                     {statusIcon[test.display_status]}
                   </div>
 
-                  <p className="text-sm text-gray-600 truncate mb-2" title={test.assessment_id?.description}>
+                  <p
+                    className="text-sm text-gray-600 truncate mb-2"
+                    title={test.assessment_id?.description}
+                  >
                     {test.assessment_id?.description || 'No description'}
                   </p>
-
-
-
-
 
                   <div className="flex flex-wrap items-center gap-4 text-sm mt-3">
                     <span className="flex items-center gap-1 text-green-700">
@@ -165,8 +211,8 @@ const Dashboard = () => {
                     </span>
                   </div>
 
-
-                  {test.display_status === 'active' && (
+                  {/* Buttons based on status */}
+                  {test.display_status === 'active' && test.submission_status !== 'blocked' && (
                     <div className="text-right pt-2">
                       <StartTestButton
                         test={test}
@@ -176,6 +222,17 @@ const Dashboard = () => {
                             : 'Start Test'
                         }
                       />
+                    </div>
+                  )}
+
+                  {test.display_status === 'active' && test.submission_status === 'blocked' && (
+                    <div className="text-right pt-2">
+                      <button
+                        onClick={() => setShowWarning(true)}
+                        className="w-full mt-2 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:from-red-600 hover:to-orange-600 transition flex justify-center items-cente"
+                      >
+                        Test Blocked
+                      </button>
                     </div>
                   )}
 
@@ -197,6 +254,9 @@ const Dashboard = () => {
           <p className="text-gray-500 text-sm">No tests in this category.</p>
         )}
       </div>
+
+      {/* Warning Popup */}
+      {showWarning && <WarningPopup onClose={() => setShowWarning(false)} />}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import { getSectionWiseStatus } from '../../../Controllers/SubmissionController'
 import AssessmentSection from './AssessmentSection';
 import { useUser } from '../../../context/UserContext';
 import useProctoringEvents from '../Proctoring/useProctoringEvents';
+import ProctoringPopup from '../Proctoring/ProctoringPopup';
 
 const Assessment = () => {
   const { state } = useLocation();
@@ -25,12 +26,13 @@ const Assessment = () => {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
   const [answerStatusMap, setAnswerStatusMap] = useState({});
-  const development =true;
-  useProctoringEvents({
+  const development =false;
+  const { showPopup, popupMessage, setShowPopup } = useProctoringEvents({
     submission_id: submissionId,
     assignment_id: assignmentId,
     student_id: studentId,
   });
+
 
   const activeSection = sections[sectionIndex];
   const question = activeSection.questions[questionIndex];
@@ -163,7 +165,7 @@ const Assessment = () => {
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <Header />
-
+{showPopup && <ProctoringPopup message={popupMessage} onClose={() => setShowPopup(false)} />}
       <div className="p-4 border-b border-gray-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex overflow-x-auto gap-2 md:justify-end scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           {sections.map((sec, idx) => (
