@@ -60,7 +60,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       // { label: 'Submissions', to: '/college_rep/submissions', icon: Inbox, gradient: 'from-teal-200 to-lime-100' },
       //{ label: 'Analytics', to: '/college_rep/analytics', icon: BarChart2, gradient: 'from-teal-200 to-green-100' },
       { label: 'Groups', to: '/college_rep/groups', icon: Users2, gradient: 'from-indigo-200 to-purple-100' },
-      { label: 'Assessments', to: '/college_rep/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
+      //{ label: 'Assessments', to: '/college_rep/assessments', icon: ClipboardList, gradient: 'from-green-200 to-emerald-100' },
       { label: 'Assignments', to: '/college_rep/assignments', icon: FileSignature, gradient: 'from-indigo-200 to-purple-100' },
       { label: 'Results', to: '/college_rep/results', icon: FileCheck2,gradient: 'from-yellow-200 to-red-100' },
       { label: 'Reports', to: '/college_rep/reports', icon: FileBarChart, gradient: 'from-indigo-200 to-purple-100' },
