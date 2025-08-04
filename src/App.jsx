@@ -215,7 +215,9 @@ const App = () => {
           <Route path="/trainer/sections/question/coding/:id" element={<ViewCodingQuestionsInSection />} />
           <Route path="/trainer/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/trainer/submissions" element={<TrainerCandidateList />} />
-          <Route path="/trainer/students" element={<StudentTable />} />
+          <Route path="/trainer/students" element={<AllUsers />} />
+          <Route path="/trainer/students/create" element={<CreateUser />} />
+          <Route path="/trainer/students/:id" element={<UserDetails />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
           <Route path="/trainer/reports" element={<div>Trainer Reports</div>} />
           <Route path="/trainer/profile" element={<div>Trainer Profile</div>} />

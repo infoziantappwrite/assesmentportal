@@ -4,6 +4,7 @@ import { assignCollegeRepresentative } from '../../../Controllers/CollegeControl
 import { UserPlus, School, X, Check, Building2 } from 'lucide-react';
 import SelectCollegeModal from './SelectCollegeModal';
 import BulkUploadUser from './BulkUploadUser';
+import { useUser } from '../../../context/UserContext';
 
 const CreateUser = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,8 @@ const CreateUser = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [showCollegeModal, setShowCollegeModal] = useState(false);
+
+  const { role } = useUser();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -154,18 +157,31 @@ const CreateUser = () => {
 
             <div>
               <label className="font-medium">Role</label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="admin">Admin</option>
-                <option value="trainer">Trainer</option>
-                <option value="college_rep">College Rep</option>
-                <option value="candidate">Candidate</option>
-              </select>
+              {role === 'trainer' ? (
+                <>
+                  <input
+                    type="text"
+                    value="Candidate"
+                    disabled
+                    className="w-full border border-gray-300 p-2 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                  />
+                  <input type="hidden" name="role" value="candidate" />
+                </>
+              ) : (
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="trainer">Trainer</option>
+                  <option value="college_rep">College Rep</option>
+                  <option value="candidate">Candidate</option>
+                </select>
+              )}
             </div>
+
           </div>
 
           {/* Status Toggle + College Select + Action Buttons */}
