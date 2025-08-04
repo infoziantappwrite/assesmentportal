@@ -130,12 +130,15 @@ const App = () => {
           <Route path="/college_rep/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/college_rep/submissions" element={<CandidateList />} />
           <Route path="/college_rep/groups" element={<ManageGroup />} />
+          <Route path="/college_rep/groups/:id" element={<ViewGroup />} />
           <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
           <Route path="/college_rep/reports" element={<ReportsPage />} />
           <Route path="/college_rep/profile" element={<CollegeProfile />} />
           <Route path="college_rep/test/:testId/candidates" element={<CandidateList />} />
           <Route path="college_rep/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
           <Route path="/college_rep/students/:studentId" element={<StudentDetails />} />
+          <Route path='/college_rep/results' element={<Results/>}/>
+          <Route path="/college_rep/result/:id" element={<ViewResult />} />
         </Route>
       </Route>
 
@@ -218,6 +221,8 @@ const App = () => {
           <Route path="/trainer/profile" element={<div>Trainer Profile</div>} />
           <Route path="/trainer/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
           <Route path="/trainer/students/:studentId" element={<StudentDetails />} />
+          <Route path='/trainer/results' element={<Results/>}/>
+          <Route path="/trainer/result/:id" element={<ViewResult />} />
         </Route>
       </Route>
 

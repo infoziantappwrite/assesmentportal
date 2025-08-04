@@ -15,6 +15,7 @@ import {
   getAssignmentById,
   changeAssignmentStatus,
 } from "../../../Controllers/AssignmentControllers";
+import { useUser } from '../../../context/UserContext';
  
 const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
   const AssignmentStatus = Object.freeze({
@@ -27,6 +28,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
   });
  
   const navigate = useNavigate();
+  const { role: userRole } = useUser();
   const [assignment, setAssignment] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -168,14 +170,16 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
           <ArrowLeft size={16} /> Back
         </button>
  
-        {/* Button to open Status Change Modal */}
-        <button
-          onClick={openStatusModal}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-        >
-          Change Status
-        </button>
- 
+        {userRole !== 'college_rep' && (
+          <button
+            onClick={openStatusModal}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+          >
+            Change Status
+          </button>
+        )}
+
+        {userRole !== 'college_rep' && (
         <button
           onClick={() => navigate(`/${role}/assignments/edit/${id}`)}
           className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm"
@@ -183,36 +187,41 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
           <Pencil className="w-4 h-4" />
           Edit
         </button>
+        )}
  
         {/* Toggle Cancel/Activate button */}
-        <button
-          onClick={handleToggleStatus}
-          disabled={
-            normalizedStatus !== "active" && !(normalizedStatus === "draft" || normalizedStatus === "cancelled")
-          }
-          className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm ${
-            normalizedStatus === "active"
-              ? "bg-red-500 hover:bg-red-600"
-              : "bg-green-600 hover:bg-green-700"
-          } ${
-            normalizedStatus !== "active" && !(normalizedStatus === "draft" || normalizedStatus === "cancelled")
-              ? "opacity-20 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          {normalizedStatus === "active" ? (
-            <>
-              <XCircle className="w-4 h-4" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              Activate
-            </>
-          )}
-        </button>
+        {userRole !== 'college_rep' && (
+          <button
+            onClick={handleToggleStatus}
+            disabled={
+              normalizedStatus !== "active" && !(normalizedStatus === "draft" || normalizedStatus === "cancelled")
+            }
+            className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm ${
+              normalizedStatus === "active"
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-green-600 hover:bg-green-700"
+            } ${
+              normalizedStatus !== "active" && !(normalizedStatus === "draft" || normalizedStatus === "cancelled")
+                ? "opacity-20 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            {normalizedStatus === "active" ? (
+              <>
+                <XCircle className="w-4 h-4" />
+                Cancel
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4" />
+                Activate
+              </>
+            )}
+          </button>
+        )}
+
  
+        {userRole !== 'college_rep' && (
         <button
           onClick={openExtendModal}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm"
@@ -220,6 +229,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
           <Clock className="w-4 h-4" />
           Extend Deadline
         </button>
+        )}
       </div>
  
       {/* Success & Error Messages */}
