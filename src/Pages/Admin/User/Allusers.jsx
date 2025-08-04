@@ -3,6 +3,7 @@ import { getAllUsers } from '../../../Controllers/userControllers';
 import { useNavigate } from 'react-router-dom';
 import Table from '../../../Components/Table';
 import Loader from '../../../Components/Loader';
+import { useUser } from '../../../context/UserContext';
 
 import { ChevronDown, Search, ShieldPlus, UserPlus, Users } from 'lucide-react';
 
@@ -14,6 +15,7 @@ const AllUsers = () => {
   const [error, setError] = useState('');
 
   const navigate = useNavigate();
+  const { role } = useUser();
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -96,16 +98,24 @@ const columns = [
   },
   {
     label: 'Action',
-    render: (row) => (
-      <button
-        onClick={() => navigate(`/admin/users/${row._id}`)}
-        className="text-blue-600 hover:underline text-sm"
-      >
-        View
-      </button>
-    ),
+    render: (row) => {
+      const canView =
+        role !== 'trainer' || (role === 'trainer' && row.role === 'candidate');
+
+      return canView ? (
+        <button
+          onClick={() => navigate(`/admin/users/${row._id}`)}
+          className="text-blue-600 hover:underline text-sm"
+        >
+          View
+        </button>
+      ) : (
+        <span className="text-gray-400 text-sm">View</span>
+      );
+    },
   },
 ];
+
 
   if (loading) {
     return (

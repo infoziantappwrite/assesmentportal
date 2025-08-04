@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { getSubmissions } from "../../../Controllers/AssignmentControllers";
+import { unblockStudent } from "../../../Controllers/ProctoringController"; 
 import Loader from "../../../Components/Loader";
-import { TimerIcon, UserIcon, CheckCircle2, XCircle, Search } from "lucide-react";
+import { TimerIcon, UserIcon, CheckCircle2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   generateUserActivityReport,
@@ -17,7 +18,8 @@ const Submissions = ({ id }) => {
   const [selectedFormats, setSelectedFormats] = useState({});
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Fetch submissions
+  const fetchSubmissions = () => {
     setLoading(true);
     getSubmissions(id, pagination.page, pagination.limit)
       .then((res) => {
@@ -29,6 +31,10 @@ const Submissions = ({ id }) => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchSubmissions();
   }, [id, pagination.page, pagination.limit]);
 
   useEffect(() => {
@@ -48,7 +54,7 @@ const Submissions = ({ id }) => {
     try {
       const res = await generateUserActivityReport(submissionId, format);
       const exportLogId = res.data?.exportLogId;
-      if (res?.data?.exportLogId) {
+      if (exportLogId) {
         setTimeout(async () => {
           try {
             await downloadReport(exportLogId);
@@ -66,8 +72,21 @@ const Submissions = ({ id }) => {
     }
   };
 
+  // Handle unblock button click
+  const handleUnblock = async (studentId, assignmentId) => {
+    if (!window.confirm("Are you sure you want to unblock this student?")) return;
+
+    try {
+      const res = await unblockStudent(studentId, assignmentId);
+      alert(res.message || "Student unblocked successfully.");
+      fetchSubmissions(); // refresh after unblock
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to unblock student.");
+    }
+  };
+
   return (
-    <div className="bg-gradient-to-br from-pruple-50 to-white rounded-xl border border-purple-200  shadow-l overflow-hidden">
+    <div className="bg-gradient-to-br from-pruple-50 to-white rounded-xl border border-purple-200 shadow-l overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
         <h3 className="text-xl font-bold text-gray-800 flex items-center">
           <span className="w-2 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mr-3"></span>
@@ -76,13 +95,11 @@ const Submissions = ({ id }) => {
         <div className="relative">
           <input
             type="text"
-      placeholder="Search by name or email..."
-      className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 w-full sm:w-80"
-      value={search}
+            placeholder="Search by name or email..."
+            className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400 w-full sm:w-80"
+            value={search}
             onChange={(e) => setSearch(e.target.value)}
-            
           />
-          
         </div>
       </div>
 
@@ -116,14 +133,28 @@ const Submissions = ({ id }) => {
                     <p className="text-xs text-gray-500">Attempt #{s.attempt_number}</p>
                   </div>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${s.status === "submitted"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-yellow-100 text-yellow-800"
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${
+                      s.status === "submitted"
+                        ? "bg-green-100 text-green-800"
+                        : s.status === "blocked"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
                     }`}
-                >
-                  {s.status}
-                </span>
+                  >
+                    {s.status}
+                  </span>
+                  {s.status === "blocked" && (
+                    <button
+                      onClick={() => handleUnblock(s.student_id._id, s.assignment_id)}
+                      className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium"
+                      title="Unblock Student"
+                    >
+                      Unblock
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="ml-11 pl-1">
@@ -203,10 +234,11 @@ const Submissions = ({ id }) => {
                     page: i + 1,
                   }))
                 }
-                className={`px-3 py-1.5 rounded border text-sm font-medium ${pagination.page === i + 1
-                  ? "bg-purple-600 border-purple-600 text-white"
-                  : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                  }`}
+                className={`px-3 py-1.5 rounded border text-sm font-medium ${
+                  pagination.page === i + 1
+                    ? "bg-purple-600 border-purple-600 text-white"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                }`}
               >
                 {i + 1}
               </button>
