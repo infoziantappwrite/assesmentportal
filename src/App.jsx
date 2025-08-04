@@ -130,6 +130,7 @@ const App = () => {
           <Route path="/college_rep/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/college_rep/submissions" element={<CandidateList />} />
           <Route path="/college_rep/groups" element={<ManageGroup />} />
+          <Route path="/college_rep/groups/:id" element={<ViewGroup />} />
           <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
           <Route path="/college_rep/reports" element={<ReportsPage />} />
           <Route path="/college_rep/profile" element={<CollegeProfile />} />
