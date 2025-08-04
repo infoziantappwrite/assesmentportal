@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getSubmissions } from "../../../Controllers/AssignmentControllers";
-import { unblockStudent } from "../../../Controllers/proctoringController"; 
+import { unblockStudent } from "../../../Controllers/ProctoringController"; 
 import Loader from "../../../Components/Loader";
 import { TimerIcon, UserIcon, CheckCircle2, XCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
