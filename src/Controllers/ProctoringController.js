@@ -14,3 +14,17 @@ export const logEvent = async (payload) => {
         throw error;
     }
 };
+
+export const unblockStudent = async (studentId, assignmentId) => {
+  try {
+    const response = await axiosClient.put(
+      `/proctoring/student/${studentId}/unblock`,
+      { assignmentId },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in unblockStudent", error);
+    throw error;
+  }
+};
