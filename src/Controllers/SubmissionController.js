@@ -39,7 +39,7 @@ export const resumeSubmission = async (submissionId) => {
   const response = await axiosClient.put(`/submissions/resume/${submissionId}`, {
     withCredentials: true,
   });
-  //console.log(response.data);
+  console.log(response.data);
   return response.data;
 };
 

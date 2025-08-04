@@ -6,7 +6,7 @@ import Loader from '../Components/Loader';
 const PrivateRoute = ({ allowedRoles }) => {
   const { user, loading , role } = useUser();
 
-  console.log('PrivateRoute role:', role, 'allowedRoles:', allowedRoles);
+  //console.log('PrivateRoute role:', role, 'allowedRoles:', allowedRoles);
 
   if (loading) {
     // Show a loading spinner or just null
@@ -19,9 +19,9 @@ const PrivateRoute = ({ allowedRoles }) => {
   }
   
 
-  // if (allowedRoles && !allowedRoles.includes(role)) {
-  //   return <Navigate to="/not-authorized" replace />;
-  // }
+  if (allowedRoles && !allowedRoles.includes(role)) {
+   return <Navigate to="/not-authorized" replace />;
+ }
 
   return <Outlet />;
 };
