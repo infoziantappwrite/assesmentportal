@@ -14,23 +14,9 @@ import StartTestButton from './StartTestButton';
 import { getMyAssignments } from '../../../Controllers/SubmissionController';
 
 const TABS = ['upcoming', 'active', 'completed'];
-const visibleTabs = ['upcoming', 'active'];
+const visibleTabs = ['upcoming', 'active',];
 
-const formatDateTimeUTC = (isoString) => {
-  if (!isoString) return 'N/A';
-  const date = new Date(isoString);
-  if (isNaN(date)) return 'Invalid Date';
 
-  return date.toLocaleString('en-GB', {
-    timeZone: 'UTC',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
-};
 
 const statusColors = {
   upcoming: 'border-blue-200 text-blue-800',
@@ -49,6 +35,21 @@ const formatDuration = (minutes) => {
   const mins = minutes % 60;
   return `${hrs > 0 ? `${hrs} hr ` : ''}${mins} min`;
 };
+const formatDateTimeIST = (isoString) => {
+    if (!isoString) return 'N/A';
+    const date = new Date(isoString);
+    if (isNaN(date)) return 'Invalid Date';
+
+    return date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
 // Popup Component
 const WarningPopup = ({ onClose }) => {
@@ -199,11 +200,11 @@ const Dashboard = () => {
                   <div className="flex flex-wrap items-center gap-4 text-sm mt-3">
                     <span className="flex items-center gap-1 text-green-700">
                       <PlayCircle className="w-4 h-4" />
-                      Start: {formatDateTimeUTC(start)}
+                      Start: {formatDateTimeIST(start)}
                     </span>
                     <span className="flex items-center gap-1 text-red-700">
                       <XCircle className="w-4 h-4" />
-                      End: {formatDateTimeUTC(end)}
+                      End: {formatDateTimeIST(end)}
                     </span>
                     <span className="flex items-center gap-1 text-gray-700">
                       <Clock className="w-4 h-4" />

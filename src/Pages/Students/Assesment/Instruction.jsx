@@ -12,23 +12,33 @@ import {
   EyeOff,
   CheckCircle,
   XOctagon,
-  MinusCircle
+  MinusCircle,
+  MonitorX,
+  Copy,
+  ClipboardPaste,
+  MousePointerClick,
+  LayoutPanelLeft,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 
 const Instruction = () => {
   const { state } = useLocation();
   const navigate = useNavigate();
 
-  const [countdown, setCountdown] = useState(30); // Reduced from 60 to 30
-  const [buttonEnabled, setButtonEnabled] = useState(false);
+  const isDevelopment = window.location.hostname === 'localhost';
+  const [countdown, setCountdown] = useState(30);
+  const [buttonEnabled, setButtonEnabled] = useState(isDevelopment);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const submission = state?.submission;
   const assessment = state?.assessment;
   const sections = state?.sections;
 
+  // Timer only for production
   useEffect(() => {
     if (!submission || !assessment || !sections) return;
+    if (isDevelopment) return;
 
     const savedStartTime = localStorage.getItem('instruction_timer_start');
     let startTime = savedStartTime ? new Date(savedStartTime) : new Date();
@@ -40,7 +50,7 @@ const Instruction = () => {
     const interval = setInterval(() => {
       const now = new Date();
       const elapsed = Math.floor((now - new Date(startTime)) / 1000);
-      const remaining = Math.max(0, 30 - elapsed); // Countdown to 30s
+      const remaining = Math.max(0, 30 - elapsed);
       setCountdown(remaining);
 
       if (remaining <= 0) {
@@ -51,26 +61,9 @@ const Instruction = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [submission, assessment, sections]);
+  }, [submission, assessment, sections, isDevelopment]);
 
-  useEffect(() => {
-    const beforeUnloadHandler = (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', beforeUnloadHandler);
-    return () => window.removeEventListener('beforeunload', beforeUnloadHandler);
-  }, []);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      window.history.pushState(null, null, window.location.pathname);
-    };
-    window.history.pushState(null, null, window.location.pathname);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
+  // Fullscreen enforcement
   useEffect(() => {
     const el = document.documentElement;
     if (el.requestFullscreen) el.requestFullscreen();
@@ -102,6 +95,7 @@ const Instruction = () => {
 
   const handleProceed = () => {
     localStorage.setItem('submission_id', submission._id);
+    console.log(submission)
     navigate('/assesment', { state: { submission, assessment, sections } });
   };
 
@@ -131,28 +125,27 @@ const Instruction = () => {
   return (
     <>
       <header className="w-full bg-white border-b border-gray-200 shadow-sm py-3 px-4 sm:px-6 flex flex-wrap items-center justify-between gap-3 fixed top-0 left-0 z-40">
-  <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
+        <img src="/Logo.png" alt="Logo" className="h-10 w-auto" />
 
-  <div className="flex  sm:flex-row items-center gap-2 sm:gap-3">
-    {!buttonEnabled && (
-      <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 font-semibold whitespace-nowrap">
-        <AlarmClock className="w-4 h-4" />
-        {countdown}
-      </div>
-    )}
+        <div className="flex sm:flex-row items-center gap-2 sm:gap-3">
+          {!isDevelopment && !buttonEnabled && (
+            <div className="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 font-semibold whitespace-nowrap">
+              <AlarmClock className="w-4 h-4" />
+              {countdown}
+            </div>
+          )}
 
-    <button
-      onClick={handleProceed}
-      disabled={!buttonEnabled}
-      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg shadow transition
-        ${buttonEnabled ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
-    >
-      <PlayCircle className="w-4 h-4" />
-      Start
-    </button>
-  </div>
-</header>
-
+          <button
+            onClick={handleProceed}
+            disabled={!buttonEnabled}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg shadow transition
+              ${buttonEnabled ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+          >
+            <PlayCircle className="w-4 h-4" />
+            Start
+          </button>
+        </div>
+      </header>
 
       <div className="pt-20 min-h-screen bg-gradient-to-br from-blue-50 to-white py-4 px-4">
         <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-10 border border-gray-200">
@@ -171,24 +164,47 @@ const Instruction = () => {
               <li>Ensure a stable internet connection before beginning.</li>
               <li>Retakes are allowed only if explicitly enabled.</li>
             </ul>
-
-            {/* Color Legend */}
-            <div className="mt-6 text-xs space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-green-600 inline-block"></span> Answered
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-purple-600 inline-block"></span> Marked for Review
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-yellow-400 inline-block"></span> Visited but Unanswered
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-gray-200 border border-gray-300 inline-block"></span> Not Visited
-              </div>
-            </div>
           </div>
 
+          {/* Proctoring Violations */}
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-5 text-sm text-red-900">
+            <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" /> Proctoring Rules & Violations
+            </h2>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <LayoutPanelLeft className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Tab Switching:</strong> Leaving this tab will be recorded as a violation.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <MonitorX className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Window Blur:</strong> Minimizing or losing focus on the browser window triggers a warning.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <MousePointerClick className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Right Click Disabled:</strong> Attempting to right-click will trigger a warning.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Copy className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Copy Attempt:</strong> Copying content is prohibited.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <ClipboardPaste className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Paste Attempt:</strong> Pasting content is prohibited.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <RefreshCw className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Page Reload:</strong> Reloading or closing the page ends the test session.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <Zap className="w-5 h-5 text-red-500 mt-1" />
+                <span><strong>Idle Timeout:</strong> Staying inactive for too long will be considered suspicious.</span>
+              </li>
+            </ul>
+            <p className="mt-4 text-sm font-medium">
+              <strong>Note:</strong> Accumulating too many violations may automatically end your test and redirect you to the dashboard.
+            </p>
+          </div>
           {/* Config and Scoring */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="rounded-xl bg-gray-50 border border-gray-200 p-6">
@@ -218,6 +234,9 @@ const Instruction = () => {
               </div>
             </div>
           </div>
+
+          {/* Config and Scoring (unchanged) */}
+          {/* ... existing configuration and scoring blocks ... */}
         </div>
       </div>
 
@@ -230,34 +249,19 @@ const Instruction = () => {
             >
               <X className="w-5 h-5" />
             </button>
-
             <div className="flex justify-center mb-3">
               <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full">
                 <AlertTriangle className="w-6 h-6" />
               </div>
             </div>
-
-            <h2 className="text-xl font-bold text-center text-gray-800 mb-2">
-              Exit Full Screen?
-            </h2>
+            <h2 className="text-xl font-bold text-center text-gray-800 mb-2">Exit Full Screen?</h2>
             <p className="text-sm text-center text-gray-600 mb-6">
               Exiting full screen is considered an attempt and may affect your test score.
               Are you sure you want to exit?
             </p>
-
             <div className="flex justify-center gap-3">
-              <button
-                onClick={handleCancelExit}
-                className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleExit}
-                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm"
-              >
-                Exit Anyway
-              </button>
+              <button onClick={handleCancelExit} className="px-4 py-2 rounded bg-gray-100 hover:bg-gray-200 text-sm">Cancel</button>
+              <button onClick={handleExit} className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white text-sm">Exit Anyway</button>
             </div>
           </div>
         </div>
