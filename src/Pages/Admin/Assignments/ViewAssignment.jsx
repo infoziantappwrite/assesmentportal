@@ -1,21 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getAssignmentById, getAssignmentResults } from '../../../Controllers/AssignmentControllers';
+import { getAssignmentById, submitAllSubmissions } from '../../../Controllers/AssignmentControllers';
 import Loader from '../../../Components/Loader';
-import { ArrowLeft, Pencil } from 'lucide-react';
 import AssignmentActions from './AssignmentActions';
 import Submissions from './Submissions';
 
 const ViewAssignment = () => {
   const { id } = useParams();
-  // getAssignmentResults(id)  get assignment result
 
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
+
   const fetchAssignment = async () => {
     try {
       const response = await getAssignmentById(id);
-      // console.log('API Response:', JSON.stringify(response, null, 2)); // <--- Log the JSON response here
       setAssignment(response.data.assignment);
     } catch (error) {
       console.error('Failed to fetch assignment:', error);
@@ -27,6 +25,17 @@ const ViewAssignment = () => {
   useEffect(() => {
     fetchAssignment();
   }, [id]);
+
+  const handleSubmitAll = async () => {
+    try {
+      const res = await submitAllSubmissions(assignment._id);
+      window.alert(res.message || "All submissions have been submitted.");
+    } catch (error) {
+      window.alert(
+        error.response?.data?.message || "Failed to submit all submissions."
+      );
+    }
+  };
 
   const formatDateTimeUTC = (isoString) => {
     if (!isoString) return 'N/A';
@@ -69,7 +78,7 @@ const ViewAssignment = () => {
     cancelled: 'bg-pink-100 text-pink-700',
   };
 
-  const statusColor = statusColorMap[status] || 'bg-gray-100 text-gray-700'; // fallback
+  const statusColor = statusColorMap[status] || 'bg-gray-100 text-gray-700';
 
   const formatDateTimeIST = (isoString) => {
     if (!isoString) return 'N/A';
@@ -94,20 +103,29 @@ const ViewAssignment = () => {
 
       {/* Title Card */}
       <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-2">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
-          <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor}`}>
-            {status.toUpperCase()}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">{title}</h1>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleSubmitAll}
+              className="text-xs px-4 py-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap"
+            >
+              Submit All
+            </button>
+            <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor}`}>
+              {status.toUpperCase()}
+            </span>
+          </div>
         </div>
         <p className="text-gray-700">{description}</p>
       </div>
+
 
       <Section title="Schedule" color="purple">
         <Grid>
           <Info label="Start Time" value={formatDateTimeIST(schedule?.start_time)} />
           <Info label="End Time" value={formatDateTimeIST(schedule?.end_time)} />
-
           <Info label="Timezone" value={schedule?.timezone} />
           <Info label="Grace Period" value={`${schedule?.grace_period_minutes} minutes`} />
         </Grid>
@@ -125,7 +143,6 @@ const ViewAssignment = () => {
       </Section>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Group 2: Notification + Performance */}
         <Section title="Notification Status" color="indigo">
           <Grid>
             <Info label="Email Sent" value={notification?.email_sent ? 'Yes' : 'No'} />
@@ -145,14 +162,13 @@ const ViewAssignment = () => {
         </Section>
       </div>
 
-      {/* Full-width Sections */}
       <Section title="Assessment Info" color="blue">
         <Info label="Assessment" value={`${assessment_id?.title} – ${assessment_id?.description}`} />
         <Info label="Assigned By" value={`${assigned_by?.name} (${assigned_by?.email})`} />
       </Section>
+
       <Section title="Target Info" color="pink">
         <Info label="Target Type" value={target?.type ?? 'N/A'} />
-
         {target?.type === 'individuals' && target?.student_ids?.length > 0 ? (
           <div>
             <h4 className="font-medium text-gray-600 mb-1">Students:</h4>
@@ -169,9 +185,7 @@ const ViewAssignment = () => {
             <h4 className="font-medium text-gray-600 mb-1">Colleges:</h4>
             <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
               {target.college_ids.map((college) => (
-                <li key={college._id} className="text-sm text-gray-800">
-                  {college.name}
-                </li>
+                <li key={college._id} className="text-sm text-gray-800">{college.name}</li>
               ))}
             </ul>
           </div>
@@ -180,9 +194,7 @@ const ViewAssignment = () => {
             <h4 className="font-medium text-gray-600 mb-1">Groups:</h4>
             <ul className="list-disc list-inside max-h-40 overflow-auto border border-gray-200 rounded p-2 bg-white shadow-sm">
               {target.group_ids.map((group) => (
-                <li key={group._id} className="text-sm text-gray-800">
-                  {group.name}
-                </li>
+                <li key={group._id} className="text-sm text-gray-800">{group.name}</li>
               ))}
             </ul>
           </div>
@@ -190,6 +202,7 @@ const ViewAssignment = () => {
           <span>No targets assigned.</span>
         )}
       </Section>
+
       <Submissions id={assignment._id} />
     </div>
   );
