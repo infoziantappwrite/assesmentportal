@@ -106,3 +106,12 @@ export const getAssignmentResults = async (assignmentId) => {
   
   return response.data;
 };
+
+// POST /assignments/:id/submit-all - Submit all in-progress submissions
+export const submitAllSubmissions = async (assignmentId) => {
+  const response = await axiosClient.post(`/assignments/${assignmentId}/submit-all`, {}, {
+    withCredentials: true,
+  });
+  return response.data;
+};
+
