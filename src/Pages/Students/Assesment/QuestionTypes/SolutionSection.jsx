@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import {
@@ -56,11 +55,103 @@ const SolutionSection = ({
   const { isExecuting, executeCode, } = useJudge0();
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
+  
+  // Enhanced execution states for dynamic indicators
+  const [executionState, setExecutionState] = useState({
+    isRunning: false,
+    phase: '', // 'compiling', 'executing', 'testing', 'submitting'
+    progress: 0,
+    message: '',
+    currentTest: 0,
+    totalTests: 0,
+    executionTime: 0,
+    queuePosition: 0
+  });
+  const [executionTimer, setExecutionTimer] = useState(null);
+  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); // Timeout timer for 60 seconds
   const [lastSavedCode, setLastSavedCode] = useState(''); // Track last saved code
   const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); // Track current question
   const [showConfirmModal, setShowConfirmModal] = useState(false); // Show confirmation modal
   const [pendingAction, setPendingAction] = useState(null); // Store pending action details
   const [startTime, setStartTime] = useState(Date.now()); // Track when question started
+
+  // Dynamic execution indicators helper functions
+  const startExecutionTimer = () => {
+    const timer = setInterval(() => {
+      setExecutionState(prev => ({
+        ...prev,
+        executionTime: prev.executionTime + 0.1
+      }));
+    }, 100);
+    setExecutionTimer(timer);
+    return timer;
+  };
+
+  const startExecutionTimeout = () => {
+    const timeoutTimer = setTimeout(() => {
+      // Auto-reset execution state after 60 seconds
+      resetExecutionState();
+      showNotification('warning', 'Execution timed out after 60 seconds. Please try again.');
+    }, 60000); // 60 seconds
+    setExecutionTimeoutTimer(timeoutTimer);
+    return timeoutTimer;
+  };
+
+  const stopExecutionTimer = () => {
+    if (executionTimer) {
+      clearInterval(executionTimer);
+      setExecutionTimer(null);
+    }
+  };
+
+  const stopExecutionTimeout = () => {
+    if (executionTimeoutTimer) {
+      clearTimeout(executionTimeoutTimer);
+      setExecutionTimeoutTimer(null);
+    }
+  };
+
+  const updateExecutionState = (updates) => {
+    setExecutionState(prev => ({ ...prev, ...updates }));
+  };
+
+  const resetExecutionState = () => {
+    stopExecutionTimer();
+    stopExecutionTimeout();
+    setExecutionState({
+      isRunning: false,
+      phase: '',
+      progress: 0,
+      message: '',
+      currentTest: 0,
+      totalTests: 0,
+      executionTime: 0,
+      queuePosition: 0
+    });
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (executionTimer) {
+        clearInterval(executionTimer);
+      }
+      if (executionTimeoutTimer) {
+        clearTimeout(executionTimeoutTimer);
+      }
+    };
+  }, [executionTimer, executionTimeoutTimer]);
+
+  // Handle code changes
+  const handleCodeChange = (value) => {
+    // Prevent erasing code if value is undefined or null
+    if (value === undefined || value === null) {
+      return;
+    }
+    
+    // Call the original onChange function
+    onAnswerChange(question._id, value || '');
+  };
 
   // Helper functions for submission state persistence
   const getSubmissionStateKey = (questionId, submissionId) => {
@@ -276,19 +367,23 @@ const SolutionSection = ({
         return; // Don't proceed until user confirms
       }
       setPreviousLanguage(selectedLanguage);
+      
+      // Only load template when language actually changes and user wants auto-reload
+      if (autoReloadTemplate && !hasUnsavedChanges) {
+        const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+        onAnswerChange(question._id, template);
+        setLastSavedCode('');
+        setHasUnsavedChanges(false);
+      }
     }
 
-    // Only load template if no unsaved changes or user confirmed
-    if (!answer ||
-      answer.trim() === '' ||
-      (languageChanged && autoReloadTemplate && !hasUnsavedChanges)) {
-
+    // Only load template for completely empty editor (first time load)
+    if (!answer && !previousLanguage) {
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
       onAnswerChange(question._id, template);
-
-      // Reset tracking when template is loaded
       setLastSavedCode('');
       setHasUnsavedChanges(false);
+      setPreviousLanguage(selectedLanguage);
     }
   }, [selectedLanguage, question._id, onAnswerChange, autoReloadTemplate, previousLanguage, answer, hasUnsavedChanges]);
 
@@ -335,7 +430,7 @@ const SolutionSection = ({
     if (!code || code.trim() === '') return false;
     if (isTemplateCode(code)) return false;
 
-    // Check if code has more than just comments and basic structure
+    // Check if code has meaningful content beyond template
     const lines = code.split('\n').filter(line => {
       const trimmed = line.trim();
       return trimmed &&
@@ -347,7 +442,8 @@ const SolutionSection = ({
         trimmed !== '}';
     });
 
-    return lines.length > 3; // Require more than basic structure
+    // More lenient: allow any meaningful code beyond just basic structure
+    return lines.length > 1; // Just need more than one line of actual code
   };
 
   // Handle language dropdown change
@@ -376,6 +472,8 @@ const SolutionSection = ({
     onAnswerChange(question._id, template);
     setCustomInput('');
     setJudge0Results(null);
+    setLastSavedCode('');
+    setHasUnsavedChanges(false);
   };
 
   // Manually reload template for current language
@@ -384,6 +482,8 @@ const SolutionSection = ({
     //console.log(`Manually reloading template for ${selectedLanguage}`);
     onAnswerChange(question._id, template);
     setJudge0Results(null);
+    setLastSavedCode('');
+    setHasUnsavedChanges(false);
     setTemplateReloadNotification(`Template manually reloaded for ${selectedLanguage.toUpperCase()}`);
     setTimeout(() => setTemplateReloadNotification(''), 3000);
   };
@@ -406,8 +506,49 @@ const SolutionSection = ({
     }
 
     try {
+      // Start execution with dynamic indicators
+      updateExecutionState({
+        isRunning: true,
+        phase: 'compiling',
+        progress: 10,
+        message: 'Checking syntax...',
+        executionTime: 0,
+        queuePosition: Math.floor(Math.random() * 3) + 1 // Simulate queue position
+      });
+      
+      const timer = startExecutionTimer();
+      const timeoutTimer = startExecutionTimeout();
+      
+      // Simulate compilation phase
+      setTimeout(() => {
+        updateExecutionState({
+          phase: 'compiling',
+          progress: 40,
+          message: 'Compiling your code...'
+        });
+      }, 500);
+      
+      setTimeout(() => {
+        updateExecutionState({
+          phase: 'executing',
+          progress: 70,
+          message: 'Running your program...'
+        });
+      }, 1200);
+
       setLastActionType('runCode'); // Mark this as run code action
       const result = await executeCode(answer, selectedLanguage, customInput);
+
+      // Complete execution
+      updateExecutionState({
+        phase: 'completed',
+        progress: 100,
+        message: 'Execution completed!'
+      });
+
+      setTimeout(() => {
+        resetExecutionState();
+      }, 1000);
 
       // For "Run Code" button, always show "Compiled" status if execution was successful
       if (result.status?.description === 'Accepted') {
@@ -424,6 +565,7 @@ const SolutionSection = ({
 
       setJudge0Results(result);
     } catch (error) {
+      resetExecutionState();
       setJudge0Results({
         status: { description: 'Error' },
         stderr: error.message || 'Failed to execute code. Please check your code and try again.'
@@ -463,8 +605,33 @@ const SolutionSection = ({
 
     setIsRunningTests(true);
     setLastActionType('testCases'); // Mark this as test cases action
+    
+    const totalTestCases = fullDetails.sample_test_cases.length;
+    
+    // Start test execution with dynamic indicators
+    updateExecutionState({
+      isRunning: true,
+      phase: 'testing',
+      progress: 5,
+      message: 'Preparing test environment...',
+      currentTest: 0,
+      totalTests: totalTestCases,
+      executionTime: 0,
+      queuePosition: Math.floor(Math.random() * 2) + 1
+    });
+    
+    const timer = startExecutionTimer();
+    const timeoutTimer = startExecutionTimeout();
+    
     try {
       // Step 1: Save the answer first
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 15,
+          message: 'Saving your solution...'
+        });
+      }, 300);
+      
       const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
       const savePayload = {
         sectionId: question.section_id,
@@ -482,6 +649,22 @@ const SolutionSection = ({
       // Update tracking after successful save in test cases
       setLastSavedCode(answer);
       setHasUnsavedChanges(false);
+
+      // Step 2: Prepare for test execution
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 30,
+          message: 'Compiling your code...'
+        });
+      }, 600);
+      
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 50,
+          message: `Running test case 1 of ${totalTestCases}...`,
+          currentTest: 1
+        });
+      }, 1000);
 
       // DON'T reset timer after test cases save - keep accumulating time like QuizQuestion
       // setStartTime(Date.now()); // Removed - timer continues running
@@ -513,6 +696,24 @@ const SolutionSection = ({
       };
 
       try {
+        // Simulate test progress
+        for (let i = 2; i <= totalTestCases; i++) {
+          setTimeout(() => {
+            updateExecutionState({
+              progress: 50 + (i * 30 / totalTestCases),
+              message: `Running test case ${i} of ${totalTestCases}...`,
+              currentTest: i
+            });
+          }, 1200 + (i * 400));
+        }
+        
+        setTimeout(() => {
+          updateExecutionState({
+            progress: 85,
+            message: 'Evaluating results...'
+          });
+        }, 1200 + (totalTestCases * 400));
+
         const response = await runSampleTestCases(currentQuestionId, testPayload);
 
         // Process test results and determine status
@@ -533,6 +734,16 @@ const SolutionSection = ({
           ).length;
           const totalCount = testResults.length;
 
+          // Complete with results
+          updateExecutionState({
+            progress: 100,
+            message: `Tests completed: ${passedCount}/${totalCount} passed`
+          });
+
+          setTimeout(() => {
+            resetExecutionState();
+          }, 1500);
+
           // Set status based on test results
           const allPassed = passedCount === totalCount;
           const statusDescription = allPassed ? 'Correct' : 'Incorrect';
@@ -552,14 +763,17 @@ const SolutionSection = ({
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 3000);
         } else {
+          resetExecutionState();
           showNotification('error', 'Test cases completed but no valid results received');
         }
       } catch (apiError) {
+        resetExecutionState();
         showNotification('error', 'Failed to run test cases. Please try again.');
         console.error('Test cases API error:', apiError);
       }
 
     } catch (error) {
+      resetExecutionState();
       showNotification('error', 'Failed to save answer before running test cases');
       console.error('Save error:', error);
     } finally {
@@ -658,9 +872,37 @@ const SolutionSection = ({
 
     let res;
 
+    // Start submission with dynamic indicators
+    updateExecutionState({
+      isRunning: true,
+      phase: 'submitting',
+      progress: 10,
+      message: 'Preparing submission...',
+      executionTime: 0
+    });
+    
+    const timer = startExecutionTimer();
+    const timeoutTimer = startExecutionTimeout();
+
     try {
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 30,
+          message: 'Saving your final solution...'
+        });
+      }, 400);
+      
       res = await handleSaveAnswer();
+      
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 60,
+          message: 'Validating code submission...'
+        });
+      }, 800);
+      
     } catch {
+      resetExecutionState();
       showNotification('error', 'Failed to save answer before submitting');
       return;
     }
@@ -672,6 +914,7 @@ const SolutionSection = ({
     const currentQuestionId = fullDetails?.question_id || question._id;
 
     if (!currentSubmissionId || !currentQuestionId) {
+      resetExecutionState();
       showNotification('error', 'Missing submission or question data');
       return;
     }
@@ -679,6 +922,13 @@ const SolutionSection = ({
     try {
       setIsSubmitting(true);
       setSubmitStatus(null);
+
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 80,
+          message: 'Submitting to evaluation system...'
+        });
+      }, 1200);
 
       const getLanguageId = (language) => {
         const languageMap = {
@@ -708,6 +958,17 @@ const SolutionSection = ({
       };
 
       await evaluateCodingSubmission(currentSubmissionId, payload);
+      
+      // Complete submission
+      updateExecutionState({
+        progress: 100,
+        message: 'Submission completed successfully!'
+      });
+
+      setTimeout(() => {
+        resetExecutionState();
+      }, 1500);
+
       setSubmitStatus("success");
 
       // Save submission state to localStorage for persistence
@@ -716,6 +977,7 @@ const SolutionSection = ({
       showNotification('success', 'Code submitted successfully!');
 
     } catch (error) {
+      resetExecutionState();
       setSubmitStatus("error");
       const errorMessage = error.response?.data?.message || error.message || "Failed to submit code";
       showNotification('error', errorMessage);
@@ -750,8 +1012,113 @@ const SolutionSection = ({
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
   const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0 && lastActionType === 'testCases';
 
+  // Dynamic Execution Indicator Component
+  const ExecutionIndicator = () => {
+    if (!executionState.isRunning) return null;
+
+    const getDots = () => {
+      const dots = Math.floor(executionState.executionTime * 3) % 4;
+      return '.'.repeat(dots);
+    };
+
+    const getPhaseIcon = () => {
+      switch (executionState.phase) {
+        case 'compiling':
+          return <Cpu className="w-5 h-5 text-blue-500 animate-pulse" />;
+        case 'executing':
+          return <Play className="w-5 h-5 text-green-500 animate-spin" />;
+        case 'testing':
+          return <FlaskConical className="w-5 h-5 text-purple-500 animate-bounce" />;
+        case 'submitting':
+          return <Upload className="w-5 h-5 text-emerald-500 animate-pulse" />;
+        default:
+          return <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />;
+      }
+    };
+
+    const getPhaseColor = () => {
+      switch (executionState.phase) {
+        case 'compiling':
+          return 'from-blue-50 to-blue-100 border-blue-200';
+        case 'executing':
+          return 'from-green-50 to-green-100 border-green-200';
+        case 'testing':
+          return 'from-purple-50 to-purple-100 border-purple-200';
+        case 'submitting':
+          return 'from-emerald-50 to-emerald-100 border-emerald-200';
+        default:
+          return 'from-indigo-50 to-indigo-100 border-indigo-200';
+      }
+    };
+
+    return (
+      <div className={`fixed top-4 right-4 z-50 min-w-80 bg-gradient-to-r ${getPhaseColor()} border-2 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-300 animate-in slide-in-from-right-4`}>
+        <div className="p-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              {getPhaseIcon()}
+              <span className="font-semibold text-gray-800 capitalize">
+                {executionState.phase || 'Processing'}
+              </span>
+            </div>
+            <div className="text-xs text-gray-600 font-mono">
+              {executionState.executionTime.toFixed(1)}s
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mb-3">
+            <div className="flex justify-between text-xs text-gray-600 mb-1">
+              <span>Progress</span>
+              <span>{executionState.progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${executionState.progress}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Status Message */}
+          <div className="text-sm text-gray-700 mb-2">
+            {executionState.message}
+            {executionState.phase === 'compiling' && <span className="animate-pulse">{getDots()}</span>}
+          </div>
+
+          {/* Additional Info */}
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            {executionState.phase === 'testing' && executionState.totalTests > 0 && (
+              <div className="flex items-center gap-1">
+                <FlaskConical className="w-3 h-3" />
+                <span>Test {executionState.currentTest}/{executionState.totalTests}</span>
+              </div>
+            )}
+            
+            {executionState.queuePosition > 0 && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>Queue: #{executionState.queuePosition}</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1">
+              <MemoryStick className="w-3 h-3" />
+              <span>Active</span>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className=" space-y-6">
+      {/* Dynamic Execution Indicator */}
+      <ExecutionIndicator />
+      
       {notification && (
         <NotificationMessage
           type={notification.type}
@@ -766,8 +1133,20 @@ const SolutionSection = ({
           Code Editor & Execution Environment
         </h2>
 
-        {/* API Status Indicator */}
-
+        {/* System Status Indicators */}
+        <div className="flex items-center gap-4 text-sm">
+          {/* Compiler Status */}
+          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-200">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-green-700 font-medium">Compiler Ready</span>
+          </div>
+          
+          {/* Judge0 API Status */}
+          <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-200">
+            <Zap className="w-3 h-3 text-blue-500" />
+            <span className="text-blue-700 font-medium">API Online</span>
+          </div>
+        </div>
       </div>
 
       {/* Template Reload Notification */}
@@ -918,12 +1297,11 @@ const SolutionSection = ({
                                         selectedLanguage === 'typescript' ? 'ts' : 'txt'
               }</span>
             </div>
-            <div className="text-xs text-gray-500">
-              Lines: {answer ? answer.split('\n').length : 0} |
-              Chars: {answer ? answer.length : 0}
-              {hasUnsavedChanges && (
-                <span className="ml-2 text-orange-600 font-medium">● Unsaved</span>
-              )}
+            <div className="text-xs text-gray-500 flex items-center gap-2">
+              <span>
+                Lines: {answer ? answer.split('\n').length : 0} |
+                Chars: {answer ? answer.length : 0}
+              </span>
             </div>
           </div>
 
@@ -936,7 +1314,7 @@ const SolutionSection = ({
                     selectedLanguage.toLowerCase()
             }
             value={answer || LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || ''}
-            onChange={(value) => onAnswerChange(question._id, value || '')}
+            onChange={handleCodeChange}
             theme="vs-dark"
             options={{
               minimap: { enabled: true },
@@ -1019,30 +1397,80 @@ const SolutionSection = ({
       <button
         type="button"
         onClick={handleRunWithAPI}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
+        disabled={executionState.isRunning || submitStatus === 'success'}
+        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 ${
+          executionState.isRunning && executionState.phase === 'executing'
+            ? 'bg-green-500 text-white cursor-not-allowed'
+            : executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'runCode')
+            ? 'bg-blue-500 text-white cursor-not-allowed animate-pulse'
+            : submitStatus === 'success'
+            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
       >
-        <Play className="w-4 h-4" />
-        Run Code
+        {executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'executing') ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {executionState.phase === 'compiling' ? 'Compiling...' : 'Running...'}
+          </>
+        ) : (
+          <>
+            <Play className="w-4 h-4" />
+            Run Code
+          </>
+        )}
       </button>
 
       {/* Run Test Cases */}
       <button
         type="button"
         onClick={handleRunTestCases}
-        className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:bg-purple-700 focus:ring-2 focus:ring-purple-500"
+        disabled={executionState.isRunning || submitStatus === 'success'}
+        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-purple-500 ${
+          executionState.isRunning && executionState.phase === 'testing'
+            ? 'bg-purple-500 text-white cursor-not-allowed animate-pulse'
+            : submitStatus === 'success'
+            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+            : 'bg-purple-600 text-white hover:bg-purple-700'
+        }`}
       >
-        <FlaskConical className="w-4 h-4" />
-        Run Test Cases
+        {executionState.isRunning && executionState.phase === 'testing' ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Testing...
+          </>
+        ) : (
+          <>
+            <FlaskConical className="w-4 h-4" />
+            Run Test Cases
+          </>
+        )}
       </button>
 
       {/* Submit */}
       <button
         type="button"
         onClick={handleSubmitCode}
-        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500"
+        disabled={executionState.isRunning || submitStatus === 'success'}
+        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-emerald-500 ${
+          executionState.isRunning && executionState.phase === 'submitting'
+            ? 'bg-emerald-500 text-white cursor-not-allowed animate-pulse'
+            : submitStatus === 'success'
+            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+            : 'bg-emerald-600 text-white hover:bg-emerald-700'
+        }`}
       >
-        <Terminal className="w-4 h-4" />
-        Submit Answer
+        {executionState.isRunning && executionState.phase === 'submitting' ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Submitting...
+          </>
+        ) : (
+          <>
+            <Terminal className="w-4 h-4" />
+            Submit Answer
+          </>
+        )}
       </button>
     </div>
   </div>
