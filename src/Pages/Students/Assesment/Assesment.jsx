@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { X, AlertTriangle } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import QuizQuestion from './QuestionTypes/QuizQuestion';
 import CodingQuestion from './QuestionTypes/CodingQuestion';
@@ -14,7 +13,7 @@ import ProctoringPopup from '../Proctoring/ProctoringPopup';
 const Assessment = () => {
   const { state } = useLocation();
   const {user}=useUser();
-  const navigate = useNavigate();
+  
   const { sections,submission } = state;
   const submissionId = submission._id;
   const assignmentId=submission.assignment_id;
@@ -23,11 +22,10 @@ const Assessment = () => {
   
   const [sectionIndex, setSectionIndex] = useState(0);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [sectionWiseStatus, setSectionWiseStatus] = useState({});
   const [answerStatusMap, setAnswerStatusMap] = useState({});
-  const development =false;
-  const { showPopup, popupMessage, setShowPopup } = useProctoringEvents({
+
+  const { showPopup, popupMessage, setShowPopup,needsFullscreenPrompt } = useProctoringEvents({
     submission_id: submissionId,
     assignment_id: assignmentId,
     student_id: studentId,
@@ -56,64 +54,12 @@ const Assessment = () => {
     setAnswerStatusMap(map);
   }, [sectionWiseStatus]);
 
-  const enforceFullScreen = () => {
-    const elem = document.documentElement;
-    if (!document.fullscreenElement) {
-      if (elem.requestFullscreen) elem.requestFullscreen();
-      else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-      else if (elem.mozRequestFullScreen) elem.mozRequestFullScreen();
-      else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-    }
-  };
 
-  useEffect(() => {
-    if (development) return;
-    enforceFullScreen();
 
-    const preventRightClick = (e) => e.preventDefault();
-    const preventDevTools = (e) => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(e.key)) ||
-        (e.ctrlKey && e.key === 'U')
-      ) {
-        e.preventDefault();
-      }
-    };
 
-    const handleTabSwitch = () => {
-      setShowExitConfirm(true);
-    };
+  
 
-    window.addEventListener('contextmenu', preventRightClick);
-    window.addEventListener('keydown', preventDevTools);
-    window.addEventListener('blur', handleTabSwitch);
-
-    const checkFullScreen = () => {
-      if (!document.fullscreenElement) {
-        setShowExitConfirm(true);
-      }
-    };
-
-    document.addEventListener('fullscreenchange', checkFullScreen);
-
-    return () => {
-      window.removeEventListener('contextmenu', preventRightClick);
-      window.removeEventListener('keydown', preventDevTools);
-      window.removeEventListener('blur', handleTabSwitch);
-      document.removeEventListener('fullscreenchange', checkFullScreen);
-    };
-  }, []);
-
-  const handleExitConfirm = () => {
-    localStorage.clear();
-    navigate('/dashboard');
-  };
-
-  const handleCancelExit = () => {
-    setShowExitConfirm(false);
-    enforceFullScreen();
-  };
+  
 
   const renderQuestion = (layout) => {
     if (!question) return <div>No question available</div>;
@@ -165,6 +111,26 @@ const Assessment = () => {
   return (
     <div className="min-h-screen bg-gray-50 relative">
       <Header />
+      {needsFullscreenPrompt && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+      <p className="text-lg font-semibold mb-4">
+        You must return to fullscreen to continue the assessment.
+      </p>
+      <button
+        onClick={() => {
+          document.documentElement.requestFullscreen().catch(err =>
+            console.error('Failed to re-enter fullscreen:', err)
+          );
+        }}
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Return to Fullscreen
+      </button>
+    </div>
+  </div>
+)}
+
 {showPopup && <ProctoringPopup message={popupMessage} onClose={() => setShowPopup(false)} />}
       <div className="p-4 border-b border-gray-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex overflow-x-auto gap-2 md:justify-end scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
@@ -204,45 +170,7 @@ const Assessment = () => {
         
       />
 
-      {showExitConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full shadow-xl border border-gray-300 relative">
-            <button
-              onClick={handleCancelExit}
-              className="absolute top-3 right-3 text-gray-400 hover:text-red-500"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex justify-center mb-3">
-              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-full">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-            </div>
-
-            <h2 className="text-xl font-bold text-center text-gray-800 mb-2">Exit Full Screen?</h2>
-            <p className="text-sm text-center text-gray-600 mb-6">
-              Exiting full screen or switching tabs counts as an attempt and may affect your test.
-              Are you sure you want to exit?
-            </p>
-
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={handleCancelExit}
-                className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleExitConfirm}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm"
-              >
-                Exit Anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };

@@ -30,7 +30,7 @@ const AssessmentSection = ({
           submissionID,
           questionID: currentQuestion._id,
         });
-        console.log(timeTakenSeconds)
+        //console.log(timeTakenSeconds)
       } catch (err) {
         console.error('Failed to save time taken:', err);
       }
