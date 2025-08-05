@@ -40,3 +40,18 @@ export const unblockStudent = async (studentId, assignmentId) => {
     throw error;
   }
 };
+
+// Unblock all students for an assignment
+export const unblockAllStudents = async (assignmentId) => {
+  try {
+    const response = await axiosClient.put(
+      `/proctoring/assignment/${assignmentId}/unblock`,
+      {},
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in unblockAllStudents", error);
+    throw error;
+  }
+};
