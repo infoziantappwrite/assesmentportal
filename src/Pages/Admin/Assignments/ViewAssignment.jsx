@@ -107,12 +107,13 @@ const ViewAssignment = () => {
           <h1 className="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">{title}</h1>
 
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleSubmitAll}
-              className="text-xs px-4 py-2 rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors font-medium whitespace-nowrap"
-            >
-              Submit All
-            </button>
+          <button
+            onClick={handleSubmitAll}
+            className="text-xs px-4 py-2 rounded-2xl bg-blue-600 text-white font-medium whitespace-nowrap cursor-pointer transition-colors hover:bg-blue-800"
+          >
+            Submit All
+          </button>
+
             <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor}`}>
               {status.toUpperCase()}
             </span>
