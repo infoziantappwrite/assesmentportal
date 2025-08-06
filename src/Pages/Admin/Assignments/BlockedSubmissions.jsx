@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { getSubmissions } from "../../../Controllers/AssignmentControllers";
 import { unblockStudent, unblockAllStudents } from "../../../Controllers/ProctoringController";
+import NotificationMessage from "../../../Components/NotificationMessage";
+import { useNavigate } from "react-router-dom";
 
 const BlockedSubmissions = ({ assignmentId }) => {
     const [blockedSubmissions, setBlockedSubmissions] = useState([]);
@@ -13,6 +15,12 @@ const BlockedSubmissions = ({ assignmentId }) => {
         message: "",
         onConfirm: null,
     });
+    const navigate=useNavigate();
+    const [notification, setNotification] = useState({
+        show: false,
+        type: "success",
+        message: "",
+    });
 
     // Fetch blocked submissions
     const fetchBlocked = async () => {
@@ -24,14 +32,18 @@ const BlockedSubmissions = ({ assignmentId }) => {
                 pagination.page,
                 pagination.limit
             );
-            const data = response.data || response; // Adjust for your API
+            const data = response.data || response;
             setBlockedSubmissions(data.submissions || []);
-            setPagination(prev => ({
+            setPagination((prev) => ({
                 ...prev,
                 total: data.statistics?.total || 0,
             }));
-        } catch (error) {
-            console.error("Error fetching blocked submissions:", error);
+        } catch  {
+            setNotification({
+                show: true,
+                type: "error",
+                message: "Failed to fetch blocked submissions.",
+            });
         } finally {
             setLoading(false);
         }
@@ -41,13 +53,52 @@ const BlockedSubmissions = ({ assignmentId }) => {
         if (assignmentId) fetchBlocked();
     }, [assignmentId, pagination.page]);
 
-    // Filter based on search
+    // Search filter
     const filteredResults = blockedSubmissions.filter((res) => {
         const name = res.student_id?.name?.toLowerCase() || "";
         const email = res.student_id?.email?.toLowerCase() || "";
         const query = search.toLowerCase();
         return name.includes(query) || email.includes(query);
     });
+
+    // --- Unblock Logic ---
+    const handleUnblock = async (studentId) => {
+        setModalData({ ...modalData, show: false });
+        try {
+            const res = await unblockStudent(studentId, assignmentId);
+            setNotification({
+                show: true,
+                type: "success",
+                message: res.message || "Student unblocked successfully.",
+            });
+            fetchBlocked();
+        } catch (error) {
+            setNotification({
+                show: true,
+                type: "error",
+                message: error.response?.data?.message || "Failed to unblock student.",
+            });
+        }
+    };
+
+    const handleUnblockAll = async () => {
+        setModalData({ ...modalData, show: false });
+        try {
+            const res = await unblockAllStudents(assignmentId);
+            setNotification({
+                show: true,
+                type: "success",
+                message: res.message || "All students unblocked successfully.",
+            });
+            fetchBlocked();
+        } catch (error) {
+            setNotification({
+                show: true,
+                type: "error",
+                message: error.response?.data?.message || "Failed to unblock all students.",
+            });
+        }
+    };
 
     // Pagination
     const totalPages = Math.ceil(pagination.total / pagination.limit);
@@ -61,49 +112,17 @@ const BlockedSubmissions = ({ assignmentId }) => {
         else visiblePages = [pagination.page, pagination.page + 1, pagination.page + 2];
     }
 
-    // --- Unblock Logic ---
-    const onRequestUnblock = (studentId) => {
-        setModalData({
-            show: true,
-            title: "Confirm Unblock",
-            message: "Are you sure you want to unblock this student?",
-            onConfirm: () => handleUnblock(studentId),
-        });
-    };
-
-    const handleUnblock = async (studentId) => {
-        setModalData({ ...modalData, show: false });
-        try {
-            const res = await unblockStudent(studentId, assignmentId);
-            alert(res.message || "Student unblocked successfully.");
-            fetchBlocked();
-        } catch (error) {
-            alert(error.response?.data?.message || "Failed to unblock student.");
-        }
-    };
-
-    const onRequestUnblockAll = () => {
-        setModalData({
-            show: true,
-            title: "Confirm Unblock All",
-            message: "Are you sure you want to unblock ALL blocked students?",
-            onConfirm: () => handleUnblockAll(),
-        });
-    };
-
-    const handleUnblockAll = async () => {
-        setModalData({ ...modalData, show: false });
-        try {
-            const res = await unblockAllStudents(assignmentId);
-            alert(res.message || "All students unblocked successfully.");
-            fetchBlocked();
-        } catch (error) {
-            alert(error.response?.data?.message || "Failed to unblock all students.");
-        }
-    };
-
     return (
         <div className="bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 shadow-lg">
+            {/* Notification */}
+            {notification.show && (
+                <NotificationMessage
+                    type={notification.type}
+                    message={notification.message}
+                    onClose={() => setNotification({ ...notification, show: false })}
+                />
+            )}
+
             {/* Header */}
             <div className="w-full border-b border-gray-300 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center space-x-3 mb-3 sm:mb-0">
@@ -125,7 +144,14 @@ const BlockedSubmissions = ({ assignmentId }) => {
                         }}
                     />
                     <button
-                        onClick={onRequestUnblockAll}
+                        onClick={() =>
+                            setModalData({
+                                show: true,
+                                title: "Confirm Unblock All",
+                                message: "Are you sure you want to unblock ALL blocked students?",
+                                onConfirm: handleUnblockAll,
+                            })
+                        }
                         className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
                     >
                         Unblock All
@@ -133,7 +159,7 @@ const BlockedSubmissions = ({ assignmentId }) => {
                 </div>
             </div>
 
-            {/* Table */}
+            {/* List */}
             {loading ? (
                 <div className="text-center py-6">Loading...</div>
             ) : filteredResults.length === 0 ? (
@@ -141,139 +167,128 @@ const BlockedSubmissions = ({ assignmentId }) => {
                     No blocked submissions.
                 </div>
             ) : (
-                <div className="p-4">
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse border border-red-200 text-left text-sm table-fixed">
-                            <thead className="bg-red-100 text-gray-700 text-xs uppercase">
-                                <tr>
-                                    <th className="border border-red-200 p-2 w-8">#</th>
-                                    <th className="border border-red-200 p-2 w-32 truncate">Name</th>
-                                    <th className="border border-red-200 p-2 w-48 truncate">Email</th>
-                                    <th className="border border-red-200 p-2 w-40 truncate">Reason</th>
-                                    <th className="border border-red-200 p-2 w-24">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredResults.map((res, index) => (
-                                    <tr
-                                        key={res._id}
-                                        className="hover:bg-red-50 transition-colors duration-200 text-gray-700"
-                                    >
-                                        <td className="border border-red-200 p-2 text-center font-semibold text-red-700">
-                                            {index + 1 + (pagination.page - 1) * pagination.limit}
-                                        </td>
-                                        <td
-                                            className="border border-red-200 p-2 truncate font-medium text-red-800"
-                                            title={res.student_id?.name}
-                                        >
-                                            {res.student_id?.name || "N/A"}
-                                        </td>
-                                        <td
-                                            className="border border-red-200 p-2 truncate text-blue-600"
-                                            title={res.student_id?.email}
-                                        >
-                                            {res.student_id?.email || "N/A"}
-                                        </td>
-                                        <td
-                                            className="border border-red-200 p-2 truncate text-gray-600"
-                                            title={res.block_reason || "Not provided"}
-                                        >
-                                            {res.block_reason || "Not provided"}
-                                        </td>
-                                        <td className="border border-red-200 p-2">
-                                            <button
-                                                onClick={() => onRequestUnblock(res.student_id?._id)}
-                                                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
-                                            >
-                                                Unblock
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className=" divide-y divide-red-200">
+                    {filteredResults.map((res, index) => (
+                        <div
+                            key={res._id}
+                            className="flex justify-between items-center p-4 hover:bg-red-50 rounded-xl  transition"
+                        >
+                            <div>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {index + 1 + (pagination.page - 1) * pagination.limit}.{" "}
+                                    {res.student_id?.name || "N/A"}
+                                </p>
+                                <p className="text-xs text-gray-500">{res.student_id?.email || "N/A"}</p>
+                                <p className="text-xs text-gray-400 italic">
+                                    {res.block_reason || "No reason provided"}
+                                </p>
+                            </div>
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex justify-center items-center space-x-2 mt-4 text-sm">
-                            <button
-                                onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
-                                disabled={pagination.page === 1}
-                                className="px-3 py-1 border rounded-lg hover:bg-red-100 disabled:opacity-50"
-                            >
-                                First
-                            </button>
-                            <button
-                                onClick={() =>
-                                    setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))
-                                }
-                                disabled={pagination.page === 1}
-                                className="px-3 py-1 border rounded-lg hover:bg-red-100 disabled:opacity-50"
-                            >
-                                Prev
-                            </button>
-                            {visiblePages.map((page) => (
+                            <div className="flex gap-2">
                                 <button
-                                    key={page}
-                                    onClick={() => setPagination((prev) => ({ ...prev, page }))}
-                                    className={`px-3 py-1 border rounded-lg ${
-                                        pagination.page === page
-                                            ? "bg-red-500 text-white"
-                                            : "hover:bg-red-100"
-                                    }`}
+                                    onClick={() => navigate(`/admin/proctoring_report/${res._id}`)}
+                                    className="text-xs px-3 py-1.5 bg-white-500 font-semibold text-blue-600 rounded-md hover:bg-blue-100 border border-blue-600"
                                 >
-                                    {page}
+                                    View Details
                                 </button>
-                            ))}
-                            <button
-                                onClick={() =>
-                                    setPagination((prev) => ({
-                                        ...prev,
-                                        page: Math.min(prev.page + 1, totalPages),
-                                    }))
-                                }
-                                disabled={pagination.page === totalPages}
-                                className="px-3 py-1 border rounded-lg hover:bg-red-100 disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                            <button
-                                onClick={() => setPagination((prev) => ({ ...prev, page: totalPages }))}
-                                disabled={pagination.page === totalPages}
-                                className="px-3 py-1 border rounded-lg hover:bg-red-100 disabled:opacity-50"
-                            >
-                                Last
-                            </button>
+                                <button
+                                    onClick={() =>
+                                        setModalData({
+                                            show: true,
+                                            title: "Confirm Unblock",
+                                            message: "Are you sure you want to unblock this student?",
+                                            onConfirm: () => handleUnblock(res.student_id?._id),
+                                        })
+                                    }
+                                    className="text-xs px-3 py-1.5 font-semibold bg-red-500 text-white rounded-md hover:bg-red-600"
+                                >
+                                    Unblock
+                                </button>
+                            </div>
                         </div>
-                    )}
+                    ))}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-4 text-sm">
+                    <button
+                        onClick={() => setPagination((prev) => ({ ...prev, page: 1 }))}
+                        disabled={pagination.page === 1}
+                        className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                    >
+                        First
+                    </button>
+                    <button
+                        onClick={() =>
+                            setPagination((prev) => ({ ...prev, page: Math.max(prev.page - 1, 1) }))
+                        }
+                        disabled={pagination.page === 1}
+                        className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                    >
+                        Prev
+                    </button>
+                    {visiblePages.map((page) => (
+                        <button
+                            key={page}
+                            onClick={() => setPagination((prev) => ({ ...prev, page }))}
+                            className={`px-3 py-1 border border-gray-300 rounded-lg ${
+                                pagination.page === page
+                                    ? "bg-red-500 text-white"
+                                    : "hover:bg-red-100"
+                            }`}
+                        >
+                            {page}
+                        </button>
+                    ))}
+                    <button
+                        onClick={() =>
+                            setPagination((prev) => ({
+                                ...prev,
+                                page: Math.min(prev.page + 1, totalPages),
+                            }))
+                        }
+                        disabled={pagination.page === totalPages}
+                        className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                    >
+                        Next
+                    </button>
+                    <button
+                        onClick={() => setPagination((prev) => ({ ...prev, page: totalPages }))}
+                        disabled={pagination.page === totalPages}
+                        className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-red-100 disabled:opacity-50"
+                    >
+                        Last
+                    </button>
                 </div>
             )}
 
             {/* Confirmation Modal */}
             {modalData.show && (
-    <div className="fixed inset-0 z-100 flex items-center justify-center backdrop-blur-sm bg-white/50">
-        <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-300 w-96">
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">{modalData.title}</h3>
-            <p className="text-gray-700 mb-4">{modalData.message}</p>
-            <div className="flex justify-end gap-3">
-                <button
-                    onClick={() => setModalData({ ...modalData, show: false })}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={modalData.onConfirm}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                >
-                    Confirm
-                </button>
-            </div>
-        </div>
-    </div>
-)}
-
+                <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-white/50">
+                    <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-300 w-96">
+                        <h3 className="text-lg font-semibold mb-2 text-gray-900">
+                            {modalData.title}
+                        </h3>
+                        <p className="text-gray-700 mb-4">{modalData.message}</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setModalData({ ...modalData, show: false })}
+                                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={modalData.onConfirm}
+                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

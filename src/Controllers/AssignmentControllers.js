@@ -62,7 +62,7 @@ export const getEligibleStudents = async (id) => {
 
 // GET /assignments/:id/submissions - Get all submissions
 export const getSubmissions = async (id,status, page = 1, limit = 10) => {
-  console.log(status)
+  //console.log(status)
   const response = await axiosClient.get(`/assignments/${id}/submissions`, {
     withCredentials: true,
     params: { status,page, limit },

@@ -43,6 +43,8 @@ const SubmissionItem = ({
 }) => (
   <div className="px-5 py-4 hover:bg-gradient-to-br from-purple-50 to-indigo-50 transition-all duration-200">
     <div className="flex justify-between items-start mb-2">
+      
+      {/* Left Side: User Info */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
           <UserIcon size={18} className="text-purple-700" />
@@ -54,21 +56,37 @@ const SubmissionItem = ({
           <p className="text-xs text-gray-500">Attempt #{s.attempt_number}</p>
         </div>
       </div>
-      <span
-        className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${
-          s.status === "submitted"
-            ? "bg-green-100 text-green-800"
-            : s.status === "blocked"
-            ? "bg-red-100 text-red-800"
-            : s.status === "auto_submitted"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-blue-100 text-blue-800"
-        }`}
-      >
-        {s.status}
-      </span>
+
+      {/* Right Side: Status & Proctoring Info */}
+      <div className="flex items-center gap-3">
+        
+
+        {/* Unblock Count */}
+        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full shadow-sm">
+          Unblocks: {s.proctoring?.unblock_count ?? 0}
+        </span>
+
+        {/* Violation Count */}
+        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full shadow-sm">
+          Violations: {s.proctoring?.violation_count ?? 0}
+        </span>
+        <span
+          className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${
+            s.status === "submitted"
+              ? "bg-green-100 text-green-800"
+              : s.status === "blocked"
+              ? "bg-red-100 text-red-800"
+              : s.status === "auto_submitted"
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-blue-100 text-blue-800"
+          }`}
+        >
+          Status : {s.status}
+        </span>
+      </div>
     </div>
 
+    {/* Marks & Time */}
     <div className="ml-11 pl-1">
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-700 mb-3">
         <div className="flex items-center gap-1.5">
@@ -83,6 +101,7 @@ const SubmissionItem = ({
         </div>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 items-center">
         <button
           onClick={() => navigate(`/submissions/${s._id}`)}
@@ -118,6 +137,7 @@ const SubmissionItem = ({
     </div>
   </div>
 );
+
 
 const Submissions = () => {
   const { id } = useParams();
@@ -248,7 +268,7 @@ const Submissions = () => {
 
       {/* Content */}
       {loading ? (
-        <div className="p-8 flex justify-center">
+        <div>
           <Loader />
         </div>
       ) : filteredSubmissions.length === 0 ? (

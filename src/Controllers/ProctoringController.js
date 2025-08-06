@@ -55,3 +55,46 @@ export const unblockAllStudents = async (assignmentId) => {
     throw error;
   }
 };
+
+// Get proctoring violations for a submission
+export const getViolationsBySubmission = async (submissionId) => {
+  try {
+    const response = await axiosClient.get(
+      `/proctoring/violations/${submissionId}`,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in getViolationsBySubmission", error);
+    throw error;
+  }
+};
+
+// Get student's proctoring history
+export const getStudentHistory = async (studentId) => {
+  try {
+    const response = await axiosClient.get(
+      `/proctoring/student/${studentId}/history`,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in getStudentHistory", error);
+    throw error;
+  }
+};
+
+// Review and take action on a proctoring violation
+export const reviewViolation = async (violationId, action, notes) => {
+  try {
+    const response = await axiosClient.put(
+      `/proctoring/violations/${violationId}/review`,
+      { action, notes },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error in reviewViolation", error);
+    throw error;
+  }
+};
