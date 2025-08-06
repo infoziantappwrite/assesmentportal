@@ -2,14 +2,70 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getAssignmentById, submitAllSubmissions } from '../../../Controllers/AssignmentControllers';
 import Loader from '../../../Components/Loader';
+import NotificationMessage from '../../../Components/NotificationMessage';
 import AssignmentActions from './AssignmentActions';
 import Submissions from './Submissions';
+
+const ConfirmationModal = ({ title, message, onConfirm, onCancel, confirmButtonColor = "red" }) => (
+  <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="absolute inset-0 bg-opacity-10 backdrop-blur-sm"></div>
+    <div className="relative bg-white rounded-lg shadow-lg p-6 w-80 max-w-full z-10">
+      <h3 className="text-lg font-semibold mb-3">{title}</h3>
+      <p className="mb-5 text-gray-700">{message}</p>
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className={`px-4 py-2 rounded text-white transition ${
+            confirmButtonColor === "green" 
+              ? "bg-green-600 hover:bg-green-700" 
+              : confirmButtonColor === "blue"
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-red-600 hover:bg-red-700"
+          }`}
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 const ViewAssignment = () => {
   const { id } = useParams();
 
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notificationState, setNotificationState] = useState({
+    show: false,
+    type: '',
+    message: ''
+  });
+  const [modalData, setModalData] = useState({
+    show: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    confirmButtonColor: "blue"
+  });
+
+  // Helper function to show notifications
+  const showNotification = (type, message) => {
+    setNotificationState({ 
+      show: true, 
+      type, 
+      message 
+    });
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => {
+      setNotificationState(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   const fetchAssignment = async () => {
     try {
@@ -27,14 +83,24 @@ const ViewAssignment = () => {
   }, [id]);
 
   const handleSubmitAll = async () => {
+    setModalData({ ...modalData, show: false }); // hide modal
     try {
       const res = await submitAllSubmissions(assignment._id);
-      window.alert(res.message || "All submissions have been submitted.");
+      showNotification('success', res.message || 'All submissions have been submitted.');
     } catch (error) {
-      window.alert(
-        error.response?.data?.message || "Failed to submit all submissions."
-      );
+      showNotification('error', error.response?.data?.message || 'Failed to submit all submissions.');
     }
+  };
+
+  // Show confirmation modal before submitting all
+  const onRequestSubmitAll = () => {
+    setModalData({
+      show: true,
+      title: "Confirm Submit All",
+      message: "Are you sure you want to submit ALL active submissions? This action cannot be undone.",
+      onConfirm: () => handleSubmitAll(),
+      confirmButtonColor: "blue"
+    });
   };
 
   const formatDateTimeUTC = (isoString) => {
@@ -108,7 +174,7 @@ const ViewAssignment = () => {
 
           <div className="flex items-center space-x-2">
           <button
-            onClick={handleSubmitAll}
+            onClick={onRequestSubmitAll}
             className="text-xs px-4 py-2 rounded-2xl bg-blue-600 text-white font-medium whitespace-nowrap cursor-pointer transition-colors hover:bg-blue-800"
           >
             Submit All
@@ -205,6 +271,27 @@ const ViewAssignment = () => {
       </Section>
 
       <Submissions id={assignment._id} />
+
+      {/* Confirmation Modal */}
+      {modalData.show && (
+        <ConfirmationModal
+          title={modalData.title}
+          message={modalData.message}
+          onConfirm={modalData.onConfirm}
+          onCancel={() => setModalData({ ...modalData, show: false })}
+          confirmButtonColor={modalData.confirmButtonColor}
+        />
+      )}
+
+      {/* Notification Message */}
+      {notificationState.show && notificationState.message && (
+        <NotificationMessage
+          show={notificationState.show}
+          type={notificationState.type}
+          message={notificationState.message}
+          onClose={() => setNotificationState({ ...notificationState, show: false })}
+        />
+      )}
     </div>
   );
 };
