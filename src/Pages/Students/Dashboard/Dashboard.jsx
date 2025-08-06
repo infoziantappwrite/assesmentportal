@@ -14,7 +14,7 @@ import StartTestButton from './StartTestButton';
 import { getMyAssignments } from '../../../Controllers/SubmissionController';
 
 const TABS = ['upcoming', 'active', 'completed'];
-const visibleTabs = ['upcoming', 'active',];
+const visibleTabs = [ 'active','upcoming',];
 
 
 
@@ -98,7 +98,7 @@ const WarningPopup = ({ onClose }) => {
 
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('upcoming');
+  const [activeTab, setActiveTab] = useState('active');
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showWarning, setShowWarning] = useState(false);

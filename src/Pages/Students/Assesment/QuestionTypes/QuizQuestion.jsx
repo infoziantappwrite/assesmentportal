@@ -12,7 +12,9 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
   const [isMarkedForReview, setIsMarkedForReview] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
   const [notification, setNotification] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
+
+  // "idle" | "saving" | "saved"
+  const [saveStatus, setSaveStatus] = useState('idle');
   const debounceRef = useRef(null);
 
   const showNotification = (type, message) => {
@@ -20,15 +22,16 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
     setTimeout(() => setNotification(null), 2000);
   };
 
+  // Fetch previous answer when question changes
   useEffect(() => {
     const fetchAnswer = async () => {
       setSelectedOptions([]);
       setIsMarkedForReview(false);
       setStartTime(Date.now());
+      setSaveStatus('idle');
 
       try {
         const answer = answerStatus;
-
         if (!answer || answer.selected_options?.length === 0) {
           await questionVisited({
             submissionID: submissionId,
@@ -60,10 +63,15 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
     }
   }, [submissionId, question._id]);
 
+  // Debounced save
   const debouncedSaveAnswer = useCallback(
     debounce(async (opts, marked) => {
-      setIsSaving(true);
+      // Prevent multiple simultaneous saves
+      if (saveStatus === 'saving') return;
+
+      setSaveStatus('saving');
       const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
+
       const payload = {
         sectionId: question.section_id,
         questionId: question._id,
@@ -78,59 +86,64 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
         await saveAnswer(submissionId, payload);
         if (typeof refreshSectionStatus === 'function') refreshSectionStatus();
         showNotification('success', 'Answer saved');
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1500); // Reset after 1.5s
       } catch {
         showNotification('error', 'Error saving answer');
-      } finally {
-        setIsSaving(false);
+        setSaveStatus('idle');
       }
     }, 500),
-    [submissionId, question._id, startTime]
+    [submissionId, question._id, startTime, saveStatus]
   );
 
   debounceRef.current = debouncedSaveAnswer;
 
- const handleOptionClick = (optionId) => {
-  let updatedOptions;
-  if (question.type === 'single_correct') {
-    updatedOptions = [optionId];
-  } else {
-    updatedOptions = selectedOptions.includes(optionId)
-      ? selectedOptions.filter((opt) => opt !== optionId)
-      : [...selectedOptions, optionId];
-  }
+  const handleOptionClick = (optionId) => {
+    let updatedOptions;
+    if (question.type === 'single_correct') {
+      updatedOptions = [optionId];
+    } else {
+      updatedOptions = selectedOptions.includes(optionId)
+        ? selectedOptions.filter((opt) => opt !== optionId)
+        : [...selectedOptions, optionId];
+    }
 
-  setSelectedOptions(updatedOptions);
-  setIsMarkedForReview(false); 
-  
-};
-
+    setSelectedOptions(updatedOptions);
+    setIsMarkedForReview(false);
+    setSaveStatus('idle'); // reset button state on new selection
+  };
 
   const handleMarkForReview = (e) => {
-  const checked = e.target.checked;
-
-  if (selectedOptions.length === 0 && checked) {
-    showNotification('warning', 'Please select an option before marking for review');
-    return;
-  }
-
-  setIsMarkedForReview(checked);
-  // 🚫 no save triggered here
-};
-
+    const checked = e.target.checked;
+    if (selectedOptions.length === 0 && checked) {
+      showNotification('warning', 'Please select an option before marking for review');
+      return;
+    }
+    setIsMarkedForReview(checked);
+    setSaveStatus('idle');
+  };
 
   const handleManualSave = () => {
-    debouncedSaveAnswer.cancel(); // cancel any debounced call
-    debouncedSaveAnswer(selectedOptions, isMarkedForReview); // trigger save immediately
+    if (saveStatus === 'saving') return; // prevent overlapping calls
+    debouncedSaveAnswer.cancel();
+    debouncedSaveAnswer(selectedOptions, isMarkedForReview);
   };
+
+  // Button states
+  const buttonDisabled = selectedOptions.length === 0 || saveStatus === 'saving';
+  const buttonText =
+    saveStatus === 'saving' ? 'Submitting...' :
+    saveStatus === 'saved' ? 'Saved' :
+    'Save Answer';
 
   return (
     <div className='bg-white p-4 border border-gray-200 rounded-xl'>
-      {/* 🔔 Notification */}
+      {/* Notification */}
       {notification && (
         <NotificationMessage type={notification.type} message={notification.message} />
       )}
 
-      {/* 📷 Images */}
+      {/* Question Images */}
       {question.content?.images?.length > 0 && (
         <div className="mb-4 space-x-2">
           {question.content.images.map((imgUrl, idx) => (
@@ -144,12 +157,12 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
         </div>
       )}
 
-      {/* 🧾 Question Text */}
+      {/* Question Text */}
       <h2 className="mb-4 font-semibold text-lg text-gray-800">
         Q{questionIndex + 1}. {question.content.question_text}
       </h2>
 
-      {/* ✅ Options */}
+      {/* Options */}
       <div className="space-y-3 mb-6">
         {question.options.map((opt) => {
           const selected = selectedOptions.includes(opt.option_id);
@@ -157,12 +170,12 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
             <button
               key={opt.option_id}
               onClick={() => handleOptionClick(opt.option_id)}
-              disabled={isSaving}
+              disabled={saveStatus === 'saving'}
               className={`block w-full text-left px-4 py-2 rounded-md border text-sm transition font-medium 
                 ${selected
                   ? 'bg-green-100 border-green-500 text-green-700'
                   : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'} 
-                ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                ${saveStatus === 'saving' ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {opt.text}
             </button>
@@ -170,38 +183,34 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
         })}
       </div>
 
-     {/* 🟣 Mark for Review + Save Button */}
-<div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-  {/* 🔘 Mark for Review Checkbox */}
-  <label className="flex items-center text-sm text-gray-700">
-    <input
-      type="checkbox"
-      className="mr-2"
-      checked={isMarkedForReview}
-      onChange={handleMarkForReview}
-      disabled={isSaving}
-    />
-    Mark for Review
-  </label>
+      {/* Mark for Review + Save Button */}
+      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+        <label className="flex items-center text-sm text-gray-700">
+          <input
+            type="checkbox"
+            className="mr-2"
+            checked={isMarkedForReview}
+            onChange={handleMarkForReview}
+            disabled={saveStatus === 'saving'}
+          />
+          Mark for Review
+        </label>
 
-  {/* 🟣 Status (Optional – shows only if marked) */}
-  {isMarkedForReview && (
-    <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
-      🟣 Marked for Review
-    </span>
-  )}
+        {isMarkedForReview && (
+          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
+            🟣 Marked for Review
+          </span>
+        )}
 
-  {/* ✅ Save Button */}
-  <button
-    onClick={handleManualSave}
-    disabled={isSaving}
-    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-md transition"
-  >
-    {isSaving ? 'Submitting...' : 'Save Answer'}
-  </button>
-</div>
-
-      
+        <button
+          onClick={handleManualSave}
+          disabled={buttonDisabled}
+          className={`px-4 py-2 rounded-md text-white text-sm font-semibold transition 
+            ${buttonDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+        >
+          {buttonText}
+        </button>
+      </div>
     </div>
   );
 };
