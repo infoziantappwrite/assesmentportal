@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getSubmissions } from "../../../Controllers/AssignmentControllers";
+import { getSubmissions, submitAllSubmissions } from "../../../Controllers/AssignmentControllers";
 import {
   unblockStudent,
   unblockAllStudents
 } from "../../../Controllers/ProctoringController";
 import Loader from "../../../Components/Loader";
+import NotificationMessage from "../../../Components/NotificationMessage";
 import {
   TimerIcon,
   UserIcon,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Send
 } from "lucide-react";
 import {
   generateUserActivityReport,
   downloadReport
 } from "../../../Controllers/reportsController";
 
-const ConfirmationModal = ({ title, message, onConfirm, onCancel }) => (
+const ConfirmationModal = ({ title, message, onConfirm, onCancel, confirmButtonColor = "red" }) => (
 <div className="fixed inset-0 flex items-center justify-center z-50">
   <div className="absolute inset-0 bg-opacity-10 backdrop-blur-sm"></div>
   <div className="relative bg-white rounded-lg shadow-lg p-6 w-80 max-w-full z-10">
@@ -32,7 +34,11 @@ const ConfirmationModal = ({ title, message, onConfirm, onCancel }) => (
       </button>
       <button
         onClick={onConfirm}
-        className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition"
+        className={`px-4 py-2 rounded text-white transition ${
+          confirmButtonColor === "green" 
+            ? "bg-green-600 hover:bg-green-700" 
+            : "bg-red-600 hover:bg-red-700"
+        }`}
       >
         Confirm
       </button>
@@ -143,7 +149,8 @@ const ActiveSubmissions = ({
   selectedFormats, 
   setSelectedFormats, 
   handleDownloadReport, 
-  onRequestUnblock 
+  onRequestUnblock,
+  onRequestSubmitAll
 }) => {
   const [submissions, setSubmissions] = useState([]);
   const [pagination, setPagination] = useState({
@@ -207,6 +214,22 @@ const ActiveSubmissions = ({
 
   return (
     <div className="space-y-6">
+      {/* Header with Submit All Button */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <h4 className="text-lg font-semibold text-green-700">
+            Active Submissions ({submissions.length})
+          </h4>
+        </div>
+        <button
+          onClick={onRequestSubmitAll}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center gap-2"
+        >
+          <Send className="w-4 h-4" />
+          Submit All
+        </button>
+      </div>
+
       {/* Submissions List */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
@@ -446,6 +469,11 @@ const Submissions = () => {
   const [selectedFormats, setSelectedFormats] = useState({});
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState("active"); // "active" or "blocked"
+  const [notification, setNotification] = useState({
+    show: false,
+    type: '',
+    message: ''
+  });
   const [modalData, setModalData] = useState({
     show: false,
     title: "",
@@ -453,6 +481,19 @@ const Submissions = () => {
     onConfirm: null
   });
   const navigate = useNavigate();
+
+  // Helper function to show notifications
+  const showNotification = (type, message) => {
+    setNotification({ 
+      show: true, 
+      type, 
+      message 
+    });
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   const handleDownloadReport = async (submissionId, format = "excel") => {
     try {
@@ -463,16 +504,14 @@ const Submissions = () => {
           try {
             await downloadReport(exportLogId);
           } catch {
-            alert(
-              "Report generation started. Try downloading again in a few seconds."
-            );
+            showNotification('warning', 'Report generation started. Try downloading again in a few seconds.');
           }
         }, 3000);
       } else {
-        alert("Report queued. Try again in a few seconds.");
+        showNotification('info', 'Report queued. Try again in a few seconds.');
       }
     } catch {
-      alert("Failed to generate report. Please try again.");
+      showNotification('error', 'Failed to generate report. Please try again.');
     }
   };
 
@@ -490,10 +529,10 @@ const Submissions = () => {
     setModalData({ ...modalData, show: false }); // hide modal
     try {
       const res = await unblockStudent(studentId, assignmentId);
-      alert(res.message || "Student unblocked successfully.");
+      showNotification('success', res.message || 'Student unblocked successfully.');
       setRefreshTrigger(prev => prev + 1); // Trigger refresh for both components
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to unblock student.");
+      showNotification('error', error.response?.data?.message || 'Failed to unblock student.');
     }
   };
 
@@ -511,10 +550,32 @@ const Submissions = () => {
     setModalData({ ...modalData, show: false }); // hide modal
     try {
       const res = await unblockAllStudents(id);
-      alert(res.message || "All students unblocked successfully.");
+      showNotification('success', res.message || 'All students unblocked successfully.');
       setRefreshTrigger(prev => prev + 1); // Trigger refresh for both components
     } catch (error) {
-      alert(error.response?.data?.message || "Failed to unblock all students.");
+      showNotification('error', error.response?.data?.message || 'Failed to unblock all students.');
+    }
+  };
+
+  // Show confirmation modal before submitting all
+  const onRequestSubmitAll = () => {
+    setModalData({
+      show: true,
+      title: "Confirm Submit All",
+      message: "Are you sure you want to submit ALL active submissions? This action cannot be undone.",
+      onConfirm: () => handleSubmitAll(),
+      confirmButtonColor: "green"
+    });
+  };
+
+  const handleSubmitAll = async () => {
+    setModalData({ ...modalData, show: false }); // hide modal
+    try {
+      const res = await submitAllSubmissions(id);
+      showNotification('success', res.message || 'All submissions have been submitted successfully.');
+      setRefreshTrigger(prev => prev + 1); // Trigger refresh for both components
+    } catch (error) {
+      showNotification('error', error.response?.data?.message || 'Failed to submit all submissions.');
     }
   };
 
@@ -578,6 +639,7 @@ const Submissions = () => {
               setSelectedFormats={setSelectedFormats}
               handleDownloadReport={handleDownloadReport}
               onRequestUnblock={onRequestUnblock}
+              onRequestSubmitAll={onRequestSubmitAll}
             />
           </div>
         )}
@@ -605,6 +667,17 @@ const Submissions = () => {
           message={modalData.message}
           onConfirm={modalData.onConfirm}
           onCancel={() => setModalData({ ...modalData, show: false })}
+          confirmButtonColor={modalData.confirmButtonColor}
+        />
+      )}
+
+      {/* Notification Message */}
+      {notification.show && notification.message && (
+        <NotificationMessage
+          show={notification.show}
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification({ ...notification, show: false })}
         />
       )}
     </div>
