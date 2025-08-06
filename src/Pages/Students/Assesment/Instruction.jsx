@@ -15,6 +15,8 @@ import {
   MinusCircle,
   MonitorX,
   Copy,
+  Info,
+  Award,
   ClipboardPaste,
   MousePointerClick,
   LayoutPanelLeft,
@@ -147,98 +149,99 @@ const Instruction = () => {
         </div>
       </header>
 
-      <div className="pt-20 min-h-screen bg-gradient-to-br from-blue-50 to-white py-4 px-4">
-        <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-8 space-y-10 border border-gray-200">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-extrabold text-blue-800">{assessment.title}</h1>
-            <p className="text-gray-700 text-sm">{assessment.description || 'No description available.'}</p>
-          </div>
+      <div className="min-h-screen bg-gray-50 py-20 px-4 ">
+        <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-gray-300 shadow-md p-6 space-y-6">
 
-          {/* General Instructions */}
-          <div className="bg-blue-100/60 border-l-4 border-blue-500 rounded-lg p-5 text-sm text-blue-900">
-            <h2 className="text-base font-semibold mb-3">📝 General Instructions</h2>
-            <ul className="list-disc list-inside space-y-1">
-              <li>This test will open in full-screen mode.</li>
-              <li>Do not reload or close the browser window during the test.</li>
-              <li>The timer will continue even if you leave the test.</li>
-              <li>Ensure a stable internet connection before beginning.</li>
-              <li>Retakes are allowed only if explicitly enabled.</li>
-            </ul>
-          </div>
-
-          {/* Proctoring Violations */}
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-5 text-sm text-red-900">
-            <h2 className="text-base font-semibold mb-3 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" /> Proctoring Rules & Violations
-            </h2>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <LayoutPanelLeft className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Tab Switching:</strong> Leaving this tab will be recorded as a violation.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <MonitorX className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Window Blur:</strong> Minimizing or losing focus on the browser window triggers a warning.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <MousePointerClick className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Right Click Disabled:</strong> Attempting to right-click will trigger a warning.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Copy className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Copy Attempt:</strong> Copying content is prohibited.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <ClipboardPaste className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Paste Attempt:</strong> Pasting content is prohibited.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <RefreshCw className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Page Reload:</strong> Reloading or closing the page ends the test session.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Zap className="w-5 h-5 text-red-500 mt-1" />
-                <span><strong>Idle Timeout:</strong> Staying inactive for too long will be considered suspicious.</span>
-              </li>
-            </ul>
-            <p className="mt-4 text-sm font-medium">
-              <strong>Note:</strong> Accumulating too many violations may automatically end your test and redirect you to the dashboard.
+          {/* Header */}
+          <header className="text-center space-y-1  ">
+            <h1 className="text-2xl font-bold text-blue-900">{assessment.title}</h1>
+            <p className="text-gray-500 text-base">
+              {assessment.description || 'No description available.'}
             </p>
-          </div>
-          {/* Config and Scoring */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="rounded-xl bg-gray-50 border border-gray-200 p-6">
-              <h3 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
+          </header>
+          {/* Configuration and Scoring */}
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Test Configuration */}
+            <div className=" col-span-2 bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Info className="w-5 h-5 text-green-500" /> General Instructions
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• This test will open in full-screen mode.</li>
+                <li>• Do not reload or close the browser window during the test.</li>
+                <li>• The timer will continue even if you leave the test.</li>
+                <li>• Ensure a stable internet connection before beginning.</li>
+                <li>• Retakes are allowed only if explicitly enabled.</li>
+              </ul>
+            </div>
+            <div className="bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+
+              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <Timer className="w-5 h-5 text-blue-500" /> Test Configuration
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm text-gray-700">
-                <div className="flex gap-2 items-center"><Timer className="w-4 h-4" /> Duration: {config.total_duration_minutes || 0} mins</div>
-                <div className="flex gap-2 items-center"><AlarmClock className="w-4 h-4" /> Grace Period: {config.grace_period_minutes || 0} mins</div>
-                <div className="flex gap-2 items-center"><FileCheck2 className="w-4 h-4" /> Navigation: {config.allow_section_navigation ? 'Allowed' : 'Restricted'}</div>
-                <div className="flex gap-2 items-center"><Shuffle className="w-4 h-4" /> Shuffle Sections: {config.shuffle_sections ? 'Yes' : 'No'}</div>
-                <div className="flex gap-2 items-center"><Repeat className="w-4 h-4" /> Retake Allowed: {config.allow_retake ? 'Yes' : 'No'}</div>
-                <div className="flex gap-2 items-center"><MinusCircle className="w-4 h-4" /> Max Attempts: {config.max_attempts || 1}</div>
-                <div className="flex gap-2 items-center"><EyeOff className="w-4 h-4" /> Show Results Immediately: {config.show_results_immediately ? 'Yes' : 'No'}</div>
-              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>Duration: {config.total_duration_minutes || 0} mins</li>
+                <li>Grace Period: {config.grace_period_minutes || 0} mins</li>
+                <li>Navigation: {config.allow_section_navigation ? 'Allowed' : 'Restricted'}</li>
+                <li>Shuffle Sections: {config.shuffle_sections ? 'Yes' : 'No'}</li>
+                <li>Retake Allowed: {config.allow_retake ? 'Yes' : 'No'}</li>
+
+                <li>Show Results Immediately: {config.show_results_immediately ? 'Yes' : 'No'}</li>
+              </ul>
             </div>
 
-            <div className="rounded-xl bg-gray-50 border border-gray-200 p-6">
-              <h3 className="font-semibold text-lg text-gray-800 mb-4 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-purple-500" /> Scoring Rules
+            {/* Scoring Rules */}
+            <div className="bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <Award className="w-5 h-5 text-purple-500" /> Scoring Rules
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm text-gray-700">
-                <div className="flex gap-2 items-center"><CheckCircle className="w-4 h-4" /> Total Marks: {scoring.total_marks || 0}</div>
-                <div className="flex gap-2 items-center"><CheckCircle className="w-4 h-4" /> Passing Marks: {scoring.passing_marks || 0}</div>
-                <div className="flex gap-2 items-center"><XOctagon className="w-4 h-4" /> Negative Marking: {scoring.negative_marking ? 'Yes' : 'No'}</div>
-                <div className="flex gap-2 items-center"><MinusCircle className="w-4 h-4" /> Deduction per Wrong: {scoring.negative_marks_per_wrong || 0}</div>
-              </div>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>Total Marks: {scoring.total_marks || 0}</li>
+                <li>Passing Marks: {scoring.passing_marks || 0}</li>
+                <li>Negative Marking: {scoring.negative_marking ? 'Yes' : 'No'}</li>
+                <li>Deduction per Wrong: {scoring.negative_marks_per_wrong || 0}</li>
+              </ul>
             </div>
-          </div>
 
-          {/* Config and Scoring (unchanged) */}
-          {/* ... existing configuration and scoring blocks ... */}
+          </section>
+
+
+
+
+          {/* Proctoring Rules */}
+          <section className="space-y-4 bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" /> Proctoring Rules & Violations
+            </h2>
+            {/* Highlighted Note */}
+            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-center text-md font-medium shadow-sm">
+              ⚠ Note: Accumulating too many violations may automatically end your test and redirect you to the dashboard.
+            </div>
+
+            <div className="divide-y divide-gray-200 text-sm text-gray-600">
+              {[
+                { icon: LayoutPanelLeft, label: 'Tab Switching', text: 'Leaving this tab will be recorded as a violation.' },
+                { icon: MonitorX, label: 'Window Blur', text: 'Minimizing or losing focus on the browser window triggers a warning.' },
+                { icon: MousePointerClick, label: 'Right Click Disabled', text: 'Attempting to right-click will trigger a warning.' },
+                { icon: Copy, label: 'Copy Attempt', text: 'Copying content is prohibited.' },
+                { icon: ClipboardPaste, label: 'Paste Attempt', text: 'Pasting content is prohibited.' },
+                { icon: RefreshCw, label: 'Page Reload', text: 'Reloading or closing the page ends the test session.' },
+                { icon: Zap, label: 'Idle Timeout', text: 'Staying inactive for too long will be considered suspicious.' }
+              ].map((rule, index) => (
+                <div key={index} className="flex items-start gap-3 py-2">
+                  <rule.icon className="w-4 h-4 text-red-400 mt-1" />
+                  <span><strong>{rule.label}:</strong> {rule.text}</span>
+                </div>
+              ))}
+            </div>
+
+
+          </section>
+
+
         </div>
       </div>
+
 
       {showExitConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
