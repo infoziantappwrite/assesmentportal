@@ -12,7 +12,8 @@ import {
   UserIcon,
   CheckCircle2,
   XCircle,
-  Send
+  Send,
+  RefreshCw
 } from "lucide-react";
 import {
   generateUserActivityReport,
@@ -495,6 +496,12 @@ const Submissions = () => {
     }, 3000);
   };
 
+  // Function to manually refresh submissions
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+    showNotification('info', 'Refreshing submissions...');
+  };
+
   const handleDownloadReport = async (submissionId, format = "excel") => {
     try {
       const res = await generateUserActivityReport(submissionId, format);
@@ -583,10 +590,19 @@ const Submissions = () => {
     <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 shadow-l overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="text-xl font-bold text-gray-800 flex items-center">
-          <span className="w-2 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mr-3"></span>
-          Submissions
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center">
+            <span className="w-2 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mr-3"></span>
+            Submissions
+          </h3>
+          <button
+            onClick={handleRefresh}
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            title="Refresh submissions"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </div>
         <input
           type="text"
           placeholder="Search by name or email..."
