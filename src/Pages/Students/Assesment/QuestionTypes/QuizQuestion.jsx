@@ -66,7 +66,6 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
   // Debounced save
   const debouncedSaveAnswer = useCallback(
     debounce(async (opts, marked) => {
-      // Prevent multiple simultaneous saves
       if (saveStatus === 'saving') return;
 
       setSaveStatus('saving');
@@ -87,7 +86,7 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
         if (typeof refreshSectionStatus === 'function') refreshSectionStatus();
         showNotification('success', 'Answer saved');
         setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1500); // Reset after 1.5s
+        setTimeout(() => setSaveStatus('idle'), 1500);
       } catch {
         showNotification('error', 'Error saving answer');
         setSaveStatus('idle');
@@ -110,7 +109,7 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
 
     setSelectedOptions(updatedOptions);
     setIsMarkedForReview(false);
-    setSaveStatus('idle'); // reset button state on new selection
+    setSaveStatus('idle');
   };
 
   const handleMarkForReview = (e) => {
@@ -124,7 +123,7 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
   };
 
   const handleManualSave = () => {
-    if (saveStatus === 'saving') return; // prevent overlapping calls
+    if (saveStatus === 'saving') return;
     debouncedSaveAnswer.cancel();
     debouncedSaveAnswer(selectedOptions, isMarkedForReview);
   };
@@ -137,79 +136,90 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
     'Save Answer';
 
   return (
-    <div className='bg-white p-4 border border-gray-200 rounded-xl'>
-      {/* Notification */}
-      {notification && (
-        <NotificationMessage type={notification.type} message={notification.message} />
-      )}
-
-      {/* Question Images */}
-      {question.content?.images?.length > 0 && (
-        <div className="mb-4 space-x-2">
-          {question.content.images.map((imgUrl, idx) => (
-            <img
-              key={idx}
-              src={imgUrl}
-              alt={`question-img-${idx}`}
-              className="inline-block h-24 object-contain border rounded"
-            />
-          ))}
+    <div className="relative">
+      {/* Global Freeze Overlay */}
+      {saveStatus === 'saving' && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center">
+          <div className="animate-spin border-4 border-white border-t-transparent rounded-full w-14 h-14 mb-4"></div>
+          <p className="text-white text-lg font-semibold">Saving your answer...</p>
         </div>
       )}
 
-      {/* Question Text */}
-      <h2 className="mb-4 font-semibold text-lg text-gray-800">
-        Q{questionIndex + 1}. {question.content.question_text}
-      </h2>
-
-      {/* Options */}
-      <div className="space-y-3 mb-6">
-        {question.options.map((opt) => {
-          const selected = selectedOptions.includes(opt.option_id);
-          return (
-            <button
-              key={opt.option_id}
-              onClick={() => handleOptionClick(opt.option_id)}
-              disabled={saveStatus === 'saving'}
-              className={`block w-full text-left px-4 py-2 rounded-md border text-sm transition font-medium 
-                ${selected
-                  ? 'bg-green-100 border-green-500 text-green-700'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'} 
-                ${saveStatus === 'saving' ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {opt.text}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Mark for Review + Save Button */}
-      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-        <label className="flex items-center text-sm text-gray-700">
-          <input
-            type="checkbox"
-            className="mr-2"
-            checked={isMarkedForReview}
-            onChange={handleMarkForReview}
-            disabled={saveStatus === 'saving'}
-          />
-          Mark for Review
-        </label>
-
-        {isMarkedForReview && (
-          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
-            🟣 Marked for Review
-          </span>
+      {/* Question Content */}
+      <div className="bg-white p-4 border border-gray-200 rounded-xl">
+        {/* Notification */}
+        {notification && (
+          <NotificationMessage type={notification.type} message={notification.message} />
         )}
 
-        <button
-          onClick={handleManualSave}
-          disabled={buttonDisabled}
-          className={`px-4 py-2 rounded-md text-white text-sm font-semibold transition 
-            ${buttonDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
-        >
-          {buttonText}
-        </button>
+        {/* Question Images */}
+        {question.content?.images?.length > 0 && (
+          <div className="mb-4 space-x-2">
+            {question.content.images.map((imgUrl, idx) => (
+              <img
+                key={idx}
+                src={imgUrl}
+                alt={`question-img-${idx}`}
+                className="inline-block h-24 object-contain border rounded"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Question Text */}
+        <h2 className="mb-4 font-semibold text-lg text-gray-800">
+          Q{questionIndex + 1}. {question.content.question_text}
+        </h2>
+
+        {/* Options */}
+        <div className="space-y-3 mb-6">
+          {question.options.map((opt) => {
+            const selected = selectedOptions.includes(opt.option_id);
+            return (
+              <button
+                key={opt.option_id}
+                onClick={() => handleOptionClick(opt.option_id)}
+                disabled={saveStatus === 'saving'}
+                className={`block w-full text-left px-4 py-2 rounded-md border text-sm transition font-medium 
+                  ${selected
+                    ? 'bg-green-100 border-green-500 text-green-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'} 
+                  ${saveStatus === 'saving' ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {opt.text}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mark for Review + Save Button */}
+        <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+          <label className="flex items-center text-sm text-gray-700">
+            <input
+              type="checkbox"
+              className="mr-2"
+              checked={isMarkedForReview}
+              onChange={handleMarkForReview}
+              disabled={saveStatus === 'saving'}
+            />
+            Mark for Review
+          </label>
+
+          {isMarkedForReview && (
+            <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full font-medium">
+              🟣 Marked for Review
+            </span>
+          )}
+
+          <button
+            onClick={handleManualSave}
+            disabled={buttonDisabled}
+            className={`px-4 py-2 rounded-md text-white text-sm font-semibold transition 
+              ${buttonDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+          >
+            {buttonText}
+          </button>
+        </div>
       </div>
     </div>
   );
