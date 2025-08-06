@@ -48,7 +48,15 @@ const useProctoringEvents = ({ submission_id, student_id, assignment_id }) => {
         setShowPopup(true);
         setTimeout(() => {
           setShowPopup(false);
-          localStorage.clear()
+          // Exit fullscreen if currently in fullscreen mode
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch((err) => {
+              console.warn('Error exiting fullscreen:', err);
+            });
+          }
+
+          // Clear localStorage
+          localStorage.clear();
           navigate('/dashboard');
         }, 3000);
       } else {
@@ -87,34 +95,34 @@ const useProctoringEvents = ({ submission_id, student_id, assignment_id }) => {
     };
 
     // Fullscreen Exit (log if not returned within 10 seconds)
-   let fullscreenWarningTimer;
-let fullscreenViolationTimer;
+    let fullscreenWarningTimer;
+    let fullscreenViolationTimer;
 
-const handleFullscreenChange = () => {
-  if (!document.fullscreenElement) {
-    // Step 1: Show warning after 4 seconds
-    fullscreenWarningTimer = setTimeout(() => {
-      showWarning('You exited fullscreen! Please return within 5 seconds to avoid a violation.');
-    }, 5000);
-    setNeedsFullscreenPrompt(true);
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        // Step 1: Show warning after 4 seconds
+        fullscreenWarningTimer = setTimeout(() => {
+          showWarning('You exited fullscreen! Please return within 5 seconds to avoid a violation.');
+        }, 5000);
+        setNeedsFullscreenPrompt(true);
 
-    // Step 2: Log violation after 10 seconds if still not in fullscreen
-    fullscreenViolationTimer = setTimeout(() => {
-      logViolation(
-        proctoringEvent.FULLSCREEN_EXIT,
-        'User stayed out of fullscreen for more than 10 seconds',
-        'high'
-      );
-      setNeedsFullscreenPrompt(true);
-       // Show button to re-enter fullscreen
-    }, 10000);
-  } else {
-    // User re-entered fullscreen → clear timers
-    clearTimeout(fullscreenWarningTimer);
-    clearTimeout(fullscreenViolationTimer);
-    setNeedsFullscreenPrompt(false);
-  }
-};
+        // Step 2: Log violation after 10 seconds if still not in fullscreen
+        fullscreenViolationTimer = setTimeout(() => {
+          logViolation(
+            proctoringEvent.FULLSCREEN_EXIT,
+            'User stayed out of fullscreen for more than 10 seconds',
+            'high'
+          );
+          setNeedsFullscreenPrompt(true);
+          // Show button to re-enter fullscreen
+        }, 10000);
+      } else {
+        // User re-entered fullscreen → clear timers
+        clearTimeout(fullscreenWarningTimer);
+        clearTimeout(fullscreenViolationTimer);
+        setNeedsFullscreenPrompt(false);
+      }
+    };
 
 
 
@@ -186,7 +194,7 @@ const handleFullscreenChange = () => {
     };
   }, [submission_id, student_id, assignment_id]);
 
-  return { showPopup, popupMessage, setShowPopup,needsFullscreenPrompt };
+  return { showPopup, popupMessage, setShowPopup, needsFullscreenPrompt };
 };
 
 export default useProctoringEvents;
