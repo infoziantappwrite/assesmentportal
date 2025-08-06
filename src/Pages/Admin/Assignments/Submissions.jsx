@@ -6,7 +6,8 @@ import {
   TimerIcon,
   UserIcon,
   CheckCircle2,
-  XCircle
+  XCircle,
+  RefreshCw
 } from "lucide-react";
 import {
   generateUserActivityReport,
@@ -148,6 +149,7 @@ const Submissions = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedFormats, setSelectedFormats] = useState({});
   const [notification, setNotification] = useState({
     show: false,
@@ -170,6 +172,23 @@ const Submissions = () => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  // Function to manually refresh submissions
+  const handleRefresh = () => {
+    setRefreshing(true);
+    getSubmissions(id, undefined, pagination.page, pagination.limit)
+      .then((res) => {
+        const stats = res.data.statistics || {};
+        const subs = res.data.submissions || [];
+        setSubmissions(subs);
+        setPagination((prev) => ({
+          ...prev,
+          total: stats.total || 0
+        }));
+        setRefreshing(false);
+      })
+      .catch(() => setRefreshing(false));
   };
 
   useEffect(() => {
@@ -238,10 +257,20 @@ const Submissions = () => {
     <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-200 shadow-l overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between gap-3">
-        <h3 className="text-xl font-bold text-gray-800 flex items-center">
-          <span className="w-2 h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mr-3"></span>
-          Submissions
-        </h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center">
+            <span className="w-2 h-6 bg-gradient-to-r from-green-500 to-green-600 rounded-full mr-3"></span>
+            All Submissions
+          </h3>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+            title="Refresh submissions"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
 
         <div className="flex gap-3">
           <input
