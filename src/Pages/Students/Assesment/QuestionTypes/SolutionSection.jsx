@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 
 import { useJudge0 } from '../../../../hooks/useJudge0';
-import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases } from "../../../../Controllers/SubmissionController"
+import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, RunCode } from "../../../../Controllers/SubmissionController"
 import { DEFAULT_SUPPORTED_LANGUAGES, LANGUAGE_TEMPLATES } from "./utils/languageConfig";
 import NotificationMessage from '../../../../Components/NotificationMessage';
 
@@ -42,6 +42,8 @@ const SolutionSection = ({
 }) => {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
+  console.log(judge0Results);
+
   const [customInput, setCustomInput] = useState('');
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
   const [autoReloadTemplate, setAutoReloadTemplate] = useState(true);
@@ -55,7 +57,7 @@ const SolutionSection = ({
   const { isExecuting, executeCode, } = useJudge0();
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
-  
+
   // Enhanced execution states for dynamic indicators
   const [executionState, setExecutionState] = useState({
     isRunning: false,
@@ -148,7 +150,7 @@ const SolutionSection = ({
     if (value === undefined || value === null) {
       return;
     }
-    
+
     // Call the original onChange function
     onAnswerChange(question._id, value || '');
   };
@@ -276,7 +278,7 @@ const SolutionSection = ({
 
     if (currentQuestionId && currentSubmissionId) {
       const submissionState = getSubmissionState(currentQuestionId, currentSubmissionId);
-      console.log('Checking submission state for question:', currentQuestionId, 'State:', submissionState);
+      // console.log('Checking submission state for question:', currentQuestionId, 'State:', submissionState);
       if (submissionState && submissionState.isSubmitted) {
         setSubmitStatus('success');
         // Show notification that this question was already submitted
@@ -367,7 +369,7 @@ const SolutionSection = ({
         return; // Don't proceed until user confirms
       }
       setPreviousLanguage(selectedLanguage);
-      
+
       // Only load template when language actually changes and user wants auto-reload
       if (autoReloadTemplate && !hasUnsavedChanges) {
         const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
@@ -488,6 +490,26 @@ const SolutionSection = ({
     setTimeout(() => setTemplateReloadNotification(''), 3000);
   };
 
+
+  const getLanguageIdforRunCode = (language) => {
+    const languageMap = {
+      'python': 71,
+      'javascript': 63,
+      'java': 62,
+      'c': 50,
+      'cpp': 54,
+      'csharp': 51,
+      'php': 68,
+      'ruby': 72,
+      'go': 60,
+      'rust': 73,
+      'swift': 83,
+      'kotlin': 78,
+      'typescript': 74,
+    };
+    return languageMap[language.toLowerCase()] || 71;
+  };
+
   const handleRunWithAPI = async () => {
     // Check if user has written meaningful code
     if (!hasValidCode(answer)) {
@@ -515,10 +537,10 @@ const SolutionSection = ({
         executionTime: 0,
         queuePosition: Math.floor(Math.random() * 3) + 1 // Simulate queue position
       });
-      
+
       const timer = startExecutionTimer();
       const timeoutTimer = startExecutionTimeout();
-      
+
       // Simulate compilation phase
       setTimeout(() => {
         updateExecutionState({
@@ -527,7 +549,7 @@ const SolutionSection = ({
           message: 'Compiling your code...'
         });
       }, 500);
-      
+
       setTimeout(() => {
         updateExecutionState({
           phase: 'executing',
@@ -537,7 +559,14 @@ const SolutionSection = ({
       }, 1200);
 
       setLastActionType('runCode'); // Mark this as run code action
-      const result = await executeCode(answer, selectedLanguage, customInput);
+      const result = await RunCode({
+        source_code: answer,
+        language_id: getLanguageIdforRunCode(selectedLanguage || 'python'),
+        stdin: customInput || ''
+      });
+
+      console.log(result);
+
 
       // Complete execution
       updateExecutionState({
@@ -605,9 +634,9 @@ const SolutionSection = ({
 
     setIsRunningTests(true);
     setLastActionType('testCases'); // Mark this as test cases action
-    
+
     const totalTestCases = fullDetails.sample_test_cases.length;
-    
+
     // Start test execution with dynamic indicators
     updateExecutionState({
       isRunning: true,
@@ -619,10 +648,10 @@ const SolutionSection = ({
       executionTime: 0,
       queuePosition: Math.floor(Math.random() * 2) + 1
     });
-    
+
     const timer = startExecutionTimer();
     const timeoutTimer = startExecutionTimeout();
-    
+
     try {
       // Step 1: Save the answer first
       setTimeout(() => {
@@ -631,7 +660,7 @@ const SolutionSection = ({
           message: 'Saving your solution...'
         });
       }, 300);
-      
+
       const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
       const savePayload = {
         sectionId: question.section_id,
@@ -657,7 +686,7 @@ const SolutionSection = ({
           message: 'Compiling your code...'
         });
       }, 600);
-      
+
       setTimeout(() => {
         updateExecutionState({
           progress: 50,
@@ -706,7 +735,7 @@ const SolutionSection = ({
             });
           }, 1200 + (i * 400));
         }
-        
+
         setTimeout(() => {
           updateExecutionState({
             progress: 85,
@@ -880,7 +909,7 @@ const SolutionSection = ({
       message: 'Preparing submission...',
       executionTime: 0
     });
-    
+
     const timer = startExecutionTimer();
     const timeoutTimer = startExecutionTimeout();
 
@@ -891,16 +920,16 @@ const SolutionSection = ({
           message: 'Saving your final solution...'
         });
       }, 400);
-      
+
       res = await handleSaveAnswer();
-      
+
       setTimeout(() => {
         updateExecutionState({
           progress: 60,
           message: 'Validating code submission...'
         });
       }, 800);
-      
+
     } catch {
       resetExecutionState();
       showNotification('error', 'Failed to save answer before submitting');
@@ -958,7 +987,7 @@ const SolutionSection = ({
       };
 
       await evaluateCodingSubmission(currentSubmissionId, payload);
-      
+
       // Complete submission
       updateExecutionState({
         progress: 100,
@@ -1074,7 +1103,7 @@ const SolutionSection = ({
               <span>{executionState.progress}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${executionState.progress}%` }}
               ></div>
@@ -1095,7 +1124,7 @@ const SolutionSection = ({
                 <span>Test {executionState.currentTest}/{executionState.totalTests}</span>
               </div>
             )}
-            
+
             {executionState.queuePosition > 0 && (
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -1118,7 +1147,7 @@ const SolutionSection = ({
     <div className=" space-y-6">
       {/* Dynamic Execution Indicator */}
       <ExecutionIndicator />
-      
+
       {notification && (
         <NotificationMessage
           type={notification.type}
@@ -1140,7 +1169,7 @@ const SolutionSection = ({
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-green-700 font-medium">Compiler Ready</span>
           </div>
-          
+
           {/* Judge0 API Status */}
           <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-200">
             <Zap className="w-3 h-3 text-blue-500" />
@@ -1364,117 +1393,114 @@ const SolutionSection = ({
       </div>
       <div className="space-y-6">
         {/* Button Row */}
-{/* Button Row */}
-{submitStatus === "success" ? (
-  <div className="w-full flex items-center justify-center mt-4">
-    <button
-      type="button"
-      disabled
-      className="px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm cursor-not-allowed"
-    >
-      <CheckCircle className="w-5 h-5" />
-      You have already submitted your answer
-    </button>
-  </div>
-) : (
-  <div className="flex flex-wrap items-center justify-between gap-4">
-    {/* Toggle Custom Input */}
-    <button
-      type="button"
-      onClick={() => setShowCustomInput(!showCustomInput)}
-      className="text-sm text-gray-700 hover:text-indigo-600 font-medium flex items-center gap-1"
-    >
-      {showCustomInput ? (
-        <ChevronDown className="w-4 h-4" />
-      ) : (
-        <ChevronRight className="w-4 h-4" />
-      )}
-      {showCustomInput ? "Hide Custom Input" : "Show Custom Input"}
-    </button>
-
-    <div className="flex flex-wrap gap-3">
-      {/* Run Code */}
-      <button
-        type="button"
-        onClick={handleRunWithAPI}
-        disabled={executionState.isRunning || submitStatus === 'success'}
-        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 ${
-          executionState.isRunning && executionState.phase === 'executing'
-            ? 'bg-green-500 text-white cursor-not-allowed'
-            : executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'runCode')
-            ? 'bg-blue-500 text-white cursor-not-allowed animate-pulse'
-            : submitStatus === 'success'
-            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
-        }`}
-      >
-        {executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'executing') ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            {executionState.phase === 'compiling' ? 'Compiling...' : 'Running...'}
-          </>
+        {/* Button Row */}
+        {submitStatus === "success" ? (
+          <div className="w-full flex items-center justify-center mt-4">
+            <button
+              type="button"
+              disabled
+              className="px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm cursor-not-allowed"
+            >
+              <CheckCircle className="w-5 h-5" />
+              You have already submitted your answer
+            </button>
+          </div>
         ) : (
-          <>
-            <Play className="w-4 h-4" />
-            Run Code
-          </>
-        )}
-      </button>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Toggle Custom Input */}
+            <button
+              type="button"
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              className="text-sm text-gray-700 hover:text-indigo-600 font-medium flex items-center gap-1"
+            >
+              {showCustomInput ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+              {showCustomInput ? "Hide Custom Input" : "Show Custom Input"}
+            </button>
 
-      {/* Run Test Cases */}
-      <button
-        type="button"
-        onClick={handleRunTestCases}
-        disabled={executionState.isRunning || submitStatus === 'success'}
-        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-purple-500 ${
-          executionState.isRunning && executionState.phase === 'testing'
-            ? 'bg-purple-500 text-white cursor-not-allowed animate-pulse'
-            : submitStatus === 'success'
-            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-            : 'bg-purple-600 text-white hover:bg-purple-700'
-        }`}
-      >
-        {executionState.isRunning && executionState.phase === 'testing' ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Testing...
-          </>
-        ) : (
-          <>
-            <FlaskConical className="w-4 h-4" />
-            Run Test Cases
-          </>
-        )}
-      </button>
+            <div className="flex flex-wrap gap-3">
+              {/* Run Code */}
+              <button
+                type="button"
+                onClick={handleRunWithAPI}
+                disabled={executionState.isRunning || submitStatus === 'success'}
+                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 ${executionState.isRunning && executionState.phase === 'executing'
+                  ? 'bg-green-500 text-white cursor-not-allowed'
+                  : executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'runCode')
+                    ? 'bg-blue-500 text-white cursor-not-allowed animate-pulse'
+                    : submitStatus === 'success'
+                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+              >
+                {executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'executing') ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {executionState.phase === 'compiling' ? 'Compiling...' : 'Running...'}
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    Run Code
+                  </>
+                )}
+              </button>
 
-      {/* Submit */}
-      <button
-        type="button"
-        onClick={handleSubmitCode}
-        disabled={executionState.isRunning || submitStatus === 'success'}
-        className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-emerald-500 ${
-          executionState.isRunning && executionState.phase === 'submitting'
-            ? 'bg-emerald-500 text-white cursor-not-allowed animate-pulse'
-            : submitStatus === 'success'
-            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-            : 'bg-emerald-600 text-white hover:bg-emerald-700'
-        }`}
-      >
-        {executionState.isRunning && executionState.phase === 'submitting' ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Submitting...
-          </>
-        ) : (
-          <>
-            <Terminal className="w-4 h-4" />
-            Submit Answer
-          </>
+              {/* Run Test Cases */}
+              <button
+                type="button"
+                onClick={handleRunTestCases}
+                disabled={executionState.isRunning || submitStatus === 'success'}
+                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-purple-500 ${executionState.isRunning && executionState.phase === 'testing'
+                  ? 'bg-purple-500 text-white cursor-not-allowed animate-pulse'
+                  : submitStatus === 'success'
+                    ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                  }`}
+              >
+                {executionState.isRunning && executionState.phase === 'testing' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <FlaskConical className="w-4 h-4" />
+                    Run Test Cases
+                  </>
+                )}
+              </button>
+
+              {/* Submit */}
+              <button
+                type="button"
+                onClick={handleSubmitCode}
+                disabled={executionState.isRunning || submitStatus === 'success'}
+                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-emerald-500 ${executionState.isRunning && executionState.phase === 'submitting'
+                  ? 'bg-emerald-500 text-white cursor-not-allowed animate-pulse'
+                  : submitStatus === 'success'
+                    ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+              >
+                {executionState.isRunning && executionState.phase === 'submitting' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Terminal className="w-4 h-4" />
+                    Submit Answer
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         )}
-      </button>
-    </div>
-  </div>
-)}
 
 
 
@@ -1558,7 +1584,6 @@ const SolutionSection = ({
 
             {/* Show output for Run Code without comparison */}
             {lastActionType === 'runCode' &&
-              customInput?.trim() &&
               judge0Results?.stdout && (
                 <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
@@ -1579,50 +1604,6 @@ const SolutionSection = ({
                   </div>
                 </div>
               )}
-
-
-            {/* {shouldShowSampleComparison && (
-              <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-                  {isSampleTestPassed ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <XCircle className="w-5 h-5 text-red-500" />
-                  )}
-                  <span>Sample Test Case Result</span>
-                </div>
-
-                <div className="text-sm font-mono space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Download className="w-4 h-4 text-blue-500 mt-1" />
-                    <div>
-                      <span className="font-semibold">Expected:</span>{" "}
-                      {fullDetails.sample_test_cases[0].output}
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <Upload className="w-4 h-4 text-indigo-500 mt-1" />
-                    <div>
-                      <span className="font-semibold">Your Output:</span>{" "}
-                      {judge0Results.stdout}
-                    </div>
-                  </div>
-
-                  <div
-                    className={`mt-3 font-semibold flex items-center gap-1 ${isSampleTestPassed ? "text-green-600" : "text-red-600"
-                      }`}
-                  >
-                    {isSampleTestPassed ? (
-                      <CheckCircle className="w-4 h-4" />
-                    ) : (
-                      <XCircle className="w-4 h-4" />
-                    )}
-                    {isSampleTestPassed ? "Passed" : "Failed"}
-                  </div>
-                </div>
-              </div>
-            )} */}
 
             {judge0Results.stderr && (
               <div className="mb-4">

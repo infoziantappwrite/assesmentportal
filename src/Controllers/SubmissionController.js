@@ -181,3 +181,23 @@ export const saveTimeTaken = async (payload) => {
   });
   return response.data;
 };
+
+
+export const RunCode = async ({ source_code, language_id, stdin }) => {
+  console.log('source_code:', source_code);
+  console.log('language_id:', language_id);
+  console.log('stdin:', stdin);
+  
+  const response = await axiosClient.post('/compiler/', {
+    source_code,
+    language_id,
+    stdin,
+  }, {
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+
+  return response.data;
+};
