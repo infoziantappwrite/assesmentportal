@@ -137,14 +137,14 @@ const AssignmentResults = ({ results = [] }) => {
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border rounded-lg hover:bg-green-100 disabled:opacity-50"
+                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-green-100 disabled:opacity-50"
               >
                 First
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border rounded-lg hover:bg-green-100 disabled:opacity-50"
+                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-green-100 disabled:opacity-50"
               >
                 Prev
               </button>
@@ -152,7 +152,7 @@ const AssignmentResults = ({ results = [] }) => {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 border rounded-lg ${
+                  className={`px-3 py-1 border border-gray-300 rounded-lg ${
                     currentPage === page
                       ? "bg-green-500 text-white"
                       : "hover:bg-green-100"
@@ -166,14 +166,14 @@ const AssignmentResults = ({ results = [] }) => {
                   setCurrentPage((p) => Math.min(p + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded-lg hover:bg-green-100 disabled:opacity-50"
+                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-green-100 disabled:opacity-50"
               >
                 Next
               </button>
               <button
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border rounded-lg hover:bg-green-100 disabled:opacity-50"
+                className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-green-100 disabled:opacity-50"
               >
                 Last
               </button>

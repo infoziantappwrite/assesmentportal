@@ -81,6 +81,7 @@ import ReportHistoryPage from './Pages/Admin/Reports/ReportHistoryPage';
 import AdminDashboard from './Pages/Admin/Dashboard/Dashboard';
 import Results from './Pages/Common/Results/Results';
 import ViewResult from './Pages/Common/Results/ViewResult';
+import ProctoringReport from './Pages/Admin/Assignments/ProctoringReport';
 
 
 const App = () => {
@@ -183,6 +184,8 @@ const App = () => {
           <Route path="/reports/history" element={<ReportHistoryPage />} />
           <Route path='/admin/results' element={<Results/>}/>
           <Route path="/admin/result/:id" element={<ViewResult />} />
+          <Route path="/admin/proctoring_report/:id" element={<ProctoringReport />} />
+
 
         </Route>
       </Route>
