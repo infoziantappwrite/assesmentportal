@@ -151,7 +151,8 @@ const ActiveSubmissions = ({
   setSelectedFormats, 
   handleDownloadReport, 
   onRequestUnblock,
-  onRequestSubmitAll
+  onRequestSubmitAll,
+  refreshTrigger
 }) => {
   const [submissions, setSubmissions] = useState([]);
   const [pagination, setPagination] = useState({
@@ -189,7 +190,7 @@ const ActiveSubmissions = ({
 
   useEffect(() => {
     fetchActiveSubmissions();
-  }, [assignmentId, pagination.page, pagination.limit, search]);
+  }, [assignmentId, pagination.page, pagination.limit, search, refreshTrigger]);
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
 
@@ -656,6 +657,7 @@ const Submissions = () => {
               handleDownloadReport={handleDownloadReport}
               onRequestUnblock={onRequestUnblock}
               onRequestSubmitAll={onRequestSubmitAll}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         )}
