@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PlayCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FullscreenConfirmModal from '../Assesment/FullscreenConfirmModal';
+import NotificationMessage from '../../../Components/NotificationMessage';
 import {
   startSubmission,
   resumeSubmission
@@ -10,7 +11,25 @@ import {
 const StartTestButton = ({ test, label }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState({
+    show: false,
+    type: '',
+    message: ''
+  });
   const navigate = useNavigate();
+
+  // Helper function to show notifications
+  const showNotification = (type, message) => {
+    setNotification({ 
+      show: true, 
+      type, 
+      message 
+    });
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => {
+      setNotification(prev => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   const handleStartClick = () => {
     setShowConfirm(true);
@@ -71,9 +90,16 @@ if (label === 'Resume Test') {
           state: { submission, assessment, sections }
         });
       }, 1500);
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error:', error);
-      alert('Something went wrong while starting/resuming the test.');
+
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Something went wrong while starting/resuming the test.';
+
+      showNotification('error', errorMessage); // ✅ Show detailed error message with notification
       setLoading(false);
     }
   };
@@ -103,6 +129,16 @@ if (label === 'Resume Test') {
           <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-3" />
           <p className="text-blue-700 font-medium">Preparing your test, please wait...</p>
         </div>
+      )}
+
+      {/* Notification Message */}
+      {notification.show && notification.message && (
+        <NotificationMessage
+          show={notification.show}
+          type={notification.type}
+          message={notification.message}
+          onClose={() => setNotification({ ...notification, show: false })}
+        />
       )}
     </>
   );
