@@ -13,15 +13,29 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
 const Header = () => {
-  const email = localStorage.getItem('userEmail') || 'guest@example.com';
-  const initials = email.charAt(0).toUpperCase();
-  const { role, logout } = useUser();
+  const { role, logout, user } = useUser(); // Get user from context
   const navigate = useNavigate();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const dropdownRef = useRef(null);
 
-  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
+  // Calculate initials from user context or show loading placeholder
+  const initials = user?.name?.charAt(0).toUpperCase() || (isLoading ? '...' : 'U');
+
+  // Handle loading state - user data should be available from context
+  useEffect(() => {
+    if (user) {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  const toggleDropdown = async () => {
+    setDropdownOpen((prev) => !prev);
+  };
+
+
 
   const handleLogout = async () => {
     await logout();
@@ -71,7 +85,7 @@ const Header = () => {
           onClick={toggleDropdown}
           className="flex items-center gap-2 focus:outline-none"
         >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 text-white font-bold flex items-center justify-center text-sm shadow-md">
+          <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-500 text-white font-bold flex items-center justify-center text-sm shadow-md ${isLoading ? 'animate-pulse' : ''}`}>
             {initials}
           </div>
           <ChevronDown className="w-4 h-4 text-gray-600" />
@@ -98,6 +112,14 @@ const Header = () => {
                     ✕
                   </button>
                 </div>
+
+                {/* User Info Display */}
+                {user && (
+                  <div className="mb-3 px-3 py-2 rounded-md bg-gray-50 border border-gray-200">
+                    <p className="text-sm font-medium text-gray-800">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                  </div>
+                )}
 
                 <MenuItem label="Dashboard" Icon={LayoutDashboard} variant="purple" onClick={goToDashboard} />
                 <MenuItem label="My Profile" Icon={User} variant="pink" onClick={goToProfile} />
