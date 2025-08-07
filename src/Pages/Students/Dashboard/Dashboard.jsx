@@ -6,7 +6,8 @@ import {
   Hourglass,
   XCircle,
   PlayCircle,
-  AlertTriangle
+  AlertTriangle,
+  AlertCircle, FileCheck2
 } from 'lucide-react';
 import Header from '../../../Components/Header/Header';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +15,7 @@ import StartTestButton from './StartTestButton';
 import { getMyAssignments } from '../../../Controllers/SubmissionController';
 
 const TABS = ['upcoming', 'active', 'completed'];
-const visibleTabs = [ 'active','upcoming',];
+const visibleTabs = ['active', 'upcoming', 'completed'];
 
 
 
@@ -30,26 +31,22 @@ const statusIcon = {
   completed: <CheckCircle className="w-4 h-4 text-purple-600" />,
 };
 
-const formatDuration = (minutes) => {
-  const hrs = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hrs > 0 ? `${hrs} hr ` : ''}${mins} min`;
-};
-const formatDateTimeIST = (isoString) => {
-    if (!isoString) return 'N/A';
-    const date = new Date(isoString);
-    if (isNaN(date)) return 'Invalid Date';
 
-    return date.toLocaleString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
+const formatDateTimeIST = (isoString) => {
+  if (!isoString) return 'N/A';
+  const date = new Date(isoString);
+  if (isNaN(date)) return 'Invalid Date';
+
+  return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
 
 // Popup Component
 const WarningPopup = ({ onClose }) => {
@@ -105,48 +102,49 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  let retryTimeout;
+    let retryTimeout;
 
-  const fetchAssignments = async (isRetry = false) => {
-    try {
-      const res = await getMyAssignments();
-      const all = res.data || [];
+    const fetchAssignments = async (isRetry = false) => {
+      try {
+        const res = await getMyAssignments();
+        const all = res.data || [];
+        console.log(all);
 
-      if (!isRetry && (!all || all.length === 0)) {
-        // Retry after 1 second if data is empty
-        retryTimeout = setTimeout(() => fetchAssignments(true), 1000);
-        return;
-      }
-
-      const formatted = all.map((assignment) => {
-        let displayStatus = assignment.status;
-
-        if (assignment.submission_status === 'in_progress') {
-          displayStatus = 'active';
-        } else if (assignment.submission_status === 'submitted') {
-          displayStatus = 'completed';
-        } else if (assignment.status === 'scheduled') {
-          displayStatus = 'upcoming';
+        if (!isRetry && (!all || all.length === 0)) {
+          // Retry after 1 second if data is empty
+          retryTimeout = setTimeout(() => fetchAssignments(true), 1000);
+          return;
         }
 
-        return {
-          ...assignment,
-          display_status: displayStatus,
-        };
-      });
+        const formatted = all.map((assignment) => {
+          let displayStatus = assignment.status;
 
-      setAssignments(formatted);
-    } catch (error) {
-      console.error('Error fetching assignments:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+          if (assignment.submission_status === 'in_progress') {
+            displayStatus = 'active';
+          } else if (assignment.submission_status === 'submitted' || assignment.submission_status === 'auto_submitted') {
+            displayStatus = 'completed';
+          } else if (assignment.status === 'scheduled') {
+            displayStatus = 'upcoming';
+          }
 
-  fetchAssignments();
+          return {
+            ...assignment,
+            display_status: displayStatus,
+          };
+        });
 
-  return () => clearTimeout(retryTimeout); // Cleanup on unmount
-}, []);
+        setAssignments(formatted);
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
+
+    return () => clearTimeout(retryTimeout); // Cleanup on unmount
+  }, []);
 
   const filteredTests = assignments.filter(
     (test) => test.display_status === activeTab
@@ -185,7 +183,7 @@ const Dashboard = () => {
             {filteredTests.map((test) => {
               const start = new Date(test.schedule?.start_time);
               const end = new Date(test.schedule?.end_time);
-              const durationMin = Math.floor((end - start) / 60000);
+
 
               return (
                 <div
@@ -210,16 +208,23 @@ const Dashboard = () => {
                   <div className="flex flex-wrap items-center gap-4 text-sm mt-3">
                     <span className="flex items-center gap-1 text-green-700">
                       <PlayCircle className="w-4 h-4" />
-                      Start: {formatDateTimeIST(start)}
+                      Start At : {formatDateTimeIST(start)}
                     </span>
                     <span className="flex items-center gap-1 text-red-700">
                       <XCircle className="w-4 h-4" />
-                      End: {formatDateTimeIST(end)}
+                      Valid Till: {formatDateTimeIST(end)}
                     </span>
-                    {/* <span className="flex items-center gap-1 text-gray-700">
+                    <span className="flex items-center gap-1 text-gray-700">
                       <Clock className="w-4 h-4" />
-                      Total Duration: {formatDuration(durationMin)}
-                    </span> */}
+                      Assessment Duration:&nbsp;
+                      {(() => {
+                        const minutes = test.assessment_id?.configuration.total_duration_minutes || 0;
+                        const hrs = Math.floor(minutes / 60);
+                        const mins = minutes % 60;
+                        return `${hrs > 0 ? `${hrs} hr${hrs > 1 ? 's' : ''} ` : ''}${mins > 0 ? `${mins} min${mins > 1 ? 's' : ''}` : ''}`;
+                      })()}
+                    </span>
+
                   </div>
 
                   {/* Buttons based on status */}
@@ -237,26 +242,32 @@ const Dashboard = () => {
                   )}
 
                   {test.display_status === 'active' && test.submission_status === 'blocked' && (
-                    <div className="text-right pt-2">
+                    <div className="pt-2">
                       <button
                         onClick={() => setShowWarning(true)}
-                        className="w-full mt-2 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:from-red-600 hover:to-orange-600 transition flex justify-center items-cente"
+                        className="w-full mt-2 bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-lg text-sm hover:from-red-600 hover:to-orange-600 transition flex justify-center items-center gap-2"
                       >
+                        <AlertCircle className="w-4 h-4" />
                         Test Blocked
                       </button>
                     </div>
                   )}
 
+
                   {test.display_status === 'completed' && (
-                    <div className="text-right pt-2">
+                    <div className="pt-2">
                       <button
                         onClick={() => navigate('/submissions', { state: { test } })}
-                        className="text-sm text-purple-600 underline hover:text-purple-800"
+                        disabled
+                        className=" w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition flex items-center justify-center gap-2"
                       >
+                        <FileCheck2 className="w-4 h-4" />
                         View Submission
                       </button>
                     </div>
                   )}
+
+
                 </div>
               );
             })}
