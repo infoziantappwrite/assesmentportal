@@ -42,7 +42,7 @@ const SolutionSection = ({
 }) => {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
-  console.log(judge0Results);
+  // console.log(judge0Results);
 
   const [customInput, setCustomInput] = useState('');
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
