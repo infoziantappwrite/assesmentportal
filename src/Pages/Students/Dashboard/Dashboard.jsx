@@ -216,10 +216,10 @@ const Dashboard = () => {
                       <XCircle className="w-4 h-4" />
                       End: {formatDateTimeIST(end)}
                     </span>
-                    <span className="flex items-center gap-1 text-gray-700">
+                    {/* <span className="flex items-center gap-1 text-gray-700">
                       <Clock className="w-4 h-4" />
                       Total Duration: {formatDuration(durationMin)}
-                    </span>
+                    </span> */}
                   </div>
 
                   {/* Buttons based on status */}
