@@ -3,11 +3,15 @@ import { getSubmissions } from "../../../Controllers/AssignmentControllers";
 import { unblockStudent, unblockAllStudents } from "../../../Controllers/ProctoringController";
 import NotificationMessage from "../../../Components/NotificationMessage";
 import { useNavigate } from "react-router-dom";
+import { RefreshCw } from "lucide-react"; // or from 'react-icons/lucide'
+
 
 const BlockedSubmissions = ({ assignmentId }) => {
     const [blockedSubmissions, setBlockedSubmissions] = useState([]);
     const [search, setSearch] = useState("");
-    const [loading, setLoading] = useState(false);
+  
+    const [refreshing, setRefreshing] = useState(false);
+
     const [pagination, setPagination] = useState({ page: 1, limit: 6, total: 0 });
     const [modalData, setModalData] = useState({
         show: false,
@@ -15,7 +19,7 @@ const BlockedSubmissions = ({ assignmentId }) => {
         message: "",
         onConfirm: null,
     });
-    const navigate=useNavigate();
+    const navigate = useNavigate();
     const [notification, setNotification] = useState({
         show: false,
         type: "success",
@@ -25,7 +29,7 @@ const BlockedSubmissions = ({ assignmentId }) => {
     // Fetch blocked submissions
     const fetchBlocked = async () => {
         try {
-            setLoading(true);
+            
             const response = await getSubmissions(
                 assignmentId,
                 "blocked",
@@ -38,15 +42,13 @@ const BlockedSubmissions = ({ assignmentId }) => {
                 ...prev,
                 total: data.statistics?.total || 0,
             }));
-        } catch  {
+        } catch {
             setNotification({
                 show: true,
                 type: "error",
                 message: "Failed to fetch blocked submissions.",
             });
-        } finally {
-            setLoading(false);
-        }
+        } 
     };
 
     useEffect(() => {
@@ -80,6 +82,15 @@ const BlockedSubmissions = ({ assignmentId }) => {
             });
         }
     };
+    const handleRefresh = async () => {
+        try {
+            setRefreshing(true);
+            await fetchBlocked();
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
 
     const handleUnblockAll = async () => {
         setModalData({ ...modalData, show: false });
@@ -130,6 +141,15 @@ const BlockedSubmissions = ({ assignmentId }) => {
                     <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                         Blocked Submissions
                     </h2>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="p-2 text-gray-600 hover:text-red-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+                        title="Refresh submissions"
+                    >
+                        <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                    </button>
+
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -160,9 +180,7 @@ const BlockedSubmissions = ({ assignmentId }) => {
             </div>
 
             {/* List */}
-            {loading ? (
-                <div className="text-center py-6">Loading...</div>
-            ) : filteredResults.length === 0 ? (
+            { filteredResults.length === 0 ? (
                 <div className="text-gray-500 text-center py-8 px-4">
                     No blocked submissions.
                 </div>
@@ -233,11 +251,10 @@ const BlockedSubmissions = ({ assignmentId }) => {
                         <button
                             key={page}
                             onClick={() => setPagination((prev) => ({ ...prev, page }))}
-                            className={`px-3 py-1 border border-gray-300 rounded-lg ${
-                                pagination.page === page
+                            className={`px-3 py-1 border border-gray-300 rounded-lg ${pagination.page === page
                                     ? "bg-red-500 text-white"
                                     : "hover:bg-red-100"
-                            }`}
+                                }`}
                         >
                             {page}
                         </button>

@@ -110,6 +110,12 @@ const SubmissionItem = ({
         >
           View Full Submission
         </button>
+        <button
+          onClick={() => navigate(`/admin/proctoring_report/${s._id}`)}
+          className="text-xs px-3 py-1.5 bg-white border border-red-600 text-red-600 rounded-md hover:bg-purple-50 transition-colors font-medium"
+        >
+          View Proctoring Details
+        </button>
 
         <select
           value={selectedFormats[s._id] || "excel"}
@@ -259,7 +265,7 @@ const Submissions = () => {
       <div className="px-5 py-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between gap-3">
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-bold text-gray-800 flex items-center">
-            <span className="w-2 h-6 bg-gradient-to-r from-green-500 to-green-600 rounded-full mr-3"></span>
+            <span className="w-2 h-6 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full mr-3"></span>
             All Submissions
           </h3>
           <button
