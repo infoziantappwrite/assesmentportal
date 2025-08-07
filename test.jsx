@@ -430,7 +430,7 @@ const SolutionSection = ({
   // Helper function to check if code has meaningful content
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
-    if (isTemplateCode(code)) return true;
+    if (isTemplateCode(code)) return false;
 
     // Check if code has meaningful content beyond template
     const lines = code.split('\n').filter(line => {
@@ -511,12 +511,8 @@ const SolutionSection = ({
   };
 
   const handleRunWithAPI = async () => {
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-    if (!hasValidCode(codeToRun)) {
+    // Check if user has written meaningful code
+    if (!hasValidCode(answer)) {
       showNotification('warning', 'Please write your solution code before running!');
       return;
     }
@@ -564,10 +560,13 @@ const SolutionSection = ({
 
       setLastActionType('runCode'); // Mark this as run code action
       const result = await RunCode({
-        source_code: codeToRun,
+        source_code: answer,
         language_id: getLanguageIdforRunCode(selectedLanguage || 'python'),
         stdin: customInput || ''
       });
+
+      console.log(result);
+
 
       // Complete execution
       updateExecutionState({
@@ -605,12 +604,8 @@ const SolutionSection = ({
   };
 
   const handleRunTestCases = async () => {
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-    if (!hasValidCode(codeToRun)) {
+    // Check if user has written meaningful code
+    if (!hasValidCode(answer)) {
       showNotification('warning', 'Please write your solution code before running test cases!');
       return;
     }
@@ -671,7 +666,7 @@ const SolutionSection = ({
         sectionId: question.section_id,
         questionId: question._id,
         type: 'coding',
-        codeSolution: codeToRun,
+        codeSolution: answer,
         programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
@@ -681,7 +676,7 @@ const SolutionSection = ({
       await saveCodingAnswer(currentSubmissionId, savePayload);
 
       // Update tracking after successful save in test cases
-      setLastSavedCode(codeToRun);
+      setLastSavedCode(answer);
       setHasUnsavedChanges(false);
 
       // Step 2: Prepare for test execution
@@ -725,9 +720,8 @@ const SolutionSection = ({
 
       // Step 3: Prepare test cases payload
       const testPayload = {
-        code: codeToRun, // FIXED
+        code: answer,
         language_id: getLanguageId(selectedLanguage),
-       
       };
 
       try {
@@ -822,14 +816,8 @@ const SolutionSection = ({
     const localSubmissionId = localStorage.getItem("submission_id");
     const currentSubmissionId = submissionId || localSubmissionId;
 
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-
     // Check if user has written meaningful code
-    if (!hasValidCode(codeToRun)) {
+    if (!hasValidCode(answer)) {
       showNotification('warning', 'Please write your solution code before saving!');
       setSaveStatus('error');
       return;
@@ -860,7 +848,7 @@ const SolutionSection = ({
         sectionId: question.section_id,
         questionId: question._id,
         type: 'coding',
-        codeSolution: codeToRun,
+        codeSolution: answer,
         programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
@@ -873,7 +861,7 @@ const SolutionSection = ({
       showNotification('success', 'Answer saved successfully!');
 
       // Update tracking after successful save
-      setLastSavedCode(codeToRun);
+      setLastSavedCode(answer);
       setHasUnsavedChanges(false);
 
       setTimeout(() => setSaveStatus('idle'), 3000);
@@ -905,14 +893,8 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
-
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
     // Check if user has written meaningful code
-    if (!hasValidCode(codeToRun)) {
+    if (!hasValidCode(answer)) {
       showNotification('warning', 'Please write your solution code before submitting!');
       return;
     }
@@ -998,7 +980,7 @@ const SolutionSection = ({
 
       const payload = {
         question_id: currentQuestionId,
-        code: codeToRun,
+        code: answer,
         language: selectedLanguage,
         language_id: getLanguageId(selectedLanguage),
         answer_id: answerId,

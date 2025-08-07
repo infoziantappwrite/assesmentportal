@@ -105,38 +105,48 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const res = await getMyAssignments();
-        const all = res.data || [];
+  let retryTimeout;
 
-        const formatted = all.map((assignment) => {
-          let displayStatus = assignment.status;
+  const fetchAssignments = async (isRetry = false) => {
+    try {
+      const res = await getMyAssignments();
+      const all = res.data || [];
 
-          if (assignment.submission_status === 'in_progress') {
-            displayStatus = 'active';
-          } else if (assignment.submission_status === 'submitted') {
-            displayStatus = 'completed';
-          } else if (assignment.status === 'scheduled') {
-            displayStatus = 'upcoming';
-          }
-
-          return {
-            ...assignment,
-            display_status: displayStatus,
-          };
-        });
-
-        setAssignments(formatted);
-      } catch (error) {
-        console.error('Error fetching assignments:', error);
-      } finally {
-        setLoading(false);
+      if (!isRetry && (!all || all.length === 0)) {
+        // Retry after 1 second if data is empty
+        retryTimeout = setTimeout(() => fetchAssignments(true), 1000);
+        return;
       }
-    };
 
-    fetchAssignments();
-  }, []);
+      const formatted = all.map((assignment) => {
+        let displayStatus = assignment.status;
+
+        if (assignment.submission_status === 'in_progress') {
+          displayStatus = 'active';
+        } else if (assignment.submission_status === 'submitted') {
+          displayStatus = 'completed';
+        } else if (assignment.status === 'scheduled') {
+          displayStatus = 'upcoming';
+        }
+
+        return {
+          ...assignment,
+          display_status: displayStatus,
+        };
+      });
+
+      setAssignments(formatted);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchAssignments();
+
+  return () => clearTimeout(retryTimeout); // Cleanup on unmount
+}, []);
 
   const filteredTests = assignments.filter(
     (test) => test.display_status === activeTab
