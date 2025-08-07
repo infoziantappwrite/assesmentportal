@@ -29,7 +29,7 @@ const Instruction = () => {
   const navigate = useNavigate();
 
   const isDevelopment = window.location.hostname === 'localhost';
-  const [countdown, setCountdown] = useState(30);
+  const [countdown, setCountdown] = useState(60);
   const [buttonEnabled, setButtonEnabled] = useState(isDevelopment);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
@@ -52,7 +52,7 @@ const Instruction = () => {
     const interval = setInterval(() => {
       const now = new Date();
       const elapsed = Math.floor((now - new Date(startTime)) / 1000);
-      const remaining = Math.max(0, 30 - elapsed);
+      const remaining = Math.max(0, 60 - elapsed);
       setCountdown(remaining);
 
       if (remaining <= 0) {
@@ -149,98 +149,93 @@ const Instruction = () => {
         </div>
       </header>
 
-      <div className="min-h-screen bg-gray-50 py-20 px-4 ">
-        <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-gray-300 shadow-md p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 py-20 px-4 sm:px-6 lg:px-8">
+  <div className="max-w-7xl mx-auto bg-white rounded-2xl border border-gray-300 shadow-md p-6 space-y-10">
 
-          {/* Header */}
-          <header className="text-center space-y-1  ">
-            <h1 className="text-2xl font-bold text-blue-900">{assessment.title}</h1>
-            <p className="text-gray-500 text-base">
-              {assessment.description || 'No description available.'}
-            </p>
-          </header>
-          {/* Configuration and Scoring */}
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Test Configuration */}
-            <div className=" col-span-2 bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Info className="w-5 h-5 text-green-500" /> General Instructions
-              </h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>• This test will open in full-screen mode.</li>
-                <li>• Do not reload or close the browser window during the test.</li>
-                <li>• The timer will continue even if you leave the test.</li>
-                <li>• Ensure a stable internet connection before beginning.</li>
-                <li>• Retakes are allowed only if explicitly enabled.</li>
-              </ul>
-            </div>
-            <div className="bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+    {/* Header */}
+    <header className="text-center space-y-2">
+      <h1 className="text-2xl sm:text-3xl font-bold text-blue-900">{assessment.title}</h1>
+      <p className="text-gray-500 text-sm sm:text-base">
+        {assessment.description || 'No description available.'}
+      </p>
+    </header>
 
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Timer className="w-5 h-5 text-blue-500" /> Test Configuration
-              </h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>Duration: {config.total_duration_minutes || 0} mins</li>
-                <li>Grace Period: {config.grace_period_minutes || 0} mins</li>
-                <li>Navigation: {config.allow_section_navigation ? 'Allowed' : 'Restricted'}</li>
-                <li>Shuffle Sections: {config.shuffle_sections ? 'Yes' : 'No'}</li>
-                <li>Retake Allowed: {config.allow_retake ? 'Yes' : 'No'}</li>
-
-                <li>Show Results Immediately: {config.show_results_immediately ? 'Yes' : 'No'}</li>
-              </ul>
-            </div>
-
-            {/* Scoring Rules */}
-            <div className="bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
-              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <Award className="w-5 h-5 text-purple-500" /> Scoring Rules
-              </h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>Total Marks: {scoring.total_marks || 0}</li>
-                <li>Passing Marks: {scoring.passing_marks || 0}</li>
-                <li>Negative Marking: {scoring.negative_marking ? 'Yes' : 'No'}</li>
-                <li>Deduction per Wrong: {scoring.negative_marks_per_wrong || 0}</li>
-              </ul>
-            </div>
-
-          </section>
-
-
-
-
-          {/* Proctoring Rules */}
-          <section className="space-y-4 bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" /> Proctoring Rules & Violations
-            </h2>
-            {/* Highlighted Note */}
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-center text-md font-medium shadow-sm">
-              ⚠ Note: Accumulating too many violations may automatically end your test and redirect you to the dashboard.
-            </div>
-
-            <div className="divide-y divide-gray-200 text-sm text-gray-600">
-              {[
-                { icon: LayoutPanelLeft, label: 'Tab Switching', text: 'Leaving this tab will be recorded as a violation.' },
-                { icon: MonitorX, label: 'Window Blur', text: 'Minimizing or losing focus on the browser window triggers a warning.' },
-                { icon: MousePointerClick, label: 'Right Click Disabled', text: 'Attempting to right-click will trigger a warning.' },
-                { icon: Copy, label: 'Copy Attempt', text: 'Copying content is prohibited.' },
-                { icon: ClipboardPaste, label: 'Paste Attempt', text: 'Pasting content is prohibited.' },
-                { icon: RefreshCw, label: 'Page Reload', text: 'Reloading or closing the page ends the test session.' },
-                { icon: Zap, label: 'Idle Timeout', text: 'Staying inactive for too long will be considered suspicious.' }
-              ].map((rule, index) => (
-                <div key={index} className="flex items-start gap-3 py-2">
-                  <rule.icon className="w-4 h-4 text-red-400 mt-1" />
-                  <span><strong>{rule.label}:</strong> {rule.text}</span>
-                </div>
-              ))}
-            </div>
-
-
-          </section>
-
-
-        </div>
+    {/* Configuration and Scoring */}
+    <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      {/* General Instructions */}
+      <div className="col-span-1 sm:col-span-2 bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <Info className="w-5 h-5 text-green-500" /> General Instructions
+        </h3>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li>• This test will open in full-screen mode.</li>
+          <li>• Do not reload or close the browser window during the test.</li>
+          <li>• The timer will continue even if you leave the test.</li>
+          <li>• Ensure a stable internet connection before beginning.</li>
+          <li>• Retakes are allowed only if explicitly enabled.</li>
+        </ul>
       </div>
+
+      {/* Test Configuration */}
+      <div className="bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <Timer className="w-5 h-5 text-blue-500" /> Test Configuration
+        </h3>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li>Duration: {config.total_duration_minutes || 0} mins</li>
+          <li>Grace Period: {config.grace_period_minutes || 0} mins</li>
+          <li>Navigation: {config.allow_section_navigation ? 'Allowed' : 'Restricted'}</li>
+          <li>Shuffle Sections: {config.shuffle_sections ? 'Yes' : 'No'}</li>
+          <li>Retake Allowed: {config.allow_retake ? 'Yes' : 'No'}</li>
+          <li>Show Results Immediately: {config.show_results_immediately ? 'Yes' : 'No'}</li>
+        </ul>
+      </div>
+
+      {/* Scoring Rules */}
+      <div className="bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <Award className="w-5 h-5 text-purple-500" /> Scoring Rules
+        </h3>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li>Total Marks: {scoring.total_marks || 0}</li>
+          <li>Passing Marks: {scoring.passing_marks || 0}</li>
+          <li>Negative Marking: {scoring.negative_marking ? 'Yes' : 'No'}</li>
+          <li>Deduction per Wrong: {scoring.negative_marks_per_wrong || 0}</li>
+        </ul>
+      </div>
+    </section>
+
+    {/* Proctoring Rules */}
+    <section className="space-y-4 bg-gray-50 rounded-xl p-5 border shadow border-gray-300">
+      <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+        <AlertTriangle className="w-5 h-5 text-red-500" /> Proctoring Rules & Violations
+      </h2>
+
+      <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-center text-sm sm:text-base font-medium shadow-sm">
+        ⚠ Note: Accumulating too many violations may automatically end your test and redirect you to the dashboard.
+      </div>
+
+      <div className="divide-y divide-gray-200 text-sm text-gray-600">
+        {[
+          { icon: LayoutPanelLeft, label: 'Tab Switching', text: 'Leaving this tab will be recorded as a violation.' },
+          { icon: MonitorX, label: 'Window Blur', text: 'Minimizing or losing focus on the browser window triggers a warning.' },
+          { icon: MousePointerClick, label: 'Right Click Disabled', text: 'Attempting to right-click will trigger a warning.' },
+          { icon: Copy, label: 'Copy Attempt', text: 'Copying content is prohibited.' },
+          { icon: ClipboardPaste, label: 'Paste Attempt', text: 'Pasting content is prohibited.' },
+          { icon: RefreshCw, label: 'Page Reload', text: 'Reloading or closing the page ends the test session.' },
+          { icon: Zap, label: 'Idle Timeout', text: 'Staying inactive for too long will be considered suspicious.' }
+        ].map((rule, index) => (
+          <div key={index} className="flex items-start gap-3 py-2">
+            <rule.icon className="w-4 h-4 text-red-400 mt-1" />
+            <span><strong>{rule.label}:</strong> {rule.text}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  </div>
+</div>
+
 
 
       {showExitConfirm && (
