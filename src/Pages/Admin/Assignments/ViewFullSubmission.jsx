@@ -290,6 +290,26 @@ const ViewFullSubmission = () => {
                 </div>
 
                 <div className="space-y-3">
+                  <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 text-sm">Total Questions</span>
+                      <span className="text-md font-bold text-yellow-600">{result?.total_questions}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 text-sm">Answered</span>
+                      <span className="text-md font-bold text-indigo-600">{result?.answered_questions}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-rose-50 rounded-lg p-3 border border-rose-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 text-sm">Unanswered</span>
+                      <span className="text-md font-bold text-rose-600">{result?.unanswered_questions}</span>
+                    </div>
+                  </div>
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 text-sm">Total Marks</span>
