@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { getAssignmentById, submitAllSubmissions } from '../../../Controllers/AssignmentControllers';
+import { getAssignmentById, } from '../../../Controllers/AssignmentControllers';
 import Loader from '../../../Components/Loader';
 import NotificationMessage from '../../../Components/NotificationMessage';
 import AssignmentActions from './AssignmentActions';
 import Submissions from './Submissions';
+import SubmitAllButton from './SubmitAllButton';
 
 const ConfirmationModal = ({ title, message, onConfirm, onCancel, confirmButtonColor = "red" }) => (
   <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -55,17 +56,7 @@ const ViewAssignment = () => {
   });
 
   // Helper function to show notifications
-  const showNotification = (type, message) => {
-    setNotificationState({ 
-      show: true, 
-      type, 
-      message 
-    });
-    // Auto-hide notification after 3 seconds
-    setTimeout(() => {
-      setNotificationState(prev => ({ ...prev, show: false }));
-    }, 3000);
-  };
+
 
   const fetchAssignment = async () => {
     try {
@@ -82,26 +73,9 @@ const ViewAssignment = () => {
     fetchAssignment();
   }, [id]);
 
-  const handleSubmitAll = async () => {
-    setModalData({ ...modalData, show: false }); // hide modal
-    try {
-      const res = await submitAllSubmissions(assignment._id);
-      showNotification('success', res.message || 'All submissions have been submitted.');
-    } catch (error) {
-      showNotification('error', error.response?.data?.message || 'Failed to submit all submissions.');
-    }
-  };
 
-  // Show confirmation modal before submitting all
-  const onRequestSubmitAll = () => {
-    setModalData({
-      show: true,
-      title: "Confirm Submit All",
-      message: "Are you sure you want to submit ALL active submissions? This action cannot be undone.",
-      onConfirm: () => handleSubmitAll(),
-      confirmButtonColor: "blue"
-    });
-  };
+
+
 
   const formatDateTimeUTC = (isoString) => {
     if (!isoString) return 'N/A';
@@ -173,12 +147,8 @@ const ViewAssignment = () => {
           <h1 className="text-2xl font-bold text-gray-800 mb-2 sm:mb-0">{title}</h1>
 
           <div className="flex items-center space-x-2">
-          <button
-            onClick={onRequestSubmitAll}
-            className="text-xs px-4 py-2 rounded-2xl bg-blue-600 text-white font-medium whitespace-nowrap cursor-pointer transition-colors hover:bg-blue-800"
-          >
-            Submit All
-          </button>
+         <SubmitAllButton assignmentId={assignment._id} onSuccess={fetchAssignment} />
+
 
             <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor}`}>
               {status.toUpperCase()}
