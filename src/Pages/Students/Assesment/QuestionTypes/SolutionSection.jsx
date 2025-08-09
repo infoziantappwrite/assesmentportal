@@ -40,6 +40,8 @@ const SolutionSection = ({
   testResults,
   submissionId
 }) => {
+  // Generate unique session identifier to prevent cross-student interference
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
   // console.log(judge0Results);
@@ -90,6 +92,11 @@ const SolutionSection = ({
   };
 
   const startExecutionTimeout = () => {
+    // Clear any existing timeout first to prevent multiple timers
+    if (executionTimeoutTimer) {
+      clearTimeout(executionTimeoutTimer);
+    }
+    
     const timeoutTimer = setTimeout(() => {
       // Auto-reset execution state after 60 seconds
       resetExecutionState();
@@ -144,20 +151,43 @@ const SolutionSection = ({
     };
   }, [executionTimer, executionTimeoutTimer]);
 
-  // Handle code changes
+  // Additional safety: Clear timeout when execution is no longer running
+  useEffect(() => {
+    if (!executionState.isRunning && executionTimeoutTimer) {
+      stopExecutionTimeout();
+    }
+  }, [executionState.isRunning, executionTimeoutTimer]);
+
+  // Handle code changes with protection against unwanted resets
   const handleCodeChange = (value) => {
     // Prevent erasing code if value is undefined or null
     if (value === undefined || value === null) {
       return;
     }
 
+    // Additional safety check - prevent template overwriting during multi-user scenarios
+    const currentTime = Date.now();
+    const timeSinceLastChange = currentTime - (window.lastCodeChangeTime || 0);
+    window.lastCodeChangeTime = currentTime;
+
+    // If changes are happening too rapidly (< 100ms), it might be a race condition
+    if (timeSinceLastChange < 100 && value && answer && value !== answer) {
+      // Only proceed if the new value is substantially different (not just a template)
+      const isNewValueTemplate = isTemplateCode(value);
+      const isCurrentValueTemplate = isTemplateCode(answer);
+      
+      if (isNewValueTemplate && !isCurrentValueTemplate) {
+        return;
+      }
+    }
+
     // Call the original onChange function
     onAnswerChange(question._id, value || '');
   };
 
-  // Helper functions for submission state persistence
+  // Helper functions for submission state persistence with session isolation
   const getSubmissionStateKey = (questionId, submissionId) => {
-    return `submission_state_${submissionId}_${questionId}`;
+    return `submission_state_${submissionId}_${questionId}_${sessionId}`;
   };
 
   const saveSubmissionState = (questionId, submissionId, isSubmitted) => {
@@ -287,17 +317,22 @@ const SolutionSection = ({
     }
   }, [question?._id, submissionId]);
 
-  // Track unsaved changes when code changes
+  // Track unsaved changes when code changes with debouncing
   useEffect(() => {
-    if (hasValidCode(answer)) {
-      const hasChanges = hasCodeChanged(answer);
-      setHasUnsavedChanges(hasChanges);
-    } else {
-      setHasUnsavedChanges(false);
-    }
+    // Add debouncing to prevent rapid state changes in multi-user scenarios
+    const debounceTimer = setTimeout(() => {
+      if (hasValidCode(answer)) {
+        const hasChanges = hasCodeChanged(answer);
+        setHasUnsavedChanges(hasChanges);
+      } else {
+        setHasUnsavedChanges(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(debounceTimer);
   }, [answer, lastSavedCode]);
 
-  // Track question changes
+  // Track question changes with enhanced protection
   useEffect(() => {
     const newQuestionId = question?._id;
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
@@ -338,7 +373,7 @@ const SolutionSection = ({
       setCurrentQuestionId(newQuestionId);
       setStartTime(Date.now()); // Set start time for the first question
     }
-  }, [question?._id, hasUnsavedChanges, answer]);
+  }, [question?._id, hasUnsavedChanges]); // Removed 'answer' dependency to prevent unnecessary resets
 
   // Add browser beforeunload warning for unsaved changes
   useEffect(() => {
@@ -359,8 +394,8 @@ const SolutionSection = ({
     const languageChanged = previousLanguage !== selectedLanguage;
 
     if (languageChanged && previousLanguage) {
-      // Check for unsaved changes before switching language
-      if (hasUnsavedChanges && hasValidCode(answer)) {
+      // Check for unsaved changes before switching language - use internal state only
+      if (hasUnsavedChanges) {
         // Show confirmation modal for language change
         showConfirmationModal('languageChange', {
           oldLanguage: previousLanguage,
@@ -371,6 +406,7 @@ const SolutionSection = ({
       setPreviousLanguage(selectedLanguage);
 
       // Only load template when language actually changes and user wants auto-reload
+      // AND only if there are no unsaved changes
       if (autoReloadTemplate && !hasUnsavedChanges) {
         const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
         onAnswerChange(question._id, template);
@@ -380,22 +416,26 @@ const SolutionSection = ({
     }
 
     // Only load template for completely empty editor (first time load)
-    if (!answer && !previousLanguage) {
+    if (!previousLanguage && selectedLanguage) {
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
       onAnswerChange(question._id, template);
       setLastSavedCode('');
       setHasUnsavedChanges(false);
       setPreviousLanguage(selectedLanguage);
     }
-  }, [selectedLanguage, question._id, onAnswerChange, autoReloadTemplate, previousLanguage, answer, hasUnsavedChanges]);
+  }, [selectedLanguage, question._id, autoReloadTemplate, previousLanguage, hasUnsavedChanges]); // Removed 'answer' from dependencies to prevent resets
 
-  // Ensure selected language is valid
+  // Ensure selected language is valid with protection against rapid changes
   useEffect(() => {
-    const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
-    if (!isValidLanguage && availableLanguages.length > 0) {
-      // console.log(`Selected language ${selectedLanguage} not found in available languages, switching to ${availableLanguages[0].language}`);
-      setSelectedLanguage(availableLanguages[0].language);
-    }
+    // Add debouncing to prevent rapid language changes
+    const debounceTimer = setTimeout(() => {
+      const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
+      if (!isValidLanguage && availableLanguages.length > 0) {
+        setSelectedLanguage(availableLanguages[0].language);
+      }
+    }, 200);
+
+    return () => clearTimeout(debounceTimer);
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
 
   // Clear results when question changes (backup cleanup)
@@ -416,36 +456,78 @@ const SolutionSection = ({
     }
   }, [question?._id, currentQuestionId]);
 
-  // Helper function to check if current code is just template code
+  // Helper function to check if current code is just template code - enhanced version
   const isTemplateCode = (code) => {
     if (!code || code.trim() === '') return true;
 
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-    const normalizedCode = code.replace(/\s+/g, ' ').trim();
-    const normalizedTemplate = template.replace(/\s+/g, ' ').trim();
+    
+    // Normalize both strings for comparison (remove extra whitespace, comments)
+    const normalizeCode = (str) => {
+      return str
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+        .replace(/\/\/.*$/gm, '') // Remove line comments
+        .replace(/#.*$/gm, '') // Remove Python comments
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+    };
 
-    return normalizedCode === normalizedTemplate;
+    const normalizedCode = normalizeCode(code);
+    const normalizedTemplate = normalizeCode(template);
+
+    // Check exact match
+    if (normalizedCode === normalizedTemplate) return true;
+
+    // Check if code is just template with minimal modifications (like extra newlines)
+    const codeLines = code.split('\n').filter(line => line.trim() !== '');
+    const templateLines = template.split('\n').filter(line => line.trim() !== '');
+    
+    // If code has significantly fewer lines than template, it might be incomplete
+    if (codeLines.length < templateLines.length * 0.8) return true;
+
+    // Check if most lines match the template
+    let matchingLines = 0;
+    templateLines.forEach(templateLine => {
+      const normalizedTemplateLine = normalizeCode(templateLine);
+      if (normalizedTemplateLine && codeLines.some(codeLine => 
+        normalizeCode(codeLine) === normalizedTemplateLine
+      )) {
+        matchingLines++;
+      }
+    });
+
+    // If more than 90% of template lines are found in the code, consider it template
+    return (matchingLines / templateLines.length) > 0.9;
   };
 
-  // Helper function to check if code has meaningful content
+  // Helper function to check if code has meaningful content - enhanced version
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
+    
+    // Always consider template code as valid starting point
     if (isTemplateCode(code)) return true;
 
     // Check if code has meaningful content beyond template
-    const lines = code.split('\n').filter(line => {
+    const meaningfulLines = code.split('\n').filter(line => {
       const trimmed = line.trim();
       return trimmed &&
         !trimmed.startsWith('//') &&
         !trimmed.startsWith('#') &&
         !trimmed.startsWith('/*') &&
         !trimmed.startsWith('*') &&
+        !trimmed.startsWith('*/') &&
         trimmed !== '{' &&
-        trimmed !== '}';
+        trimmed !== '}' &&
+        trimmed !== '(' &&
+        trimmed !== ')' &&
+        trimmed !== '[' &&
+        trimmed !== ']' &&
+        trimmed !== ';' &&
+        !trimmed.match(/^(import|from|using|include|package)\s/);
     });
 
-    // More lenient: allow any meaningful code beyond just basic structure
-    return lines.length > 1; // Just need more than one line of actual code
+    // Be more lenient: allow any meaningful code beyond basic structure
+    return meaningfulLines.length > 0; // Just need at least one meaningful line
   };
 
   // Handle language dropdown change
@@ -575,6 +657,10 @@ const SolutionSection = ({
         progress: 100,
         message: 'Execution completed!'
       });
+
+      // Clear timers immediately on successful completion
+      stopExecutionTimer();
+      stopExecutionTimeout();
 
       setTimeout(() => {
         resetExecutionState();
@@ -774,6 +860,10 @@ const SolutionSection = ({
             progress: 100,
             message: `Tests completed: ${passedCount}/${totalCount} passed`
           });
+
+          // Clear timers immediately on successful completion
+          stopExecutionTimer();
+          stopExecutionTimeout();
 
           setTimeout(() => {
             resetExecutionState();
@@ -1011,6 +1101,10 @@ const SolutionSection = ({
         progress: 100,
         message: 'Submission completed successfully!'
       });
+
+      // Clear timers immediately on successful completion
+      stopExecutionTimer();
+      stopExecutionTimeout();
 
       setTimeout(() => {
         resetExecutionState();
@@ -1363,6 +1457,7 @@ const SolutionSection = ({
             value={answer || LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || ''}
             onChange={handleCodeChange}
             theme="vs-dark"
+            key={`${question?._id}_${selectedLanguage}_${sessionId}`} // Add unique key to prevent cross-contamination
             options={{
               minimap: { enabled: true },
               fontSize: 14,
