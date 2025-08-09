@@ -38,7 +38,8 @@ const SolutionSection = ({
   setSelectedLanguage,
   fullDetails,
   testResults,
-  submissionId
+  submissionId,
+  refreshSectionStatus
 }) => {
   // Generate unique session identifier to prevent cross-student interference
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -886,6 +887,12 @@ const SolutionSection = ({
           }
 
           setSaveStatus('saved');
+          
+          // Refresh section status to update answer in parent component
+          if (refreshSectionStatus) {
+            refreshSectionStatus();
+          }
+          
           setTimeout(() => setSaveStatus('idle'), 3000);
         } else {
           resetExecutionState();
@@ -965,6 +972,11 @@ const SolutionSection = ({
       // Update tracking after successful save
       setLastSavedCode(codeToRun);
       setHasUnsavedChanges(false);
+
+      // Refresh section status to update answer in parent component
+      if (refreshSectionStatus) {
+        refreshSectionStatus();
+      }
 
       setTimeout(() => setSaveStatus('idle'), 3000);
 
