@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createSection } from "../../../Controllers/SectionController";
+import { useUser } from '../../../context/UserContext';
 
 const SECTION_TYPES = [
   { label: "Quiz", value: "quiz" },
@@ -11,6 +12,7 @@ const SECTION_TYPES = [
 
 const CreateSection = () => {
   const { id } = useParams(); // assessment ID
+  const { role } = useUser();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -96,7 +98,7 @@ const CreateSection = () => {
     try {
       await createSection(id, cleanData);
       setStatusMessage("✅ Section created successfully!");
-      setTimeout(() => navigate(`/admin/assessments/${id}`), 1000);
+      setTimeout(() => navigate(`/${role}/assessments/${id}`), 1000);
     } catch (error) {
       console.error("Failed to create section:", error.response?.data || error);
       setStatusMessage("❌ Error creating section. Check your data.");
