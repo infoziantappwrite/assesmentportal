@@ -94,14 +94,14 @@ const SinglePageViewSection = () => {
           </h1>
           <div className="flex gap-2">
             <button
-              onClick={() => navigate(`/admin/sections/${id}/questions`)}
+              onClick={() => navigate(`/${role}/sections/${id}/questions`)}
               className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
             >
               View All Questions
             </button>
 
             <button
-              onClick={() => navigate(`/admin/sections/edit/${id}`)}
+              onClick={() => navigate(`/${role}/sections/edit/${id}`)}
               className="px-4 py-2 text-sm font-medium bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg shadow"
               style={{ display: role === 'college_rep' ? 'none' : 'inline' }}
             >
@@ -112,8 +112,8 @@ const SinglePageViewSection = () => {
               onClick={() =>
                 navigate(
                   section.type === "code"
-                    ? `/admin/sections/${id}/add-question-code`
-                    : `/admin/sections/${id}/add-question`
+                    ? `/${role}/sections/${id}/add-question-code`
+                    : `/${role}/sections/${id}/add-question`
                 )
               }
               className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
@@ -196,8 +196,8 @@ const SinglePageViewSection = () => {
             <button
               onClick={() => navigate(
                   section.type === "code"
-                    ? `/admin/sections/${id}/add-question-code`
-                    : `/admin/sections/${id}/add-question`
+                    ? `/${role}/sections/${id}/add-question-code`
+                    : `/${role}/sections/${id}/add-question`
                 )}
               className="underline font-medium hover:text-yellow-900"
             >
