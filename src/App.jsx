@@ -222,7 +222,7 @@ const App = () => {
           <Route path="/trainer/students/create" element={<CreateUser />} />
           <Route path="/trainer/students/:id" element={<UserDetails />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
-          <Route path="/trainer/reports" element={<div>Trainer Reports</div>} />
+          <Route path="/trainer/reports" element={<ReportHistoryPage />} />
           <Route path="/trainer/profile" element={<div>Trainer Profile</div>} />
           <Route path="/trainer/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
           <Route path="/trainer/students/:studentId" element={<StudentDetails />} />
