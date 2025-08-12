@@ -5,11 +5,14 @@ import { getallAssesment } from "../../../Controllers/AssesmentController";
 import SelectCollegeModal from "../../Admin/User/SelectCollegeModal";
 import SelectGroupModal from "../../Admin/User/SelectGroupModal";
 import SelectStudentModal from "../../Admin/User/SelectStudentModal";
-import {ClipboardList,Users,CalendarDays} from "lucide-react"
+import {ClipboardList,Users,CalendarDays} from "lucide-react";
+import { useUser } from "../../../context/UserContext";
+import { toast } from "react-toastify";
 
 const EditAssignment = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { role } = useUser();
     const [assessments, setAssessments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
@@ -169,14 +172,13 @@ useEffect(() => {
         try {
 
             await updateAssignment(id, payload);
-            setMessage("Assignment updated successfully!.. Redirecting...");
+            toast.success("Assignment updated!.. Redirecting...");
             setTimeout(() => {
-                setMessage("");
-                navigate(`/admin/assignments/${id}`);
+                navigate(`/${role}/assignments/${id}`);
             }, 2000);
         } catch (err) {
             console.error(err);
-            setMessage("Failed to update assignment.");
+            toast.error("Failed to update assignment.");
         } finally {
             setLoading(false);
         }
