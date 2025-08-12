@@ -199,6 +199,9 @@ const App = () => {
           <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
           <Route path="/trainer/groups" element={<ManageGroup />} />
           <Route path="/trainer/groups/:id" element={<ViewGroup />} />
+          <Route path="/trainer/users" element={<AllUsers />} />
+          <Route path="/trainer/users/create" element={<CreateUser />} />
+          <Route path="/trainer/users/:id" element={<UserDetails />} />
           <Route path="/trainer/groups/edit/:id" element={<EditGroup />} />
           <Route path="/trainer/assessments" element={<ManageAssesment />} />
           <Route path="/trainer/assessments/create" element={<CreateAssesment />} />
