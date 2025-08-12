@@ -207,6 +207,7 @@ const App = () => {
           <Route path="/trainer/assessments/:id/sections" element={<ViewSections />} />
           <Route path="/trainer/assessments/:id" element={<ViewAssesment />} />
           <Route path="/trainer/create-test" element={<CreateTest />} />
+          <Route path="/trainer/assignments/create" element={<CreateAssignments />} />
           <Route path="/trainer/assignments" element={<ManageAssignments />} />
           <Route path="/trainer/assignments/:id" element={<ViewAssignment />} />
           <Route path="/trainer/assignments/edit/:id" element={<EditAssignment />} />

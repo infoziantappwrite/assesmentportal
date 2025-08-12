@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getQuestionsBySection } from '../../../Controllers/QuestionController';
 import { Eye, ArrowLeft } from 'lucide-react';
 import Table from '../../../Components/Table';
+import { useUser } from '../../../context/UserContext';
 
 const ViewQuestionsInSection = () => {
   const { id } = useParams(); // Section ID
   const navigate = useNavigate();
+  const { role } = useUser();
   const [questions, setQuestions] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -56,8 +58,8 @@ const ViewQuestionsInSection = () => {
           onClick={() =>
             navigate(
               row.type === "coding"
-                ? `/admin/sections/question/coding/${row._id}`
-                : `/admin/sections/question/${row._id}`
+                ? `/${role}/sections/question/coding/${row._id}`
+                : `/${role}/sections/question/${row._id}`
             )
           }
           className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
