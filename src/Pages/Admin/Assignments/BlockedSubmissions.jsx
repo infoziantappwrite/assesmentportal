@@ -3,7 +3,8 @@ import { getSubmissions } from "../../../Controllers/AssignmentControllers";
 import { unblockStudent, unblockAllStudents } from "../../../Controllers/ProctoringController";
 import NotificationMessage from "../../../Components/NotificationMessage";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw } from "lucide-react"; // or from 'react-icons/lucide'
+import { RefreshCw } from "lucide-react"; 
+import { toast } from "react-toastify";
 
 
 const BlockedSubmissions = ({ assignmentId }) => {
@@ -43,12 +44,8 @@ const BlockedSubmissions = ({ assignmentId }) => {
                 total: data.statistics?.total || 0,
             }));
         } catch {
-            setNotification({
-                show: true,
-                type: "error",
-                message: "Failed to fetch blocked submissions.",
-            });
-        } 
+            toast.error("Failed to fetch blocked submissions.");
+        }
     };
 
     useEffect(() => {
@@ -68,18 +65,10 @@ const BlockedSubmissions = ({ assignmentId }) => {
         setModalData({ ...modalData, show: false });
         try {
             const res = await unblockStudent(studentId, assignmentId);
-            setNotification({
-                show: true,
-                type: "success",
-                message: res.message || "Student unblocked successfully.",
-            });
+            toast.success(res.message || "Student unblocked successfully.");
             fetchBlocked();
         } catch (error) {
-            setNotification({
-                show: true,
-                type: "error",
-                message: error.response?.data?.message || "Failed to unblock student.",
-            });
+            toast.error(error.response?.data?.message || "Failed to unblock student.");
         }
     };
     const handleRefresh = async () => {
@@ -96,18 +85,11 @@ const BlockedSubmissions = ({ assignmentId }) => {
         setModalData({ ...modalData, show: false });
         try {
             const res = await unblockAllStudents(assignmentId);
-            setNotification({
-                show: true,
-                type: "success",
-                message: res.message || "All students unblocked successfully.",
-            });
+            toast.success(res.message || "All students unblocked successfully.");
             fetchBlocked();
-        } catch (error) {
-            setNotification({
-                show: true,
-                type: "error",
-                message: error.response?.data?.message || "Failed to unblock all students.",
-            });
+        } 
+        catch (error) {
+            toast.error(error.response?.data?.message || "Failed to unblock all students.");
         }
     };
 
@@ -125,15 +107,6 @@ const BlockedSubmissions = ({ assignmentId }) => {
 
     return (
         <div className="bg-gradient-to-br from-red-50 to-white rounded-xl border border-red-200 shadow-lg">
-            {/* Notification */}
-            {notification.show && (
-                <NotificationMessage
-                    type={notification.type}
-                    message={notification.message}
-                    onClose={() => setNotification({ ...notification, show: false })}
-                />
-            )}
-
             {/* Header */}
             <div className="w-full border-b border-gray-300 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center space-x-3 mb-3 sm:mb-0">

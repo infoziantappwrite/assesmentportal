@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { submitAllSubmissions } from '../../../Controllers/AssignmentControllers';
-import NotificationMessage from '../../../Components/NotificationMessage';
+import { toast } from 'react-toastify';
 
 const ConfirmationModal = ({ title, message, onConfirm, onCancel, confirmButtonColor = "red" }) => (
   <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -45,10 +45,10 @@ const SubmitAllButton = ({ assignmentId, onSuccess }) => {
     setModalOpen(false);
     try {
       const res = await submitAllSubmissions(assignmentId);
-      showNotification('success', res.message || 'All submissions submitted.');
+      toast.success(res.message || 'All submissions submitted');
       if (onSuccess) onSuccess();
     } catch (error) {
-      showNotification('error', error.response?.data?.message || 'Failed to submit all.');
+      toast.error(error.response?.data?.message || 'Failed to submit all');
     }
   };
 
@@ -68,15 +68,6 @@ const SubmitAllButton = ({ assignmentId, onSuccess }) => {
           onConfirm={handleConfirmSubmitAll}
           onCancel={() => setModalOpen(false)}
           confirmButtonColor="blue"
-        />
-      )}
-
-      {notification.show && (
-        <NotificationMessage
-          show={notification.show}
-          type={notification.type}
-          message={notification.message}
-          onClose={() => setNotification({ ...notification, show: false })}
         />
       )}
     </>
