@@ -3,6 +3,8 @@ import { createAssesment } from "../../../Controllers/AssesmentController";
 import { ClipboardList, Settings, BarChart2, SlidersHorizontal } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useUser } from '../../../context/UserContext';
+import { toast } from "react-toastify";
+
 
 const CreateAssessment = () => {
    const navigate = useNavigate(); // Add this
@@ -31,7 +33,6 @@ const CreateAssessment = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const { role } = useUser();
 
   const handleChange = (e) => {
@@ -68,29 +69,25 @@ const CreateAssessment = () => {
     }
   };
 
-    const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-    try {
-      const result = await createAssesment(formData);
-      const newId = result?.data?._id || result?.id; // Adjust based on your API's response
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  try {
+    const result = await createAssesment(formData);     
+    const newId = result?.data?.assessment?._id || null;
 
-      setMessage("Assessment created successfully!");
-      setTimeout(() => setMessage(""), 3000);
+    toast.success("Assessment created successfully! 🎉");
 
-      // Navigate to the new assessment's view page
-      if (newId) {
-        navigate(`/${role}/assessments/${newId}`);
-      }
-
-    } catch (err) {
-      setMessage("Failed to create assessment.");
-      setTimeout(() => setMessage(""), 3000);
-      console.error(err);
+    if (newId) {
+      navigate(`/${role}/assessments/${newId}`);
     }
-    setLoading(false);
-  };
+  } catch (err) {
+    toast.error("Failed to create assessment. ❌");
+    console.error(err);
+  }
+  setLoading(false);
+};
+
 
 
   return (
@@ -340,18 +337,6 @@ const CreateAssessment = () => {
     </button>
   </div>
 </div>
-
-{/* Feedback Message */}
-{message && (
-  <p
-    className={`mt-4 text-sm text-center ${message.toLowerCase().includes("successfully")
-      ? "text-green-600"
-      : "text-red-600"
-      }`}
-  >
-    {message}
-  </p>
-)}
 
         </form>
       </div>
