@@ -14,12 +14,12 @@ import {
   downloadReport
 } from "../../../Controllers/reportsController";
 import BlockedSubmissions from "./BlockedSubmissions";
+import { useUser } from '../../../context/UserContext';
 
 // Notification Modal for Success/Error
 const NotificationModal = ({ title, message, onClose }) => (
-  <div className="fixed inset-0 flex items-center justify-center z-50">
-    <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm"></div>
-    <div className="relative bg-white rounded-lg shadow-lg p-6 w-80 max-w-full z-10">
+  <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/40">
+    <div className="bg-white rounded-lg shadow-lg p-6 w-80 max-w-full">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
       <p className="mb-5 text-gray-700">{message}</p>
       <div className="flex justify-end">
@@ -40,7 +40,8 @@ const SubmissionItem = ({
   navigate,
   selectedFormats,
   setSelectedFormats,
-  handleDownloadReport
+  handleDownloadReport,
+  role
 }) => (
   <div className="px-5 py-4 hover:bg-gradient-to-br from-purple-50 to-indigo-50 transition-all duration-200">
     <div className="flex justify-between items-start mb-2">
@@ -105,13 +106,13 @@ const SubmissionItem = ({
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 items-center">
         <button
-          onClick={() => navigate(`/submissions/${s._id}`)}
+          onClick={() => navigate(`/${role}/submissions/${s._id}`)}
           className="text-xs px-3 py-1.5 bg-white border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition-colors font-medium"
         >
           View Full Submission
         </button>
         <button
-          onClick={() => navigate(`/admin/proctoring_report/${s._id}`)}
+          onClick={() => navigate(`/${role}/proctoring_report/${s._id}`)}
           className="text-xs px-3 py-1.5 bg-white border border-red-600 text-red-600 rounded-md hover:bg-purple-50 transition-colors font-medium"
         >
           View Proctoring Details
@@ -162,6 +163,7 @@ const Submissions = () => {
     title: "",
     message: ""
   });
+  const { role } = useUser();
 
   // Fetch Submissions
   const fetchSubmissions = () => {
@@ -253,7 +255,7 @@ const Submissions = () => {
       setNotification({
         show: true,
         title: "Error",
-        message: "Failed to generate report. Please try again."
+        message: "Permission Denied. Please try again."
       });
     }
   };
@@ -323,6 +325,7 @@ const Submissions = () => {
               selectedFormats={selectedFormats}
               setSelectedFormats={setSelectedFormats}
               handleDownloadReport={handleDownloadReport}
+              role={role}
             />
           ))}
         </div>
