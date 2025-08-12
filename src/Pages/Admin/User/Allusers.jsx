@@ -169,7 +169,7 @@ const columns = [
 
           {/* Create Button */}
           <button
-            onClick={() => navigate('/admin/users/create')}
+            onClick={() => navigate(`/${role}/users/create`)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg bg-green-600 text-white hover:bg-green-700 text-sm whitespace-nowrap"
           >
             <UserPlus className="w-4 h-4" />
