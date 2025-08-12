@@ -165,7 +165,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
       <div className="flex gap-2 flex-wrap items-center">
         <button
           className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg shadow-md flex items-center gap-2 text-sm transition-all"
-          onClick={() => navigate("/admin/assignments")}
+          onClick={() => navigate(`/${userRole}/assignments`)}
         >
           <ArrowLeft size={16} /> Back
         </button>
@@ -181,7 +181,7 @@ const AssignmentActions = ({ id, role = "admin", fetchAssignment }) => {
 
         {userRole !== 'college_rep' && (
         <button
-          onClick={() => navigate(`/${role}/assignments/edit/${id}`)}
+          onClick={() => navigate(`/${userRole}/assignments/edit/${id}`)}
           className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm"
         >
           <Pencil className="w-4 h-4" />

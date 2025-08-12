@@ -180,7 +180,7 @@ const App = () => {
           <Route path="/admin/assignments" element={<ManageAssignments />} />
           <Route path="/admin/assignments/:id" element={<ViewAssignment />} />
           <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
-          <Route path="/submissions/:submissionId" element={<ViewFullSubmission />} />
+          <Route path="/admin/submissions/:submissionId" element={<ViewFullSubmission />} />
           <Route path="/reports/history" element={<ReportHistoryPage />} />
           <Route path='/admin/results' element={<Results/>}/>
           <Route path="/admin/result/:id" element={<ViewResult />} />
@@ -219,6 +219,7 @@ const App = () => {
           <Route path="/trainer/sections/question/coding/:id" element={<ViewCodingQuestionsInSection />} />
           <Route path="/trainer/sections/question/:id/" element={<ViewSingleQuestion />} />
           <Route path="/trainer/submissions" element={<TrainerCandidateList />} />
+          <Route path="/trainer/submissions/:submissionId" element={<ViewFullSubmission />} />
           <Route path="/trainer/students" element={<AllUsers />} />
           <Route path="/trainer/students/create" element={<CreateUser />} />
           <Route path="/trainer/students/:id" element={<UserDetails />} />
@@ -229,6 +230,7 @@ const App = () => {
           <Route path="/trainer/students/:studentId" element={<StudentDetails />} />
           <Route path='/trainer/results' element={<Results/>}/>
           <Route path="/trainer/result/:id" element={<ViewResult />} />
+          <Route path="/trainer/proctoring_report/:id" element={<ProctoringReport />} />
         </Route>
       </Route>
 
