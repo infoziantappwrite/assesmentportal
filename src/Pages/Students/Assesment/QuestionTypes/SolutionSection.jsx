@@ -1807,8 +1807,7 @@ const SolutionSection = ({
             </div>
 
             {/* Show output for Run Code without comparison */}
-            {lastActionType === 'runCode' &&
-              judge0Results?.stdout && (
+            {lastActionType === 'runCode' && judge0Results && (
                 <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
                     <Terminal className="w-5 h-5 text-blue-600" />
@@ -1821,7 +1820,13 @@ const SolutionSection = ({
                       <div className="flex-1">
                         <span className="font-semibold">Output:</span>
                         <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
-                          {judge0Results.stdout}
+                          {judge0Results.stdout || judge0Results.stdout === '' ? 
+                            (judge0Results.stdout.trim() === '' ? 
+                              "No output produced\n\n Your program ran successfully but didn't print anything.\n   Try adding print statements to see output." : 
+                              judge0Results.stdout
+                            ) : 
+                            "No output available"
+                          }
                         </pre>
                       </div>
                     </div>
