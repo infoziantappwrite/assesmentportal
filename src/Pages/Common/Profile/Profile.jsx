@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Lock,
   User as UserIcon,
@@ -14,10 +14,44 @@ import ChangePassword from './ChangePassword';
 import Header from '../../../Components/Header/Header';
 import Loader from '../../../Components/Loader';
 import { useUser } from '../../../context/UserContext';
+import { getUser } from '../../../Controllers/authController';
 
 const Profile = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const { loading, user } = useUser();
+  const [profileUser, setProfileUser] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user: contextUser } = useUser(); // Fallback to context user
+
+  // Fetch fresh user data on component mount
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        setProfileLoading(true);
+        setError(null);
+        const userData = await getUser();
+        
+        if (userData) {
+          setProfileUser(userData);
+        } else {
+          // If API call fails, fallback to context user
+          setProfileUser(contextUser);
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+        setError('Failed to load profile data');
+        // Fallback to context user if available
+        setProfileUser(contextUser);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [contextUser]);
+
+  // Use profileUser if available, otherwise fallback to contextUser
+  const user = profileUser || contextUser;
 
   const getInitials = (name) => {
     if (!name) return '';
@@ -28,8 +62,49 @@ const Profile = () => {
       .toUpperCase();
   };
 
-  if (loading || !user) {
+  // Show loader while fetching profile data
+  if (profileLoading) {
     return <Loader />;
+  }
+
+  // Show error message if profile data couldn't be loaded
+  if (error && !user) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-gradient-to-br from-blue-100 via-slate-100 to-teal-100 py-8 px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+            <div className="text-red-600 mb-4">
+              <UserIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Profile</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Show message if no user data is available
+  if (!user) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-gradient-to-br from-blue-100 via-slate-100 to-teal-100 py-8 px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+            <UserIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">No Profile Data</h2>
+            <p className="text-gray-600">Unable to load your profile information.</p>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
@@ -76,7 +151,7 @@ const Profile = () => {
 
               {/* Assigned Colleges */}
               <CardSection title="Assigned Colleges" icon={<Building2 size={18} />}>
-                {user.assigned_colleges.length > 0 ? (
+                {user.assigned_colleges && user.assigned_colleges.length > 0 ? (
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     {user.assigned_colleges.map((college, i) => (
                       <li key={i} className="text-gray-700">
@@ -91,7 +166,7 @@ const Profile = () => {
 
               {/* Assigned Groups */}
               <CardSection title="Assigned Groups" icon={<Users size={18} />}>
-                {user.assigned_groups.length > 0 ? (
+                {user.assigned_groups && user.assigned_groups.length > 0 ? (
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     {user.assigned_groups.map((group) => (
                       <li key={group._id} className="text-gray-700">
