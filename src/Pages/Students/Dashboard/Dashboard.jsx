@@ -263,13 +263,13 @@ const Dashboard = () => {
                   {test.display_status === 'completed' && (
                     <div className="pt-2">
                       <button
-                        onClick={() => navigate('/submissions', { state: { test } })}
-                        disabled
-                        className=" w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition flex items-center justify-center gap-2"
+                        onClick={() => navigate(`/submissions/${test.submission_id}`)}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition flex items-center justify-center gap-2"
                       >
                         <FileCheck2 className="w-4 h-4" />
                         View Submission
                       </button>
+
                     </div>
                   )}
 
