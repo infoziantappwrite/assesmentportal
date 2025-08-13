@@ -76,7 +76,7 @@ const Profile = () => {
 
               {/* Assigned Colleges */}
               <CardSection title="Assigned Colleges" icon={<Building2 size={18} />}>
-                {user.assigned_colleges.length > 0 ? (
+                {user.assigned_colleges && user.assigned_colleges.length > 0 ? (
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     {user.assigned_colleges.map((college, i) => (
                       <li key={i} className="text-gray-700">
@@ -91,7 +91,7 @@ const Profile = () => {
 
               {/* Assigned Groups */}
               <CardSection title="Assigned Groups" icon={<Users size={18} />}>
-                {user.assigned_groups.length > 0 ? (
+                {user.assigned_groups && user.assigned_groups.length > 0 ? (
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     {user.assigned_groups.map((group) => (
                       <li key={group._id} className="text-gray-700">
