@@ -53,6 +53,11 @@ const Header = () => {
     navigate(role === 'candidate' ? '/dashboard' : `/${role}/dashboard`);
   };
 
+  const handleLogoClick = () => {
+    // Navigate to dashboard based on role - students go to /dashboard, others go to /{role}/dashboard
+    navigate(role === 'candidate' ? '/dashboard' : `/${role}/dashboard`);
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -76,7 +81,9 @@ const Header = () => {
     <header className="w-full border-b border-gray-300 shadow-lg py-3 px-4 flex items-center justify-between md:px-6">
       {/* Logo */}
       <div className="flex items-center gap-4">
-        <img src="/Logo.png" alt="Logo" className="h-8 md:h-10 w-auto" />
+        <button onClick={handleLogoClick} className="focus:outline-none hover:opacity-80 transition-opacity">
+          <img src="/Logo.png" alt="Logo" className="h-8 md:h-10 w-auto cursor-pointer" />
+        </button>
       </div>
 
       {/* Profile Dropdown */}
