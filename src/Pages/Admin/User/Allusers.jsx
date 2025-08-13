@@ -131,8 +131,7 @@ const columns = [
         {/* Title Section */}
         <h2 className="text-lg font-semibold flex items-center gap-2 text-blue-500">
           <Users className="w-5 h-5 text-blue-500" />
-          Manage Users
-
+          {role === 'trainer' ? 'Manage Students' : 'Manage Users'}
         </h2>
 
         {/* Controls Section */}
