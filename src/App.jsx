@@ -17,6 +17,7 @@ import Instruction from './Pages/Students/Assesment/Instruction';
 import ThankYou from "./Pages/Students/Assesment/ThankYou";
 import SubmissionList from './Pages/Students/Dashboard/SubmissionList';
 import Result from './Pages/Students/Assesment/Result';
+import ViewFullSubmissionForStudent from "./Pages/Students/Dashboard/ViewFullSubmissionForStudent"
 
 //import Trainer routes
 import TrainerDashboard from "./Pages/Trainer/TrainerDashboard"
@@ -104,7 +105,7 @@ const App = () => {
         <Route path="/thank-you" element={<ThankYou/>} />
         <Route path="/result" element={<Result />} />
         <Route path="/submissions" element={<SubmissionList/>} />
-        <Route path="/submissions/:submissionId" element={<ViewFullSubmission />} />
+        <Route path="/submissions/:submissionId" element={<ViewFullSubmissionForStudent />} />
         
 
 

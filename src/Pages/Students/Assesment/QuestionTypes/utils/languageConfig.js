@@ -1,7 +1,7 @@
 //utils/languageConfig.js
 
 export const DEFAULT_SUPPORTED_LANGUAGES = [
-  { language: 'javascript', name: 'JavaScript (Node.js)' },
+  { language: 'javascript', name: 'JavaScript' },
   { language: 'python', name: 'Python 3' },
   { language: 'java', name: 'Java 11+' },
   { language: 'cpp', name: 'C++ (GCC)' },
