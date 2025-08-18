@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 
 
 const CreateAssessment = () => {
-   const navigate = useNavigate(); // Add this
+  const navigate = useNavigate(); // Add this
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -69,24 +69,27 @@ const CreateAssessment = () => {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  try {
-    const result = await createAssesment(formData);     
-    const newId = result?.data?.assessment?._id || null;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    toast.success("Assessment created successfully! 🎉");
+    if (loading) return;
+    setLoading(true);
+    
+    try {
+      const result = await createAssesment(formData);
+      const newId = result?.data?.assessment?._id || null;
 
-    if (newId) {
-      navigate(`/${role}/assessments/${newId}`);
+      toast.success("Assessment created successfully! 🎉");
+
+      if (newId) {
+        navigate(`/${role}/assessments/${newId}`);
+      }
+    } catch (err) {
+      toast.error("Failed to create assessment. ❌");
+      console.error(err);
     }
-  } catch (err) {
-    toast.error("Failed to create assessment. ❌");
-    console.error(err);
-  }
-  setLoading(false);
-};
+    setLoading(false);
+  };
 
 
 
@@ -281,62 +284,62 @@ const handleSubmit = async (e) => {
           </div>
 
           {/* SUBMIT BUTTON */}
-         {/* ACTION BUTTONS */}
-<div className="flex justify-between items-center mt-8 flex-wrap">
-  {/* Go Back (Left) */}
-  <button
-    type="button"
-    onClick={() => window.history.back()}
-    className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
-  >
-    ← Go Back
-  </button>
+          {/* ACTION BUTTONS */}
+          <div className="flex justify-between items-center mt-8 flex-wrap">
+            {/* Go Back (Left) */}
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition"
+            >
+              ← Go Back
+            </button>
 
-  {/* Clear + Submit (Right) */}
-  <div className="flex gap-4">
-    {/* Clear Button */}
-    <button
-      type="button"
-      onClick={() =>
-        setFormData({
-          title: "",
-          description: "",
-          configuration: {
-            total_duration_minutes: 60,
-            grace_period_minutes: 0,
-            shuffle_sections: false,
-            allow_section_navigation: true,
-            show_results_immediately: false,
-            allow_retake: false,
-            max_attempts: 1,
-          },
-          scoring: {
-            total_marks: 100,
-            passing_marks: 40,
-            negative_marking: false,
-            negative_marks_per_wrong: 0,
-          },
-          difficulty_level: "mixed",
-          is_active: true,
-          is_template: false,
-          is_shareable: false,
-        })
-      }
-      className="bg-yellow-400 text-white px-6 py-2 rounded-lg hover:bg-yellow-500 transition"
-    >
-      Clear
-    </button>
+            {/* Clear + Submit (Right) */}
+            <div className="flex gap-4">
+              {/* Clear Button */}
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    title: "",
+                    description: "",
+                    configuration: {
+                      total_duration_minutes: 60,
+                      grace_period_minutes: 0,
+                      shuffle_sections: false,
+                      allow_section_navigation: true,
+                      show_results_immediately: false,
+                      allow_retake: false,
+                      max_attempts: 1,
+                    },
+                    scoring: {
+                      total_marks: 100,
+                      passing_marks: 40,
+                      negative_marking: false,
+                      negative_marks_per_wrong: 0,
+                    },
+                    difficulty_level: "mixed",
+                    is_active: true,
+                    is_template: false,
+                    is_shareable: false,
+                  })
+                }
+                className="bg-yellow-400 text-white px-6 py-2 rounded-lg hover:bg-yellow-500 transition"
+              >
+                Clear
+              </button>
 
-    {/* Submit Button */}
-    <button
-      type="submit"
-      disabled={loading}
-      className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-60"
-    >
-      {loading ? "Creating..." : "Create Assessment"}
-    </button>
-  </div>
-</div>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-60"
+              >
+                {loading ? "Creating..." : "Create Assessment"}
+              </button>
+            </div>
+          </div>
 
         </form>
       </div>
