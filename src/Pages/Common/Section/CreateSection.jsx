@@ -81,6 +81,9 @@ const CreateSection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (loading) return; // 🚫 Prevent multiple clicks
+  setLoading(true);
+
     if (!formData.title || !formData.type || !formData.sequence_order) {
       toast.error("❌ Please fill all required fields."); // ✅ Error toast
       return;
@@ -294,7 +297,7 @@ const CreateSection = () => {
             type="submit"
             className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md shadow-sm transition"
           >
-            Create Section
+            {loading ? "Creating..." : "Create Section"}
           </button>
         </div>
       </form>
