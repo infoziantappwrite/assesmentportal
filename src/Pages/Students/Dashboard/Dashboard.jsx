@@ -263,13 +263,20 @@ const Dashboard = () => {
                   {test.display_status === 'completed' && (
                     <div className="pt-2">
                       <button
-                        onClick={() => navigate(`/submissions/${test.submission_id}`)}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-md transition flex items-center justify-center gap-2"
+                        onClick={() => {
+                          if (test.settings.show_results_to_students) {
+                            navigate(`/submissions/${test.submission_id}`);
+                          }
+                        }}
+                        disabled={!test.settings.show_results_to_students}
+                        className={`w-full text-white font-medium py-2 px-4 rounded-md transition flex items-center justify-center gap-2
+        ${test.settings.show_results_to_students
+                            ? "bg-purple-600 hover:bg-purple-700 cursor-pointer"
+                            : "bg-gray-400 cursor-not-allowed"}`}
                       >
                         <FileCheck2 className="w-4 h-4" />
                         View Submission
                       </button>
-
                     </div>
                   )}
 
