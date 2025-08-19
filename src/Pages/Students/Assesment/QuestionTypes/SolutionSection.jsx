@@ -826,7 +826,7 @@ const SolutionSection = ({
 
       // Update tracking after successful save in test cases
       setLastSavedCode(codeToRun);
-      setHasUnsavedChanges(false);
+      // REMOVED: setHasUnsavedChanges(false); - this was causing the "failed to save answer" error
 
       // Step 2: Prepare for test execution
       setTimeout(() => {
