@@ -106,11 +106,21 @@ const SubmissionItem = ({
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 items-center">
         <button
-          onClick={() => navigate(`/${role}/submissions/${s._id}`)}
-          className="text-xs px-3 py-1.5 bg-white border border-purple-600 text-purple-600 rounded-md hover:bg-purple-50 transition-colors font-medium"
-        >
-          View Full Submission
-        </button>
+    onClick={() => {
+      if (s.status !== "in_progress" && s.status !== "blocked") {
+        navigate(`/${role}/submissions/${s._id}`);
+      }
+    }}
+    disabled={s.status === "in_progress" || s.status === "blocked"}
+    className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors
+      ${(s.status === "in_progress" || s.status === "blocked")
+        ? "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-300"
+        : "bg-white border border-purple-600 text-purple-600 hover:bg-purple-50 cursor-pointer"
+      }`}
+  >
+    View Full Submission
+  </button>
+
         <button
           onClick={() => navigate(`/${role}/proctoring_report/${s._id}`)}
           className="text-xs px-3 py-1.5 bg-white border border-red-600 text-red-600 rounded-md hover:bg-purple-50 transition-colors font-medium"
