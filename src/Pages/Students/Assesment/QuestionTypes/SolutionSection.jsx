@@ -1,39 +1,3 @@
-/*
- * SolutionSection.jsx - Code Editor Component with Template Reset Protection
- * 
- * CORRECT SOLUTION FOR TEMPLATE RESET ISSUE:
- * 
- * 1. ✅ KEEPS Default Template Loading:
- *    - Monaco Editor loads template on initial render
- *    - Templates load when languages are changed
- *    - Templates load on question changes
- * 
- * 2. ❌ PREVENTS Unwanted Resets:
- *    - Enhanced template detection (95% match threshold)
- *    - Session-based protection against race conditions
- *    - Debounced state changes prevent rapid resets
- *    - Never overwrites meaningful user code while typing
- * 
- * 3. 🔧 SIMPLIFIED Reset Controls:
- *    - Removed "Reload Template" button (as requested)
- *    - Only "Reset Code" button for manual template loading
- *    - Clear notification when code is reset
- * 
- * 4. 🛡️ PROTECTION Mechanisms:
- *    - Enhanced session isolation with unique session keys
- *    - Better template vs. user code detection (stricter threshold)
- *    - Multiple layers of protection against overwrites
- *    - Confirmation modals for destructive language changes
- * 
- * 5. ⚡ EXECUTION & Save Features:
- *    - Fixed 60-second timeout notifications
- *    - Proper execution state cleanup
- *    - Enhanced Save Answer persistence
- *    - Integration with refreshSectionStatus
- * 
- * RESULT: Templates load when needed, but NEVER reset while typing!
- */
-
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import {
@@ -51,13 +15,11 @@ import {
   XCircle,
   AlertCircle,
   Upload,
-  Download,
-
   Save,
-
   Loader2,
-  FileCheck2, ChevronDown, ChevronRight
-
+  FileCheck2,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 import { useJudge0 } from '../../../../hooks/useJudge0';
@@ -77,7 +39,7 @@ const SolutionSection = ({
   submissionId,
   refreshSectionStatus
 }) => {
-  // Generate unique session identifier to prevent cross-student interference
+  
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
@@ -85,23 +47,18 @@ const SolutionSection = ({
 
   const [customInput, setCustomInput] = useState('');
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
-  // REMOVED: Auto-reload template functionality - templates only load on manual reset
-  // const [autoReloadTemplate, setAutoReloadTemplate] = useState(false); // DISABLED
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
-  // REMOVED: Template reload notification since reload button is removed
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
-  const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
-  const [lastActionType, setLastActionType] = useState(null); // Track if last action was run code or test cases
+  const [submitStatus, setSubmitStatus] = useState(null); 
+  const [isRunningTests, setIsRunningTests] = useState(false); 
+  const [lastActionType, setLastActionType] = useState(null);
   const { isExecuting, executeCode, } = useJudge0();
-  const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
+  const [notification, setNotification] = useState(null); 
 
-  // Enhanced execution states for dynamic indicators
   const [executionState, setExecutionState] = useState({
     isRunning: false,
-    phase: '', // 'compiling', 'executing', 'testing', 'submitting'
+    phase: '', 
     progress: 0,
     message: '',
     currentTest: 0,
@@ -110,14 +67,11 @@ const SolutionSection = ({
     queuePosition: 0
   });
   const [executionTimer, setExecutionTimer] = useState(null);
-  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); // Timeout timer for 60 seconds
-  const [lastSavedCode, setLastSavedCode] = useState(''); // Track last saved code
-  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); // Track current question
-  const [showConfirmModal, setShowConfirmModal] = useState(false); // Show confirmation modal
-  const [pendingAction, setPendingAction] = useState(null); // Store pending action details
-  const [startTime, setStartTime] = useState(Date.now()); // Track when question started
+  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); 
+  const [lastSavedCode, setLastSavedCode] = useState(''); 
+  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); 
+  const [startTime, setStartTime] = useState(Date.now()); 
 
-  // Dynamic execution indicators helper functions
   const startExecutionTimer = () => {
     const timer = setInterval(() => {
       setExecutionState(prev => ({
@@ -130,16 +84,14 @@ const SolutionSection = ({
   };
 
   const startExecutionTimeout = () => {
-    // Clear any existing timeout first to prevent multiple timers
     if (executionTimeoutTimer) {
       clearTimeout(executionTimeoutTimer);
     }
     
     const timeoutTimer = setTimeout(() => {
-      // Auto-reset execution state after 60 seconds
       resetExecutionState();
       showNotification('warning', 'Execution timed out after 60 seconds. Please try again.');
-    }, 60000); // 60 seconds
+    }, 60000); 
     setExecutionTimeoutTimer(timeoutTimer);
     return timeoutTimer;
   };
@@ -282,53 +234,9 @@ const SolutionSection = ({
     return code !== lastSavedCode;
   };
 
-  // Helper function to show confirmation modal
-  const showConfirmationModal = (actionType, actionData) => {
-    setPendingAction({ type: actionType, data: actionData });
-    setShowConfirmModal(true);
-  };
-
-  // Handle confirmation modal response - ONLY for question changes
-  const handleConfirmAction = (confirmed) => {
-    setShowConfirmModal(false);
-
-    if (confirmed && pendingAction) {
-      if (pendingAction.type === 'questionChange') {
-        // Proceed with question change - always reset states for different questions
-        const newQuestionId = pendingAction.data.newQuestionId;
-
-        setCurrentQuestionId(newQuestionId);
-        setLastSavedCode('');
-        setHasUnsavedChanges(false);
-        setStartTime(Date.now()); // Reset timer for new question
-
-        // Always reset all states when changing questions
-        setJudge0Results(null); // Clear previous execution results
-        setCustomInput(''); // Clear custom input
-        setLastActionType(null); // Reset action type
-        setSaveStatus('idle'); // Reset save status
-
-        // Check submission state for the new question
-        const localSubmissionId = localStorage.getItem("submission_id");
-        const currentSubmissionId = submissionId || localSubmissionId;
-        if (newQuestionId && currentSubmissionId) {
-          const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
-          if (submissionState && submissionState.isSubmitted) {
-            setSubmitStatus('success');
-            showNotification('success', 'Submitted successfully!');
-          } else {
-            setSubmitStatus(null); // Reset submit status for new unsubmitted question
-          }
-        }
-      }
-    } else if (!confirmed && pendingAction?.type === 'questionChange') {
-      // User cancelled question change - revert to old question
-      // Note: The parent component should handle preventing the question change
-      // We just reset our pending action
-    }
-
-    setPendingAction(null);
-  };
+  // REMOVED: Confirmation modal functions that cause confusion during question navigation
+  // const showConfirmationModal = (actionType, actionData) => { ... }
+  // const handleConfirmAction = (confirmed) => { ... }
 
 
   const getAvailableLanguages = () => {
@@ -361,54 +269,32 @@ const SolutionSection = ({
   useEffect(() => {
     if (!question?._id || !selectedLanguage) return;
 
-    // For new questions, always load template first
-    // Only skip if answer already has meaningful NON-template content
-    if (answer && answer.trim() && !isTemplateCode(answer)) {
-      // Preserve existing meaningful user code
+    // CRITICAL FIX: For new questions, always load template first
+    // Only skip if answer already has meaningful NON-template content AND it's the same question
+    if (answer && answer.trim() && !isTemplateCode(answer) && currentQuestionId === question._id) {
+      // Preserve existing meaningful user code for same question
       setLastSavedCode(answer);
-      setHasUnsavedChanges(false);
       return;
     }
 
-    // Load template for empty answers, template code, or new questions
+    // Always load template for: empty answers, template code, or new questions
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     onAnswerChange(question._id, template);
     setLastSavedCode('');
-    setHasUnsavedChanges(false);
   }, [question?._id, selectedLanguage]); // Load template on question/language change
 
-  // Track unsaved changes when code changes with debouncing
-  useEffect(() => {
-    // Add debouncing to prevent rapid state changes in multi-user scenarios
-    const debounceTimer = setTimeout(() => {
-      if (hasValidCode(answer)) {
-        const hasChanges = hasCodeChanged(answer);
-        setHasUnsavedChanges(hasChanges);
-      } else {
-        setHasUnsavedChanges(false);
-      }
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(debounceTimer);
-  }, [answer, lastSavedCode]);
+  // REMOVED: Unsaved changes tracking that causes confusion
+  // useEffect(() => { ... tracking hasUnsavedChanges ... }, [answer, lastSavedCode]);
 
   // Track question changes with enhanced protection
   useEffect(() => {
     const newQuestionId = question?._id;
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
-      // Question has changed
-      if (hasUnsavedChanges && hasValidCode(answer)) {
-        showConfirmationModal('questionChange', {
-          oldQuestionId: currentQuestionId,
-          newQuestionId: newQuestionId
-        });
-        return; 
-      }
+      // Question has changed - REMOVED: unsaved changes confirmation that causes confusion
 
       // Always reset states for different questions to ensure clean slate
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
-      setHasUnsavedChanges(false);
       setStartTime(Date.now()); // Reset timer for new question
 
       // Reset all execution and UI states for new question
@@ -433,21 +319,10 @@ const SolutionSection = ({
       setCurrentQuestionId(newQuestionId);
       setStartTime(Date.now()); // Set start time for the first question
     }
-  }, [question?._id, hasUnsavedChanges]); // Removed 'answer' dependency to prevent unnecessary resets
+  }, [question?._id]); // Removed hasUnsavedChanges dependency to prevent unnecessary resets
 
-  // Add browser beforeunload warning for unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges && hasValidCode(answer)) {
-        e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-        return 'You have unsaved changes. Are you sure you want to leave?';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges, answer]);
+  // REMOVED: Browser beforeunload warning for unsaved changes that cause confusion
+  // useEffect(() => { ... beforeunload handler ... }, [hasUnsavedChanges, answer]);
 
   // FIXED: Load template immediately on language changes (no confirmation modal)
   useEffect(() => {
@@ -463,7 +338,7 @@ const SolutionSection = ({
         const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
         onAnswerChange(question._id, template);
         setLastSavedCode('');
-        setHasUnsavedChanges(false);
+        // REMOVED: setHasUnsavedChanges(false);
 
       } else if (!previousLanguage && selectedLanguage) {
         // First time language setup
@@ -472,7 +347,7 @@ const SolutionSection = ({
     }, 100); // Reduced debounce for faster response
 
     return () => clearTimeout(debounceTimer);
-  }, [selectedLanguage, previousLanguage]) // Removed hasUnsavedChanges dependency
+  }, [selectedLanguage, previousLanguage]); // Removed hasUnsavedChanges dependency
 
   // FIXED: Ensure selected language is valid with improved stability
   useEffect(() => {
@@ -610,7 +485,7 @@ const SolutionSection = ({
     setCustomInput('');
     setJudge0Results(null);
     setLastSavedCode('');
-    setHasUnsavedChanges(false);
+    // REMOVED: setHasUnsavedChanges(false);
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
   };
 
@@ -1012,7 +887,7 @@ const SolutionSection = ({
 
       // Update tracking after successful save
       setLastSavedCode(codeToRun);
-      setHasUnsavedChanges(false);
+      // REMOVED: setHasUnsavedChanges(false);
 
       // Refresh section status to update answer in parent component
       if (refreshSectionStatus) {
@@ -1953,43 +1828,7 @@ const SolutionSection = ({
         <p className="text-green-600 mt-4">Submitted successfully!</p>
       )} */}
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertCircle className="w-6 h-6 text-orange-500" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Confirm Action
-              </h3>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-gray-700">
-                You have unsaved changes. Switching to a different question will lose your current work. Do you want to continue?
-              </p>
-              <p className="text-sm text-orange-600 mt-2 font-medium">
-                This action cannot be undone. Consider saving your work first.
-              </p>
-            </div>
-
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => handleConfirmAction(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleConfirmAction(true)}
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Yes, Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* REMOVED: Confirmation Modal that caused confusion during navigation */}
     </div>
   );
 };

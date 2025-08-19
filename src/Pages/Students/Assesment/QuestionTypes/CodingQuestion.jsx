@@ -69,10 +69,13 @@ const CodingQuestion = ({
     fetchDetails();
   }, [question._id]);
 
-  // Load existing answer if any
+  // Load existing answer if any - FIXED: Clear state immediately on question change
   useEffect(() => {
     const loadExistingAnswer = async () => {
       try {
+        // CRITICAL FIX: Always clear answer state first when question changes
+        setAnswer('');
+        
         if (!answerStatus) {
           // Answer not available yet, mark as visited
           await questionVisited({
