@@ -1,7 +1,10 @@
 import axiosClient from "../api/axiosClient";
-export const getAllColleges = async () => {
-  const res = await axiosClient.get(`/colleges`, { withCredentials: true });
-  return res.data.data.colleges || [];
+export const getAllColleges = async (params = {}) => {
+  const res = await axiosClient.get(`/colleges`, { 
+    params,
+    withCredentials: true 
+  });
+  return res.data.data || {};
 };
  
 export const getCollegeById = async (id) => {

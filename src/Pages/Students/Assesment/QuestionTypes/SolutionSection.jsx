@@ -1,40 +1,4 @@
-/*
- * SolutionSection.jsx - Code Editor Component with Template Reset Protection
- * 
- * CORRECT SOLUTION FOR TEMPLATE RESET ISSUE:
- * 
- * 1. ✅ KEEPS Default Template Loading:
- *    - Monaco Editor loads template on initial render
- *    - Templates load when languages are changed
- *    - Templates load on question changes
- * 
- * 2. ❌ PREVENTS Unwanted Resets:
- *    - Enhanced template detection (95% match threshold)
- *    - Session-based protection against race conditions
- *    - Debounced state changes prevent rapid resets
- *    - Never overwrites meaningful user code while typing
- * 
- * 3. 🔧 SIMPLIFIED Reset Controls:
- *    - Removed "Reload Template" button (as requested)
- *    - Only "Reset Code" button for manual template loading
- *    - Clear notification when code is reset
- * 
- * 4. 🛡️ PROTECTION Mechanisms:
- *    - Enhanced session isolation with unique session keys
- *    - Better template vs. user code detection (stricter threshold)
- *    - Multiple layers of protection against overwrites
- *    - Confirmation modals for destructive language changes
- * 
- * 5. ⚡ EXECUTION & Save Features:
- *    - Fixed 60-second timeout notifications
- *    - Proper execution state cleanup
- *    - Enhanced Save Answer persistence
- *    - Integration with refreshSectionStatus
- * 
- * RESULT: Templates load when needed, but NEVER reset while typing!
- */
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -51,13 +15,11 @@ import {
   XCircle,
   AlertCircle,
   Upload,
-  Download,
-
   Save,
-
   Loader2,
-  FileCheck2, ChevronDown, ChevronRight
-
+  FileCheck2,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 import { useJudge0 } from '../../../../hooks/useJudge0';
@@ -77,7 +39,7 @@ const SolutionSection = ({
   submissionId,
   refreshSectionStatus
 }) => {
-  // Generate unique session identifier to prevent cross-student interference
+  
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
@@ -85,23 +47,37 @@ const SolutionSection = ({
 
   const [customInput, setCustomInput] = useState('');
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
-  // REMOVED: Auto-reload template functionality - templates only load on manual reset
-  // const [autoReloadTemplate, setAutoReloadTemplate] = useState(false); // DISABLED
   const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
-  // REMOVED: Template reload notification since reload button is removed
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); // success, error, etc.
-  const [isRunningTests, setIsRunningTests] = useState(false); // Fix casing  
-  const [lastActionType, setLastActionType] = useState(null); // Track if last action was run code or test cases
+  const [submitStatus, setSubmitStatus] = useState(null); 
+  const [isRunningTests, setIsRunningTests] = useState(false); 
+  const [lastActionType, setLastActionType] = useState(null);
   const { isExecuting, executeCode, } = useJudge0();
-  const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'warning', message }
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
+  const [notification, setNotification] = useState(null); 
 
-  // Enhanced execution states for dynamic indicators
+  // CRITICAL FIX: Add race condition prevention for high traffic scenarios
+  const [isComponentInitialized, setIsComponentInitialized] = useState(false);
+  const [isTemplateLoading, setIsTemplateLoading] = useState(false);
+  const currentQuestionRef = useRef(question?._id);
+  const currentLanguageRef = useRef(selectedLanguage);
+  const isUserTypingRef = useRef(false);
+  const lastUserInputTime = useRef(Date.now());
+  const templateLoadingRef = useRef(false);
+
+  // CRITICAL FIX: Stable value management to prevent momentary empty values
+  const [stableAnswer, setStableAnswer] = useState(answer || '');
+  
+  // CRITICAL FIX: Update stable answer only when we have a valid value
+  useEffect(() => {
+    if (answer !== undefined && answer !== null) {
+      setStableAnswer(answer);
+    }
+  }, [answer]);
+
   const [executionState, setExecutionState] = useState({
     isRunning: false,
-    phase: '', // 'compiling', 'executing', 'testing', 'submitting'
+    phase: '', 
     progress: 0,
     message: '',
     currentTest: 0,
@@ -110,14 +86,11 @@ const SolutionSection = ({
     queuePosition: 0
   });
   const [executionTimer, setExecutionTimer] = useState(null);
-  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); // Timeout timer for 60 seconds
-  const [lastSavedCode, setLastSavedCode] = useState(''); // Track last saved code
-  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); // Track current question
-  const [showConfirmModal, setShowConfirmModal] = useState(false); // Show confirmation modal
-  const [pendingAction, setPendingAction] = useState(null); // Store pending action details
-  const [startTime, setStartTime] = useState(Date.now()); // Track when question started
+  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); 
+  const [lastSavedCode, setLastSavedCode] = useState(''); 
+  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); 
+  const [startTime, setStartTime] = useState(Date.now()); 
 
-  // Dynamic execution indicators helper functions
   const startExecutionTimer = () => {
     const timer = setInterval(() => {
       setExecutionState(prev => ({
@@ -130,16 +103,14 @@ const SolutionSection = ({
   };
 
   const startExecutionTimeout = () => {
-    // Clear any existing timeout first to prevent multiple timers
     if (executionTimeoutTimer) {
       clearTimeout(executionTimeoutTimer);
     }
     
     const timeoutTimer = setTimeout(() => {
-      // Auto-reset execution state after 60 seconds
       resetExecutionState();
       showNotification('warning', 'Execution timed out after 60 seconds. Please try again.');
-    }, 60000); // 60 seconds
+    }, 60000); 
     setExecutionTimeoutTimer(timeoutTimer);
     return timeoutTimer;
   };
@@ -196,46 +167,72 @@ const SolutionSection = ({
     }
   }, [executionState.isRunning, executionTimeoutTimer]);
 
-  // Handle code changes with protection against unwanted resets
+  // CRITICAL FIX: Handle code changes with enhanced protection against race conditions under high traffic
   const handleCodeChange = (value) => {
     // CRITICAL: Enhanced protection against template resets and race conditions
     if (value === undefined || value === null) {
       return;
     }
 
-    // Session isolation - ensure this change belongs to current session
+    // CRITICAL FIX: Track user input to distinguish from system template loading
     const currentTime = Date.now();
+    isUserTypingRef.current = true;
+    lastUserInputTime.current = currentTime;
+    
+    // Clear user typing flag after a delay (user stopped typing)
+    setTimeout(() => {
+      if (currentTime === lastUserInputTime.current) {
+        isUserTypingRef.current = false;
+      }
+    }, 1000);
+
+    // CRITICAL FIX: Prevent template loading from overwriting user input
+    if (templateLoadingRef.current && isUserTypingRef.current && hasValidCode(value)) {
+      console.warn('Prevented template loading during user typing');
+      return;
+    }
+
+    // CRITICAL FIX: Enhanced session isolation with better race condition detection
     const sessionKey = `session_${sessionId}_${question?._id}`;
     const lastSessionChange = window[sessionKey] || 0;
     const timeSinceLastChange = currentTime - lastSessionChange;
     window[sessionKey] = currentTime;
 
-    // Prevent rapid changes that might indicate race conditions
-    if (timeSinceLastChange < 50 && value && answer && value !== answer) {
+    // CRITICAL FIX: Prevent rapid fire changes that indicate race conditions (reduced threshold)
+    if (timeSinceLastChange < 100 && value && answer && value !== answer) {
       const isNewValueTemplate = isTemplateCode(value);
       const isCurrentValueTemplate = isTemplateCode(answer);
       
       // CRITICAL: Never overwrite meaningful code with template
-      if (isNewValueTemplate && !isCurrentValueTemplate) {
-        console.warn('Prevented template overwrite of user code');
+      if (isNewValueTemplate && !isCurrentValueTemplate && hasValidCode(answer)) {
+        console.warn('RACE CONDITION PREVENTED: Template overwrite of user code blocked');
         return;
       }
 
-      // Prevent empty/undefined values from overwriting code
+      // CRITICAL FIX: Prevent empty/undefined values from overwriting code
       if (!value.trim() && answer && answer.trim()) {
-        console.warn('Prevented empty value from overwriting code');
+        console.warn('RACE CONDITION PREVENTED: Empty value overwrite blocked');
         return;
       }
     }
 
-    // Additional protection: Don't allow template to replace existing meaningful code
-    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer)) {
-      console.warn('Prevented template from replacing meaningful user code');
+    // CRITICAL FIX: Additional protection - Don't allow template to replace existing meaningful code
+    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer) && !isTemplateLoading) {
+      console.warn('RACE CONDITION PREVENTED: Template replacement of user code blocked');
+      return;
+    }
+
+    // CRITICAL FIX: Only proceed if refs match current props (prevent stale closure issues)
+    if (currentQuestionRef.current !== question?._id) {
+      console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
       return;
     }
 
     // Call the original onChange function
     onAnswerChange(question._id, value || '');
+    
+    // CRITICAL FIX: Update stable answer to prevent Monaco Editor fallbacks
+    setStableAnswer(value || '');
   };
 
   // Helper functions for submission state persistence with session isolation
@@ -282,53 +279,9 @@ const SolutionSection = ({
     return code !== lastSavedCode;
   };
 
-  // Helper function to show confirmation modal
-  const showConfirmationModal = (actionType, actionData) => {
-    setPendingAction({ type: actionType, data: actionData });
-    setShowConfirmModal(true);
-  };
-
-  // Handle confirmation modal response - ONLY for question changes
-  const handleConfirmAction = (confirmed) => {
-    setShowConfirmModal(false);
-
-    if (confirmed && pendingAction) {
-      if (pendingAction.type === 'questionChange') {
-        // Proceed with question change - always reset states for different questions
-        const newQuestionId = pendingAction.data.newQuestionId;
-
-        setCurrentQuestionId(newQuestionId);
-        setLastSavedCode('');
-        setHasUnsavedChanges(false);
-        setStartTime(Date.now()); // Reset timer for new question
-
-        // Always reset all states when changing questions
-        setJudge0Results(null); // Clear previous execution results
-        setCustomInput(''); // Clear custom input
-        setLastActionType(null); // Reset action type
-        setSaveStatus('idle'); // Reset save status
-
-        // Check submission state for the new question
-        const localSubmissionId = localStorage.getItem("submission_id");
-        const currentSubmissionId = submissionId || localSubmissionId;
-        if (newQuestionId && currentSubmissionId) {
-          const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
-          if (submissionState && submissionState.isSubmitted) {
-            setSubmitStatus('success');
-            showNotification('success', 'Submitted successfully!');
-          } else {
-            setSubmitStatus(null); // Reset submit status for new unsubmitted question
-          }
-        }
-      }
-    } else if (!confirmed && pendingAction?.type === 'questionChange') {
-      // User cancelled question change - revert to old question
-      // Note: The parent component should handle preventing the question change
-      // We just reset our pending action
-    }
-
-    setPendingAction(null);
-  };
+  // REMOVED: Confirmation modal functions that cause confusion during question navigation
+  // const showConfirmationModal = (actionType, actionData) => { ... }
+  // const handleConfirmAction = (confirmed) => { ... }
 
 
   const getAvailableLanguages = () => {
@@ -357,58 +310,88 @@ const SolutionSection = ({
     }
   }, [question?._id, submissionId]);
 
-  // FIXED: Always load template on question/language initialization
+  // CRITICAL FIX: Template loading with race condition prevention for high traffic scenarios
   useEffect(() => {
     if (!question?._id || !selectedLanguage) return;
 
-    // For new questions, always load template first
-    // Only skip if answer already has meaningful NON-template content
-    if (answer && answer.trim() && !isTemplateCode(answer)) {
-      // Preserve existing meaningful user code
-      setLastSavedCode(answer);
-      setHasUnsavedChanges(false);
+    // CRITICAL FIX: Update refs to prevent stale closures
+    currentQuestionRef.current = question._id;
+    currentLanguageRef.current = selectedLanguage;
+
+    // CRITICAL FIX: Don't load template if user is actively typing
+    if (isUserTypingRef.current) {
+      console.log('Template loading skipped - user is typing');
       return;
     }
 
-    // Load template for empty answers, template code, or new questions
-    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-    onAnswerChange(question._id, template);
-    setLastSavedCode('');
-    setHasUnsavedChanges(false);
+    // CRITICAL FIX: Prevent template loading if component is not properly initialized
+    if (!isComponentInitialized && answer) {
+      setIsComponentInitialized(true);
+      return;
+    }
+
+    // CRITICAL FIX: For new questions, always load template first
+    // Only skip if answer already has meaningful NON-template content AND it's the same question
+    if (answer && answer.trim() && !isTemplateCode(answer) && currentQuestionId === question._id) {
+      // Preserve existing meaningful user code for same question
+      setLastSavedCode(answer);
+      return;
+    }
+
+    // CRITICAL FIX: Set loading flag to prevent user input interference
+    setIsTemplateLoading(true);
+    templateLoadingRef.current = true;
+
+    // Load template with delay to allow for proper state settling under high traffic
+    const loadTemplate = () => {
+      // Double-check that we should still load template (prevent race conditions)
+      if (isUserTypingRef.current || currentQuestionRef.current !== question._id) {
+        setIsTemplateLoading(false);
+        templateLoadingRef.current = false;
+        return;
+      }
+
+      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+      onAnswerChange(question._id, template);
+      setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
+      setLastSavedCode('');
+      
+      // Clear loading flags after a short delay
+      setTimeout(() => {
+        setIsTemplateLoading(false);
+        templateLoadingRef.current = false;
+        setIsComponentInitialized(true);
+      }, 100);
+    };
+
+    // Use setTimeout to prevent race conditions in high traffic scenarios
+    const timeoutId = setTimeout(loadTemplate, 50);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      setIsTemplateLoading(false);
+      templateLoadingRef.current = false;
+    };
   }, [question?._id, selectedLanguage]); // Load template on question/language change
 
-  // Track unsaved changes when code changes with debouncing
-  useEffect(() => {
-    // Add debouncing to prevent rapid state changes in multi-user scenarios
-    const debounceTimer = setTimeout(() => {
-      if (hasValidCode(answer)) {
-        const hasChanges = hasCodeChanged(answer);
-        setHasUnsavedChanges(hasChanges);
-      } else {
-        setHasUnsavedChanges(false);
-      }
-    }, 300); // 300ms debounce
+  // REMOVED: Unsaved changes tracking that causes confusion
+  // useEffect(() => { ... tracking hasUnsavedChanges ... }, [answer, lastSavedCode]);
 
-    return () => clearTimeout(debounceTimer);
-  }, [answer, lastSavedCode]);
-
-  // Track question changes with enhanced protection
+  // CRITICAL FIX: Track question changes with enhanced race condition protection
   useEffect(() => {
     const newQuestionId = question?._id;
+    
+    // CRITICAL FIX: Update ref immediately to prevent stale closures
+    currentQuestionRef.current = newQuestionId;
+    
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
-      // Question has changed
-      if (hasUnsavedChanges && hasValidCode(answer)) {
-        showConfirmationModal('questionChange', {
-          oldQuestionId: currentQuestionId,
-          newQuestionId: newQuestionId
-        });
-        return; 
-      }
+      // Question has changed - CRITICAL: Reset user typing flags immediately
+      isUserTypingRef.current = false;
+      templateLoadingRef.current = false;
 
       // Always reset states for different questions to ensure clean slate
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode(''); // Reset saved code tracking for new question
-      setHasUnsavedChanges(false);
       setStartTime(Date.now()); // Reset timer for new question
 
       // Reset all execution and UI states for new question
@@ -416,6 +399,8 @@ const SolutionSection = ({
       setCustomInput(''); // Clear custom input
       setLastActionType(null); // Reset action type
       setSaveStatus('idle'); // Reset save status
+      setIsComponentInitialized(false); // Reset initialization flag
+      setIsTemplateLoading(false); // Reset template loading flag
 
       // Check submission state for the new question
       const localSubmissionId = localStorage.getItem("submission_id");
@@ -430,49 +415,68 @@ const SolutionSection = ({
       }
 
     } else if (newQuestionId && !currentQuestionId) {
+      // First time initialization
       setCurrentQuestionId(newQuestionId);
       setStartTime(Date.now()); // Set start time for the first question
+      setIsComponentInitialized(false);
     }
-  }, [question?._id, hasUnsavedChanges]); // Removed 'answer' dependency to prevent unnecessary resets
+  }, [question?._id]); // Removed hasUnsavedChanges dependency to prevent unnecessary resets
 
-  // Add browser beforeunload warning for unsaved changes
+  // REMOVED: Browser beforeunload warning for unsaved changes that cause confusion
+  // useEffect(() => { ... beforeunload handler ... }, [hasUnsavedChanges, answer]);
+
+  // CRITICAL FIX: Language changes with enhanced race condition protection
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (hasUnsavedChanges && hasValidCode(answer)) {
-        e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-        return 'You have unsaved changes. Are you sure you want to leave?';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges, answer]);
-
-  // FIXED: Load template immediately on language changes (no confirmation modal)
-  useEffect(() => {
-    // Debounce language changes to prevent rapid template resets
+    // CRITICAL FIX: Update language ref immediately
+    currentLanguageRef.current = selectedLanguage;
+    
+    // Debounce language changes to prevent rapid template resets under high traffic
     const debounceTimer = setTimeout(() => {
       const languageChanged = previousLanguage && previousLanguage !== selectedLanguage;
 
       if (languageChanged) {
+        // CRITICAL FIX: Don't change language if user is actively typing
+        if (isUserTypingRef.current) {
+          console.log('Language change skipped - user is typing');
+          return;
+        }
+
         // NO CONFIRMATION MODAL - just load template for new language immediately
         setPreviousLanguage(selectedLanguage);
         
-        // Always load template for new language
-        const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-        onAnswerChange(question._id, template);
-        setLastSavedCode('');
-        setHasUnsavedChanges(false);
+        // CRITICAL FIX: Set loading flag to prevent conflicts
+        setIsTemplateLoading(true);
+        templateLoadingRef.current = true;
+        
+        // Load template with additional safety checks
+        setTimeout(() => {
+          // Double-check that we should still load template
+          if (isUserTypingRef.current || currentLanguageRef.current !== selectedLanguage) {
+            setIsTemplateLoading(false);
+            templateLoadingRef.current = false;
+            return;
+          }
+
+          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+          onAnswerChange(question._id, template);
+          setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
+          setLastSavedCode('');
+          
+          // Clear loading flags
+          setTimeout(() => {
+            setIsTemplateLoading(false);
+            templateLoadingRef.current = false;
+          }, 100);
+        }, 50);
 
       } else if (!previousLanguage && selectedLanguage) {
         // First time language setup
         setPreviousLanguage(selectedLanguage);
       }
-    }, 100); // Reduced debounce for faster response
+    }, 200); // Increased debounce for better stability under high traffic
 
     return () => clearTimeout(debounceTimer);
-  }, [selectedLanguage, previousLanguage]) // Removed hasUnsavedChanges dependency
+  }, [selectedLanguage, previousLanguage]); // Removed hasUnsavedChanges dependency
 
   // FIXED: Ensure selected language is valid with improved stability
   useEffect(() => {
@@ -492,6 +496,17 @@ const SolutionSection = ({
 
     return () => clearTimeout(debounceTimer);
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
+
+  // FEATURE: Auto-populate custom input with first sample test case
+  useEffect(() => {
+    // Only populate if custom input is empty and we have sample test cases
+    if (!customInput && fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
+      const firstTestCase = fullDetails.sample_test_cases[0];
+      if (firstTestCase?.input && firstTestCase.input.trim()) {
+        setCustomInput(firstTestCase.input.trim());
+      }
+    }
+  }, [fullDetails?.sample_test_cases, customInput]);
 
   // Clear results when question changes (backup cleanup)
   useEffect(() => {
@@ -605,13 +620,25 @@ const SolutionSection = ({
 
   // Reset code to language template - ONLY manual way to reload template
   const handleResetCode = () => {
+    // CRITICAL FIX: Set loading flags to prevent user input conflicts
+    setIsTemplateLoading(true);
+    templateLoadingRef.current = true;
+    isUserTypingRef.current = false; // Clear user typing flag
+    
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     onAnswerChange(question._id, template);
+    setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
     setCustomInput('');
     setJudge0Results(null);
     setLastSavedCode('');
-    setHasUnsavedChanges(false);
+    
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
+    
+    // Clear loading flags after a short delay
+    setTimeout(() => {
+      setIsTemplateLoading(false);
+      templateLoadingRef.current = false;
+    }, 100);
   };
 
 
@@ -810,7 +837,7 @@ const SolutionSection = ({
 
       // Update tracking after successful save in test cases
       setLastSavedCode(codeToRun);
-      setHasUnsavedChanges(false);
+      // REMOVED: setHasUnsavedChanges(false); - this was causing the "failed to save answer" error
 
       // Step 2: Prepare for test execution
       setTimeout(() => {
@@ -1012,7 +1039,7 @@ const SolutionSection = ({
 
       // Update tracking after successful save
       setLastSavedCode(codeToRun);
-      setHasUnsavedChanges(false);
+      // REMOVED: setHasUnsavedChanges(false);
 
       // Refresh section status to update answer in parent component
       if (refreshSectionStatus) {
@@ -1518,7 +1545,7 @@ const SolutionSection = ({
                     selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
                       selectedLanguage.toLowerCase()
               }
-              value={answer || LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || ''}
+              value={stableAnswer}
               onChange={handleCodeChange}
               theme="vs-dark"
               key={`${question?._id}_${selectedLanguage}_${sessionId}`}
@@ -1734,18 +1761,40 @@ const SolutionSection = ({
       {showCustomInput && (
         <div className="border-t border-gray-200 pt-6">
           <div className="space-y-3">
-            <label className="flex items-center gap-2 text-base font-medium text-gray-800">
-              <Terminal className="w-5 h-5" />
-              Custom Input (stdin)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-base font-medium text-gray-800">
+                <Terminal className="w-5 h-5" />
+                Custom Input (stdin)
+              </label>
+              {fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                  Pre-filled with Sample Test Case 1
+                </span>
+              )}
+            </div>
             <div className="bg-gray-50 rounded-lg shadow-sm">
-              <textarea
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                placeholder={`Enter input for your program (one value per line)...\nExample:\n5\n3\nHello World`}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none font-mono"
-                rows={6}
-              />
+              <div className="relative">
+                <textarea
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  placeholder={fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 
+                    ? "Auto-filled with first sample test case input. You can edit this if needed..."
+                    : "Enter input for your program (one value per line)...\nExample:\n5\n3\nHello World"
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none font-mono"
+                  rows={6}
+                />
+                {fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomInput(fullDetails.sample_test_cases[0].input)}
+                    className="absolute top-2 right-2 bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded hover:bg-indigo-200 transition-colors duration-200 font-medium"
+                    title="Reset to first sample test case input"
+                  >
+                    Reset Sample
+                  </button>
+                )}
+              </div>
               <div className="flex items-center justify-between mt-2 px-2 pb-1 text-xs text-gray-500">
                 <div>This input will be passed to your program via stdin</div>
                 <div>
@@ -1953,43 +2002,7 @@ const SolutionSection = ({
         <p className="text-green-600 mt-4">Submitted successfully!</p>
       )} */}
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertCircle className="w-6 h-6 text-orange-500" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Confirm Action
-              </h3>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-gray-700">
-                You have unsaved changes. Switching to a different question will lose your current work. Do you want to continue?
-              </p>
-              <p className="text-sm text-orange-600 mt-2 font-medium">
-                This action cannot be undone. Consider saving your work first.
-              </p>
-            </div>
-
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => handleConfirmAction(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleConfirmAction(true)}
-                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Yes, Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* REMOVED: Confirmation Modal that caused confusion during navigation */}
     </div>
   );
 };
