@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -55,6 +55,25 @@ const SolutionSection = ({
   const [lastActionType, setLastActionType] = useState(null);
   const { isExecuting, executeCode, } = useJudge0();
   const [notification, setNotification] = useState(null); 
+
+  // CRITICAL FIX: Add race condition prevention for high traffic scenarios
+  const [isComponentInitialized, setIsComponentInitialized] = useState(false);
+  const [isTemplateLoading, setIsTemplateLoading] = useState(false);
+  const currentQuestionRef = useRef(question?._id);
+  const currentLanguageRef = useRef(selectedLanguage);
+  const isUserTypingRef = useRef(false);
+  const lastUserInputTime = useRef(Date.now());
+  const templateLoadingRef = useRef(false);
+
+  // CRITICAL FIX: Stable value management to prevent momentary empty values
+  const [stableAnswer, setStableAnswer] = useState(answer || '');
+  
+  // CRITICAL FIX: Update stable answer only when we have a valid value
+  useEffect(() => {
+    if (answer !== undefined && answer !== null) {
+      setStableAnswer(answer);
+    }
+  }, [answer]);
 
   const [executionState, setExecutionState] = useState({
     isRunning: false,
@@ -148,46 +167,72 @@ const SolutionSection = ({
     }
   }, [executionState.isRunning, executionTimeoutTimer]);
 
-  // Handle code changes with protection against unwanted resets
+  // CRITICAL FIX: Handle code changes with enhanced protection against race conditions under high traffic
   const handleCodeChange = (value) => {
     // CRITICAL: Enhanced protection against template resets and race conditions
     if (value === undefined || value === null) {
       return;
     }
 
-    // Session isolation - ensure this change belongs to current session
+    // CRITICAL FIX: Track user input to distinguish from system template loading
     const currentTime = Date.now();
+    isUserTypingRef.current = true;
+    lastUserInputTime.current = currentTime;
+    
+    // Clear user typing flag after a delay (user stopped typing)
+    setTimeout(() => {
+      if (currentTime === lastUserInputTime.current) {
+        isUserTypingRef.current = false;
+      }
+    }, 1000);
+
+    // CRITICAL FIX: Prevent template loading from overwriting user input
+    if (templateLoadingRef.current && isUserTypingRef.current && hasValidCode(value)) {
+      console.warn('Prevented template loading during user typing');
+      return;
+    }
+
+    // CRITICAL FIX: Enhanced session isolation with better race condition detection
     const sessionKey = `session_${sessionId}_${question?._id}`;
     const lastSessionChange = window[sessionKey] || 0;
     const timeSinceLastChange = currentTime - lastSessionChange;
     window[sessionKey] = currentTime;
 
-    // Prevent rapid changes that might indicate race conditions
-    if (timeSinceLastChange < 50 && value && answer && value !== answer) {
+    // CRITICAL FIX: Prevent rapid fire changes that indicate race conditions (reduced threshold)
+    if (timeSinceLastChange < 100 && value && answer && value !== answer) {
       const isNewValueTemplate = isTemplateCode(value);
       const isCurrentValueTemplate = isTemplateCode(answer);
       
       // CRITICAL: Never overwrite meaningful code with template
-      if (isNewValueTemplate && !isCurrentValueTemplate) {
-        console.warn('Prevented template overwrite of user code');
+      if (isNewValueTemplate && !isCurrentValueTemplate && hasValidCode(answer)) {
+        console.warn('RACE CONDITION PREVENTED: Template overwrite of user code blocked');
         return;
       }
 
-      // Prevent empty/undefined values from overwriting code
+      // CRITICAL FIX: Prevent empty/undefined values from overwriting code
       if (!value.trim() && answer && answer.trim()) {
-        console.warn('Prevented empty value from overwriting code');
+        console.warn('RACE CONDITION PREVENTED: Empty value overwrite blocked');
         return;
       }
     }
 
-    // Additional protection: Don't allow template to replace existing meaningful code
-    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer)) {
-      console.warn('Prevented template from replacing meaningful user code');
+    // CRITICAL FIX: Additional protection - Don't allow template to replace existing meaningful code
+    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer) && !isTemplateLoading) {
+      console.warn('RACE CONDITION PREVENTED: Template replacement of user code blocked');
+      return;
+    }
+
+    // CRITICAL FIX: Only proceed if refs match current props (prevent stale closure issues)
+    if (currentQuestionRef.current !== question?._id) {
+      console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
       return;
     }
 
     // Call the original onChange function
     onAnswerChange(question._id, value || '');
+    
+    // CRITICAL FIX: Update stable answer to prevent Monaco Editor fallbacks
+    setStableAnswer(value || '');
   };
 
   // Helper functions for submission state persistence with session isolation
@@ -265,9 +310,25 @@ const SolutionSection = ({
     }
   }, [question?._id, submissionId]);
 
-  // FIXED: Always load template on question/language initialization
+  // CRITICAL FIX: Template loading with race condition prevention for high traffic scenarios
   useEffect(() => {
     if (!question?._id || !selectedLanguage) return;
+
+    // CRITICAL FIX: Update refs to prevent stale closures
+    currentQuestionRef.current = question._id;
+    currentLanguageRef.current = selectedLanguage;
+
+    // CRITICAL FIX: Don't load template if user is actively typing
+    if (isUserTypingRef.current) {
+      console.log('Template loading skipped - user is typing');
+      return;
+    }
+
+    // CRITICAL FIX: Prevent template loading if component is not properly initialized
+    if (!isComponentInitialized && answer) {
+      setIsComponentInitialized(true);
+      return;
+    }
 
     // CRITICAL FIX: For new questions, always load template first
     // Only skip if answer already has meaningful NON-template content AND it's the same question
@@ -277,20 +338,56 @@ const SolutionSection = ({
       return;
     }
 
-    // Always load template for: empty answers, template code, or new questions
-    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-    onAnswerChange(question._id, template);
-    setLastSavedCode('');
+    // CRITICAL FIX: Set loading flag to prevent user input interference
+    setIsTemplateLoading(true);
+    templateLoadingRef.current = true;
+
+    // Load template with delay to allow for proper state settling under high traffic
+    const loadTemplate = () => {
+      // Double-check that we should still load template (prevent race conditions)
+      if (isUserTypingRef.current || currentQuestionRef.current !== question._id) {
+        setIsTemplateLoading(false);
+        templateLoadingRef.current = false;
+        return;
+      }
+
+      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+      onAnswerChange(question._id, template);
+      setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
+      setLastSavedCode('');
+      
+      // Clear loading flags after a short delay
+      setTimeout(() => {
+        setIsTemplateLoading(false);
+        templateLoadingRef.current = false;
+        setIsComponentInitialized(true);
+      }, 100);
+    };
+
+    // Use setTimeout to prevent race conditions in high traffic scenarios
+    const timeoutId = setTimeout(loadTemplate, 50);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      setIsTemplateLoading(false);
+      templateLoadingRef.current = false;
+    };
   }, [question?._id, selectedLanguage]); // Load template on question/language change
 
   // REMOVED: Unsaved changes tracking that causes confusion
   // useEffect(() => { ... tracking hasUnsavedChanges ... }, [answer, lastSavedCode]);
 
-  // Track question changes with enhanced protection
+  // CRITICAL FIX: Track question changes with enhanced race condition protection
   useEffect(() => {
     const newQuestionId = question?._id;
+    
+    // CRITICAL FIX: Update ref immediately to prevent stale closures
+    currentQuestionRef.current = newQuestionId;
+    
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
-      // Question has changed - REMOVED: unsaved changes confirmation that causes confusion
+      // Question has changed - CRITICAL: Reset user typing flags immediately
+      isUserTypingRef.current = false;
+      templateLoadingRef.current = false;
 
       // Always reset states for different questions to ensure clean slate
       setCurrentQuestionId(newQuestionId);
@@ -302,6 +399,8 @@ const SolutionSection = ({
       setCustomInput(''); // Clear custom input
       setLastActionType(null); // Reset action type
       setSaveStatus('idle'); // Reset save status
+      setIsComponentInitialized(false); // Reset initialization flag
+      setIsTemplateLoading(false); // Reset template loading flag
 
       // Check submission state for the new question
       const localSubmissionId = localStorage.getItem("submission_id");
@@ -316,35 +415,65 @@ const SolutionSection = ({
       }
 
     } else if (newQuestionId && !currentQuestionId) {
+      // First time initialization
       setCurrentQuestionId(newQuestionId);
       setStartTime(Date.now()); // Set start time for the first question
+      setIsComponentInitialized(false);
     }
   }, [question?._id]); // Removed hasUnsavedChanges dependency to prevent unnecessary resets
 
   // REMOVED: Browser beforeunload warning for unsaved changes that cause confusion
   // useEffect(() => { ... beforeunload handler ... }, [hasUnsavedChanges, answer]);
 
-  // FIXED: Load template immediately on language changes (no confirmation modal)
+  // CRITICAL FIX: Language changes with enhanced race condition protection
   useEffect(() => {
-    // Debounce language changes to prevent rapid template resets
+    // CRITICAL FIX: Update language ref immediately
+    currentLanguageRef.current = selectedLanguage;
+    
+    // Debounce language changes to prevent rapid template resets under high traffic
     const debounceTimer = setTimeout(() => {
       const languageChanged = previousLanguage && previousLanguage !== selectedLanguage;
 
       if (languageChanged) {
+        // CRITICAL FIX: Don't change language if user is actively typing
+        if (isUserTypingRef.current) {
+          console.log('Language change skipped - user is typing');
+          return;
+        }
+
         // NO CONFIRMATION MODAL - just load template for new language immediately
         setPreviousLanguage(selectedLanguage);
         
-        // Always load template for new language
-        const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-        onAnswerChange(question._id, template);
-        setLastSavedCode('');
-        // REMOVED: setHasUnsavedChanges(false);
+        // CRITICAL FIX: Set loading flag to prevent conflicts
+        setIsTemplateLoading(true);
+        templateLoadingRef.current = true;
+        
+        // Load template with additional safety checks
+        setTimeout(() => {
+          // Double-check that we should still load template
+          if (isUserTypingRef.current || currentLanguageRef.current !== selectedLanguage) {
+            setIsTemplateLoading(false);
+            templateLoadingRef.current = false;
+            return;
+          }
+
+          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+          onAnswerChange(question._id, template);
+          setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
+          setLastSavedCode('');
+          
+          // Clear loading flags
+          setTimeout(() => {
+            setIsTemplateLoading(false);
+            templateLoadingRef.current = false;
+          }, 100);
+        }, 50);
 
       } else if (!previousLanguage && selectedLanguage) {
         // First time language setup
         setPreviousLanguage(selectedLanguage);
       }
-    }, 100); // Reduced debounce for faster response
+    }, 200); // Increased debounce for better stability under high traffic
 
     return () => clearTimeout(debounceTimer);
   }, [selectedLanguage, previousLanguage]); // Removed hasUnsavedChanges dependency
@@ -480,13 +609,25 @@ const SolutionSection = ({
 
   // Reset code to language template - ONLY manual way to reload template
   const handleResetCode = () => {
+    // CRITICAL FIX: Set loading flags to prevent user input conflicts
+    setIsTemplateLoading(true);
+    templateLoadingRef.current = true;
+    isUserTypingRef.current = false; // Clear user typing flag
+    
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     onAnswerChange(question._id, template);
+    setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
     setCustomInput('');
     setJudge0Results(null);
     setLastSavedCode('');
-    // REMOVED: setHasUnsavedChanges(false);
+    
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
+    
+    // Clear loading flags after a short delay
+    setTimeout(() => {
+      setIsTemplateLoading(false);
+      templateLoadingRef.current = false;
+    }, 100);
   };
 
 
@@ -1393,7 +1534,7 @@ const SolutionSection = ({
                     selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
                       selectedLanguage.toLowerCase()
               }
-              value={answer || LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || ''}
+              value={stableAnswer}
               onChange={handleCodeChange}
               theme="vs-dark"
               key={`${question?._id}_${selectedLanguage}_${sessionId}`}
