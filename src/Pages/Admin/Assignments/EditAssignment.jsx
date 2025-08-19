@@ -5,7 +5,7 @@ import { getallAssesment } from "../../../Controllers/AssesmentController";
 import SelectCollegeModal from "../../Admin/User/SelectCollegeModal";
 import SelectGroupModal from "../../Admin/User/SelectGroupModal";
 import SelectStudentModal from "../../Admin/User/SelectStudentModal";
-import {ClipboardList,Users,CalendarDays} from "lucide-react";
+import { ClipboardList, Users, CalendarDays } from "lucide-react";
 import { useUser } from "../../../context/UserContext";
 import { toast } from "react-toastify";
 
@@ -50,92 +50,92 @@ const EditAssignment = () => {
             .catch((err) => console.error("Failed to fetch assessments", err));
     }, []);
 
-useEffect(() => {
-  const fetchAssignment = async () => {
-    try {
-      const res = await getAssignmentById(id);
-      const assignment = res.data.assignment;  // changed from res.message.assignment
+    useEffect(() => {
+        const fetchAssignment = async () => {
+            try {
+                const res = await getAssignmentById(id);
+                const assignment = res.data.assignment;  // changed from res.message.assignment
 
-      setFormData({
-        assessmentId: assignment.assessment_id?._id || "",
-        title: assignment.title,
-        description: assignment.description,
-        targetType:
-          assignment.target?.type === "colleges"
-            ? "colleges"
-            : assignment.target?.type === "groups"
-            ? "groups"
-            : "students", // 'individuals' is mapped to 'students'
-        status: assignment.status || "", // also fill status here
-        assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
-        assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
-        assignedStudents: (assignment.target?.student_ids || []).map((id) => ({ id, name: id })),
-        schedule: {
-          ...assignment.schedule,
-          start_time: formatForDatetimeLocal(assignment.schedule.start_time),
-          end_time: formatForDatetimeLocal(assignment.schedule.end_time),
-        },
-        settings: {
-          ...assignment.settings,
-          results_release_time: formatForDatetimeLocal(assignment.settings.results_release_time), // format here
-        },
-      });
-    } catch (err) {
-      console.error("Failed to load assignment", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+                setFormData({
+                    assessmentId: assignment.assessment_id?._id || "",
+                    title: assignment.title,
+                    description: assignment.description,
+                    targetType:
+                        assignment.target?.type === "colleges"
+                            ? "colleges"
+                            : assignment.target?.type === "groups"
+                                ? "groups"
+                                : "students", // 'individuals' is mapped to 'students'
+                    status: assignment.status || "", // also fill status here
+                    assignedColleges: (assignment.target?.college_ids || []).map((id) => ({ id, name: id })),
+                    assignedGroups: (assignment.target?.group_ids || []).map((id) => ({ id, name: id })),
+                    assignedStudents: (assignment.target?.student_ids || []).map((id) => ({ id, name: id })),
+                    schedule: {
+                        ...assignment.schedule,
+                        start_time: formatForDatetimeLocal(assignment.schedule.start_time),
+                        end_time: formatForDatetimeLocal(assignment.schedule.end_time),
+                    },
+                    settings: {
+                        ...assignment.settings,
+                        results_release_time: formatForDatetimeLocal(assignment.settings.results_release_time), // format here
+                    },
+                });
+            } catch (err) {
+                console.error("Failed to load assignment", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  fetchAssignment();
-}, [id]);
+        fetchAssignment();
+    }, [id]);
 
 
     const formatForDatetimeLocal = (isoString) => {
-    if (!isoString) return "";
-    const date = new Date(isoString);
-    const pad = (num) => num.toString().padStart(2, "0");
+        if (!isoString) return "";
+        const date = new Date(isoString);
+        const pad = (num) => num.toString().padStart(2, "0");
 
-    const year = date.getUTCFullYear();
-    const month = pad(date.getUTCMonth() + 1);
-    const day = pad(date.getUTCDate());
-    const hours = pad(date.getUTCHours());
-    const minutes = pad(date.getUTCMinutes());
+        const year = date.getUTCFullYear();
+        const month = pad(date.getUTCMonth() + 1);
+        const day = pad(date.getUTCDate());
+        const hours = pad(date.getUTCHours());
+        const minutes = pad(date.getUTCMinutes());
 
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
     };
 
 
     const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name.includes("schedule.")) {
-        const key = name.split(".")[1];
-        setFormData((prev) => {
-            let updatedSchedule = { ...prev.schedule, [key]: value };
+        const { name, value } = e.target;
+        if (name.includes("schedule.")) {
+            const key = name.split(".")[1];
+            setFormData((prev) => {
+                let updatedSchedule = { ...prev.schedule, [key]: value };
 
-            if (key === "start_time") {
-                // If end_time is before new start_time, set end_time = start_time
-                if (new Date(updatedSchedule.end_time) < new Date(value)) {
-                    updatedSchedule.end_time = value;
+                if (key === "start_time") {
+                    // If end_time is before new start_time, set end_time = start_time
+                    if (new Date(updatedSchedule.end_time) < new Date(value)) {
+                        updatedSchedule.end_time = value;
+                    }
                 }
-            }
 
-            if (key === "end_time") {
-                // If end_time < start_time, reset end_time to start_time
-                if (new Date(value) < new Date(updatedSchedule.start_time)) {
-                    updatedSchedule.end_time = updatedSchedule.start_time;
+                if (key === "end_time") {
+                    // If end_time < start_time, reset end_time to start_time
+                    if (new Date(value) < new Date(updatedSchedule.start_time)) {
+                        updatedSchedule.end_time = updatedSchedule.start_time;
+                    }
                 }
-            }
 
-            return {
-                ...prev,
-                schedule: updatedSchedule,
-            };
-        });
-    } else {
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-};
+                return {
+                    ...prev,
+                    schedule: updatedSchedule,
+                };
+            });
+        } else {
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        }
+    };
 
 
     const handleSubmit = async (e) => {
@@ -143,34 +143,85 @@ useEffect(() => {
         setMessage("");
         setLoading(true);
 
+        // Basic validation (similar to create page)
+        if (!formData.assessmentId) {
+            toast.error("Please select an assessment.");
+            setLoading(false);
+            return;
+        }
+        if (!formData.title.trim()) {
+            toast.error("Assignment title is required.");
+            setLoading(false);
+            return;
+        }
+        if (!formData.targetType) {
+            toast.error("Please select a target type.");
+            setLoading(false);
+            return;
+        }
+        if (
+            (formData.targetType === "colleges" && formData.assignedColleges.length === 0) ||
+            (formData.targetType === "groups" && formData.assignedGroups.length === 0) ||
+            (formData.targetType === "students" && formData.assignedStudents.length === 0)
+        ) {
+            toast.error(`Please assign at least one ${formData.targetType.slice(0, -1)}.`);
+            setLoading(false);
+            return;
+        }
+        if (!formData.schedule.start_time || !formData.schedule.end_time) {
+            toast.error("Start and end time are required.");
+            setLoading(false);
+            return;
+        }
+
+        const now = new Date().getTime();
+        const start = new Date(formData.schedule.start_time).getTime();
+        const end = new Date(formData.schedule.end_time).getTime();
+
+        if (start <= now) {
+            toast.error("Start time must be in the future.");
+            setLoading(false);
+            return;
+        }
+
+        if (end <= start) {
+            toast.error("End time must be after start time.");
+            setLoading(false);
+            return;
+        }
+
         const target = {
-        type:
-            formData.targetType === "students"
-            ? "individuals"
-            : formData.targetType,
+            type: formData.targetType === "students" ? "individuals" : formData.targetType,
         };
+
         if (formData.targetType === "colleges") {
             target.college_ids = formData.assignedColleges.map((c) => c.id);
         } else if (formData.targetType === "groups") {
             target.group_ids = formData.assignedGroups.map((g) => g.id);
         } else if (formData.targetType === "students") {
-            target.type = "individuals"; // Important
             target.student_ids = formData.assignedStudents.map((s) => s.id);
         }
 
+        // Convert all dates to timestamps
         const payload = {
             assessmentID: formData.assessmentId,
             title: formData.title,
             description: formData.description,
             target,
-            schedule: formData.schedule,
-            settings: formData.settings,
+            schedule: {
+                start_time: new Date(formData.schedule.start_time).getTime(),
+                end_time: new Date(formData.schedule.end_time).getTime(),
+                timezone: formData.schedule.timezone,
+            },
+            settings: {
+                ...formData.settings,
+                results_release_time: formData.settings.results_release_time
+                    ? new Date(formData.settings.results_release_time).getTime()
+                    : null,
+            },
         };
 
-        console.log("Sending payload:", { ...payload, target });
-
         try {
-
             await updateAssignment(id, payload);
             toast.success("Assignment updated!.. Redirecting...");
             setTimeout(() => {
@@ -184,7 +235,6 @@ useEffect(() => {
         }
     };
 
-    
 
     if (loading) return <div className="p-4">Loading...</div>;
 
@@ -200,11 +250,10 @@ useEffect(() => {
 
                     {message && (
                         <p
-                        className={`text-sm text-center ${
-                            message.includes("success") ? "text-green-600" : "text-red-600"
-                        }`}
+                            className={`text-sm text-center ${message.includes("success") ? "text-green-600" : "text-red-600"
+                                }`}
                         >
-                        {message}
+                            {message}
                         </p>
                     )}
 
@@ -249,128 +298,128 @@ useEffect(() => {
 
                     {/* Target Section */}
                     <div>
-                    <h2 className="text-xl font-semibold mb-4 flex gap-2 text-pink-600">
-                        <Users className="w-5 h-5 mt-1" /> Target
-                    </h2>
+                        <h2 className="text-xl font-semibold mb-4 flex gap-2 text-pink-600">
+                            <Users className="w-5 h-5 mt-1" /> Target
+                        </h2>
 
-                    <label className="block mb-1">Target Type</label>
-                    <select
-                        name="targetType"
-                        value={formData.targetType}
-                        onChange={handleChange}
-                        className="w-full mb-4 border border-gray-300 p-3 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-                        required
-                    >
-                        <option value="">-- Select Target Type --</option>
-                        <option value="colleges">Colleges</option>
-                        <option value="groups">Groups</option>
-                        <option value="students">Students</option>
-                    </select>
-
-                    {formData.targetType === "colleges" && (
-                        <>
-                        <button
-                            type="button"
-                            onClick={() => setShowCollegeModal(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        <label className="block mb-1">Target Type</label>
+                        <select
+                            name="targetType"
+                            value={formData.targetType}
+                            onChange={handleChange}
+                            className="w-full mb-4 border border-gray-300 p-3 rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                            required
                         >
-                            Select Colleges
-                        </button>
-                        <ul className="mt-2 space-y-1 text-sm">
-                            {formData.assignedColleges.map((c, i) => (
-                            <li
-                                key={typeof c.id === "string" || typeof c.id === "number" ? c.id : i}
-                                className="bg-blue-50 p-2 rounded flex justify-between"
-                            >
-                                {typeof c.name === "object"
-                                ? `${c.name.name} (${c.name.email})`
-                                : c.name}
-                                <button
-                                onClick={() =>
-                                    setFormData((prev) => ({
-                                    ...prev,
-                                    assignedColleges: prev.assignedColleges.filter((_, idx) => idx !== i),
-                                    }))
-                                }
-                                className="text-red-500 text-xs"
-                                >
-                                ✕
-                                </button>
-                            </li>
-                            ))}
-                        </ul>
-                        </>
-                    )}
+                            <option value="">-- Select Target Type --</option>
+                            <option value="colleges">Colleges</option>
+                            <option value="groups">Groups</option>
+                            <option value="students">Students</option>
+                        </select>
 
-                    {formData.targetType === "groups" && (
-                        <>
-                        <button
-                            type="button"
-                            onClick={() => setShowGroupModal(true)}
-                            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
-                        >
-                            Select Groups
-                        </button>
-                        <ul className="mt-2 space-y-1 text-sm">
-                            {formData.assignedGroups.map((g, i) => (
-                            <li
-                                key={typeof g.id === "string" || typeof g.id === "number" ? g.id : i}
-                                className="bg-pink-50 p-2 rounded flex justify-between"
-                            >
-                                {typeof g.name === "object"
-                                ? `${g.name.name} (${g.name.email})`
-                                : g.name}
+                        {formData.targetType === "colleges" && (
+                            <>
                                 <button
-                                onClick={() =>
-                                    setFormData((prev) => ({
-                                    ...prev,
-                                    assignedGroups: prev.assignedGroups.filter((_, idx) => idx !== i),
-                                    }))
-                                }
-                                className="text-red-500 text-xs"
+                                    type="button"
+                                    onClick={() => setShowCollegeModal(true)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                ✕
+                                    Select Colleges
                                 </button>
-                            </li>
-                            ))}
-                        </ul>
-                        </>
-                    )}
+                                <ul className="mt-2 space-y-1 text-sm">
+                                    {formData.assignedColleges.map((c, i) => (
+                                        <li
+                                            key={typeof c.id === "string" || typeof c.id === "number" ? c.id : i}
+                                            className="bg-blue-50 p-2 rounded flex justify-between"
+                                        >
+                                            {typeof c.name === "object"
+                                                ? `${c.name.name} (${c.name.email})`
+                                                : c.name}
+                                            <button
+                                                onClick={() =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        assignedColleges: prev.assignedColleges.filter((_, idx) => idx !== i),
+                                                    }))
+                                                }
+                                                className="text-red-500 text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
 
-                    {formData.targetType === "students" && (
-                        <>
-                        <button
-                            type="button"
-                            onClick={() => setShowStudentModal(true)}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                        >
-                            Select Students
-                        </button>
-                        <ul className="mt-2 space-y-1 text-sm">
-                            {formData.assignedStudents.map((s, i) => (
-                            <li
-                                key={typeof s.id === "string" || typeof s.id === "number" ? s.id : i}
-                                className="bg-green-50 p-2 rounded flex justify-between"
-                            >
-                                {typeof s.name === "object"
-                                ? `${s.name.name} (${s.name.email})`
-                                : s.name}
+                        {formData.targetType === "groups" && (
+                            <>
                                 <button
-                                onClick={() =>
-                                    setFormData((prev) => ({
-                                    ...prev,
-                                    assignedStudents: prev.assignedStudents.filter((_, idx) => idx !== i),
-                                    }))
-                                }
-                                className="text-red-500 text-xs"
+                                    type="button"
+                                    onClick={() => setShowGroupModal(true)}
+                                    className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
                                 >
-                                ✕
+                                    Select Groups
                                 </button>
-                            </li>
-                            ))}
-                        </ul>
-                        </>
-                    )}
+                                <ul className="mt-2 space-y-1 text-sm">
+                                    {formData.assignedGroups.map((g, i) => (
+                                        <li
+                                            key={typeof g.id === "string" || typeof g.id === "number" ? g.id : i}
+                                            className="bg-pink-50 p-2 rounded flex justify-between"
+                                        >
+                                            {typeof g.name === "object"
+                                                ? `${g.name.name} (${g.name.email})`
+                                                : g.name}
+                                            <button
+                                                onClick={() =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        assignedGroups: prev.assignedGroups.filter((_, idx) => idx !== i),
+                                                    }))
+                                                }
+                                                className="text-red-500 text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
+
+                        {formData.targetType === "students" && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStudentModal(true)}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                                >
+                                    Select Students
+                                </button>
+                                <ul className="mt-2 space-y-1 text-sm">
+                                    {formData.assignedStudents.map((s, i) => (
+                                        <li
+                                            key={typeof s.id === "string" || typeof s.id === "number" ? s.id : i}
+                                            className="bg-green-50 p-2 rounded flex justify-between"
+                                        >
+                                            {typeof s.name === "object"
+                                                ? `${s.name.name} (${s.name.email})`
+                                                : s.name}
+                                            <button
+                                                onClick={() =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        assignedStudents: prev.assignedStudents.filter((_, idx) => idx !== i),
+                                                    }))
+                                                }
+                                                className="text-red-500 text-xs"
+                                            >
+                                                ✕
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
                     </div>
 
                     {/* Assignment Settings */}
@@ -529,7 +578,7 @@ useEffect(() => {
                             ← Go Back
                         </button>
                         <div className="flex gap-4">
-                           
+
                             <button
                                 type="submit"
                                 disabled={loading}
