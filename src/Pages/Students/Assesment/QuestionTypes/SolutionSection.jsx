@@ -497,6 +497,17 @@ const SolutionSection = ({
     return () => clearTimeout(debounceTimer);
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
 
+  // FEATURE: Auto-populate custom input with first sample test case
+  useEffect(() => {
+    // Only populate if custom input is empty and we have sample test cases
+    if (!customInput && fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
+      const firstTestCase = fullDetails.sample_test_cases[0];
+      if (firstTestCase?.input && firstTestCase.input.trim()) {
+        setCustomInput(firstTestCase.input.trim());
+      }
+    }
+  }, [fullDetails?.sample_test_cases, customInput]);
+
   // Clear results when question changes (backup cleanup)
   useEffect(() => {
     if (question?._id && currentQuestionId !== question._id) {
@@ -1750,18 +1761,40 @@ const SolutionSection = ({
       {showCustomInput && (
         <div className="border-t border-gray-200 pt-6">
           <div className="space-y-3">
-            <label className="flex items-center gap-2 text-base font-medium text-gray-800">
-              <Terminal className="w-5 h-5" />
-              Custom Input (stdin)
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-base font-medium text-gray-800">
+                <Terminal className="w-5 h-5" />
+                Custom Input (stdin)
+              </label>
+              {fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 && (
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                  Pre-filled with Sample Test Case 1
+                </span>
+              )}
+            </div>
             <div className="bg-gray-50 rounded-lg shadow-sm">
-              <textarea
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                placeholder={`Enter input for your program (one value per line)...\nExample:\n5\n3\nHello World`}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none font-mono"
-                rows={6}
-              />
+              <div className="relative">
+                <textarea
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  placeholder={fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 
+                    ? "Auto-filled with first sample test case input. You can edit this if needed..."
+                    : "Enter input for your program (one value per line)...\nExample:\n5\n3\nHello World"
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none font-mono"
+                  rows={6}
+                />
+                {fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomInput(fullDetails.sample_test_cases[0].input)}
+                    className="absolute top-2 right-2 bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded hover:bg-indigo-200 transition-colors duration-200 font-medium"
+                    title="Reset to first sample test case input"
+                  >
+                    Reset Sample
+                  </button>
+                )}
+              </div>
               <div className="flex items-center justify-between mt-2 px-2 pb-1 text-xs text-gray-500">
                 <div>This input will be passed to your program via stdin</div>
                 <div>
