@@ -20,7 +20,7 @@ const defaultQuestionData = (order = 1) => ({
 const AddQuestionToSection = () => {
   const { id: sectionID } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();   
+  const location = useLocation();
   const totalMarks = location.state?.totalMarks;
   const existingQuestionCount = location.state?.questionCount || 0;
   const marksPerQuestion = 1; // Assuming 1 mark per question as per your data
@@ -39,12 +39,12 @@ const AddQuestionToSection = () => {
   useEffect(() => {
     const sum = questions.reduce((total, q) => total + (q.submitted ? 0 : q.marks), 0);
     setCurrentTotalMarks(sum);
-    
+
     const remaining = Math.floor(
       (totalMarks - (existingQuestionCount * marksPerQuestion) - sum) / marksPerQuestion
     );
     setRemainingQuestions(remaining);
-    
+
     if (sum > (totalMarks - (existingQuestionCount * marksPerQuestion))) {
       setMarksError(`Cannot exceed total section marks! (${totalMarks} total, ${existingQuestionCount * marksPerQuestion} already used)`);
     } else {
@@ -75,7 +75,7 @@ const AddQuestionToSection = () => {
       setMarksError(`Cannot add more questions. Maximum ${totalMarks} marks reached.`);
       return;
     }
-    
+
     const nextOrder = existingQuestionCount + questions.length + 1;
     setQuestions([...questions, defaultQuestionData(nextOrder)]);
   };
@@ -98,7 +98,7 @@ const AddQuestionToSection = () => {
         updated[i].statusMessage = "❌ Question title is required";
         continue;
       }
-      
+
       if (q.options.some(opt => !opt.trim())) {
         updated[i].statusMessage = "❌ All options must be filled";
         continue;
@@ -141,7 +141,7 @@ const AddQuestionToSection = () => {
 
     setQuestions(updated);
     setGlobalLoading(false);
-    
+
     // Check if all questions are submitted
     if (updated.every(q => q.submitted)) {
       toast.success("🎉 All questions submitted successfully!");
@@ -149,65 +149,104 @@ const AddQuestionToSection = () => {
     }
   };
 
-  const parseBulkInput = () => {
-    const blocks = bulkInput.trim().split(/\n(?=Question\s+\d+)/i);
-    const parsedQuestions = [];
-    let totalParsedMarks = 0;
+ const parseBulkInput = () => {
+  const questionBlocks = bulkInput.trim().split(/\n(?=Question\s+\d+)/i);
+  const parsedQuestions = [];
+  let totalParsedMarks = 0;
 
-    blocks.forEach((block, i) => {
-      if (remainingQuestions <= 0) {
-        toast.error(`Cannot add more questions. Maximum ${totalMarks} marks reached.`);
+  questionBlocks.forEach((block, blockIndex) => {
+    if (remainingQuestions <= 0) return;
+
+    const lines = block.split('\n');
+    const questionData = {
+      ...defaultQuestionData(existingQuestionCount + blockIndex + 1),
+      title: "",
+      options: ["", "", "", ""],
+      correctOptionIndex: -1,
+      marks: 1,
+      difficulty: "easy"
+    };
+
+    let currentSection = null;
+    let currentOptionIndex = -1;
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      if (!line) continue;
+
+      // Handle multi-line content by checking if the next line is part of current content
+      while (i + 1 < lines.length && 
+             !lines[i + 1].trim().match(/^(Question|Title|Options|Correct Option|Marks|Sequence Order|Difficulty|Option [1-4])/i) &&
+             lines[i + 1].trim() !== "") {
+        line += '\n' + lines[i + 1].trim();
+        i++;
+      }
+
+      // Detect sections
+      if (line.match(/^Question\s+\d+/i)) {
+        continue;
+      }
+      else if (line.match(/^Title\s*\*/i)) {
+        questionData.title = line.replace(/^Title\s*\*\s*/, '').trim();
+      }
+      else if (line.match(/^Options\s*\*/i)) {
+        currentSection = 'options';
+      }
+      else if (line.match(/^Correct\s+Option/i)) {
+        const value = line.replace(/^Correct\s+Option\s*/i, '').trim();
+        questionData.correctOptionIndex = parseInt(value) - 1;
+      }
+      else if (line.match(/^Marks\s*\*/i)) {
+        const value = line.replace(/^Marks\s*\*\s*/i, '').trim();
+        questionData.marks = parseInt(value) || 1;
+      }
+      else if (line.match(/^Sequence\s+Order\s*\*/i)) {
+        const value = line.replace(/^Sequence\s+Order\s*\*\s*/i, '').trim();
+        questionData.sequence_order = parseInt(value) || questionData.sequence_order;
+      }
+      else if (line.match(/^Difficulty/i)) {
+        questionData.difficulty = line.replace(/^Difficulty\s*/i, '').trim() || "easy";
+      }
+      else if (line.match(/^Option\s+[1-4]/i)) {
+        const match = line.match(/^Option\s+([1-4])/i);
+        if (match) {
+          const optionNum = parseInt(match[1]) - 1;
+          const optionText = line.replace(/^Option\s+[1-4]\s*/i, '').trim();
+          questionData.options[optionNum] = optionText;
+        }
+      }
+      else if (questionData.title && currentSection !== 'options') {
+        // If we have text that doesn't match any pattern, add it to the title
+        questionData.title += '\n' + line;
+      }
+    }
+
+    // Validate and add question
+    if (questionData.title.trim() &&
+        questionData.options.every(opt => opt.trim()) &&
+        questionData.correctOptionIndex >= 0 &&
+        questionData.correctOptionIndex <= 3) {
+
+      if (totalParsedMarks + questionData.marks > (totalMarks - (existingQuestionCount * marksPerQuestion))) {
+        toast.warn(`Skipping question ${blockIndex + 1} - exceeds remaining marks`);
         return;
       }
 
-      const lines = block.trim().split("\n");
-
-      const getField = (prefix) =>
-        lines.find((line) => line.toLowerCase().startsWith(prefix.toLowerCase()));
-
-      const title = getField("Title *")?.split("Title *")[1]?.trim();
-      const opt1 = getField("Option 1")?.split("Option 1")[1]?.trim();
-      const opt2 = getField("Option 2")?.split("Option 2")[1]?.trim();
-      const opt3 = getField("Option 3")?.split("Option 3")[1]?.trim();
-      const opt4 = getField("Option 4")?.split("Option 4")[1]?.trim();
-      const correctOption = parseInt(getField("Correct Option")?.split("Correct Option")[1]?.trim()) - 1;
-      const marks = parseInt(getField("Marks *")?.split("Marks *")[1]?.trim()) || 1;
-      const order = existingQuestionCount + i + 1;
-      const difficulty = getField("Difficulty")?.split("Difficulty")[1]?.trim() || "easy";
-
-      if (
-        title &&
-        [opt1, opt2, opt3, opt4].every(Boolean) &&
-        correctOption >= 0 &&
-        correctOption <= 3
-      ) {
-        if (totalParsedMarks + marks > (totalMarks - (existingQuestionCount * marksPerQuestion))) {
-          toast.warn(`Skipping question ${i+1} as it would exceed remaining marks`);
-          return;
-        }
-        
-        parsedQuestions.push({
-          ...defaultQuestionData(order),
-          title,
-          options: [opt1, opt2, opt3, opt4],
-          correctOptionIndex: correctOption,
-          marks,
-          sequence_order: order,
-          difficulty,
-        });
-        
-        totalParsedMarks += marks;
-      }
-    });
-
-    if (parsedQuestions.length > 0) {
-      setQuestions(parsedQuestions);
-      setMode("form");
-      toast.success(`✅ Parsed ${parsedQuestions.length} questions`);
+      parsedQuestions.push(questionData);
+      totalParsedMarks += questionData.marks;
     } else {
-      toast.error("No valid questions parsed. Please check the format.");
+      console.log("Invalid question data:", questionData);
     }
-  };
+  });
+
+  if (parsedQuestions.length > 0) {
+    setQuestions(parsedQuestions);
+    setMode("form");
+    toast.success(`✅ Parsed ${parsedQuestions.length} questions`);
+  } else {
+    toast.error("No valid questions parsed. Please check the format.");
+  }
+};
 
   return (
     <div className="max-w-5xl mx-auto p-6">
@@ -225,17 +264,15 @@ const AddQuestionToSection = () => {
         <div className="space-x-3">
           <button
             onClick={() => setMode("form")}
-            className={`px-3 py-1 rounded-md text-sm ${
-              mode === "form" ? "bg-indigo-600 text-white" : "bg-gray-200"
-            }`}
+            className={`px-3 py-1 rounded-md text-sm ${mode === "form" ? "bg-indigo-600 text-white" : "bg-gray-200"
+              }`}
           >
             Form Mode
           </button>
           <button
             onClick={() => setMode("bulk")}
-            className={`px-3 py-1 rounded-md text-sm ${
-              mode === "bulk" ? "bg-indigo-600 text-white" : "bg-gray-200"
-            }`}
+            className={`px-3 py-1 rounded-md text-sm ${mode === "bulk" ? "bg-indigo-600 text-white" : "bg-gray-200"
+              }`}
           >
             Bulk Paste Mode
           </button>
@@ -244,12 +281,12 @@ const AddQuestionToSection = () => {
 
       {totalMarks && (
         <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-<p className="font-semibold text-blue-800">
-          Section Status: Total Marks: {totalMarks} | 
-          Existing Questions: {existingQuestionCount} | 
-          Adding: {questions.length} questions | 
-          Can Add: {remainingQuestions} more questions
-        </p>
+          <p className="font-semibold text-blue-800">
+            Section Status: Total Marks: {totalMarks} |
+            Existing Questions: {existingQuestionCount} |
+            Adding: {questions.length} questions |
+            Can Add: {remainingQuestions} more questions
+          </p>
           {marksError && (
             <p className="text-red-600 mt-1 font-medium">{marksError}</p>
           )}
@@ -259,29 +296,125 @@ const AddQuestionToSection = () => {
       {mode === "bulk" ? (
         <div className="bg-white p-6 rounded-xl shadow border border-gray-200">
           <label className="block font-semibold text-gray-700 mb-2">
-            Paste Questions (Format below):
+            Paste Questions (Use the format below):
           </label>
+
+          {/* Format example that's easy to copy */}
+          <div className="mb-4 p-4 bg-gray-50 rounded border border-gray-200 font-mono text-sm">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-gray-600">Copy this format:</span>
+              <button
+                onClick={() => {
+                  const textToCopy = `Question 1
+Title * What is 2 + 2?
+Options *
+Option 1 2
+Option 2 3
+Option 3 4
+Option 4 5
+Correct Option 3
+Marks * 1
+Sequence Order * 1
+Difficulty easy
+
+Question 2
+Title * What is capital of France?
+Options *
+Option 1 Berlin
+Option 2 Paris
+Option 3 Rome
+Option 4 Madrid
+Correct Option 2
+Marks * 1
+Sequence Order * 2
+Difficulty easy`;
+                  navigator.clipboard.writeText(textToCopy);
+                  toast.success("Format copied to clipboard!");
+                }}
+                className="text-indigo-600 hover:text-indigo-800 text-xs flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+                Copy Format
+              </button>
+            </div>
+     <pre className="whitespace-pre-wrap">
+{`Question 1
+Title * What is 2 + 2?
+a=10;
+b=5;
+Options *
+Option 1 2
+Option 2 3
+Option 3 4
+Option 4 5
+Correct Option 3
+Marks * 1
+Sequence Order * 1
+Difficulty easy
+
+Question 2
+Title * What is capital of France?
+Options *
+Option 1 Berlin
+Option 2 Paris
+Option 3 Rome
+Option 4 Madrid
+Correct Option 2
+Marks * 1
+Sequence Order * 2
+Difficulty easy`}
+</pre>
+          </div>
+
+          {/* Input area */}
           <textarea
             rows={15}
             value={bulkInput}
             onChange={(e) => setBulkInput(e.target.value)}
             className="w-full border px-4 py-2 rounded-md text-sm font-mono"
-            placeholder={`Question 1\nTitle * What is 2 + 2?\nOptions *\nOption 1 2\nOption 2 3\nOption 3 4\nOption 4 5\nCorrect Option 3\nMarks * 1\nSequence Order * 1\nDifficulty easy\n\nQuestion 2\nTitle * What is capital of France?\nOptions *\nOption 1 Berlin\nOption 2 Paris\nOption 3 Rome\nOption 4 Madrid\nCorrect Option 2\nMarks * 1\nSequence Order * 2\nDifficulty easy`}
+            placeholder="Paste your questions here using the format above..."
           />
-          <div className="mt-2 text-sm text-gray-600">
-            <p className="font-semibold">Notes:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Each question must start with "Question X"</li>
-              <li>Required fields are marked with *</li>
-              <li>Correct Option should be the option number (1-4)</li>
-              {totalMarks && <li>Total marks of all questions cannot exceed {totalMarks}</li>}
-            </ul>
+
+          {/* Format instructions */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2">📝 Format Instructions:</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="font-medium text-blue-700">Required Fields:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><code>Title *</code> - The question text (supports multiple lines)</li>
+                  <li><code>Options *</code> - Header before options</li>
+                  <li><code>Option 1</code> to <code>Option 4</code> - All four options</li>
+                  <li><code>Correct Option</code> - Number (1-4)</li>
+                  <li><code>Marks *</code> - Points for this question</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-medium text-blue-700">Optional Fields:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><code>Sequence Order *</code> - Display order</li>
+                  <li><code>Difficulty</code> - easy/medium/hard</li>
+                </ul>
+                <p className="mt-2 font-medium text-blue-700">Multi-line Support:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Title can span multiple lines after "Title *"</li>
+                  <li>Options can also span multiple lines</li>
+                  <li>Blank lines between questions are required</li>
+                </ul>
+              </div>
+            </div>
           </div>
+
           <button
             onClick={parseBulkInput}
-            className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-md shadow"
+            className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-md shadow flex items-center gap-2 justify-center"
           >
-            📄 Parse Questions
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            Parse Questions
           </button>
         </div>
       ) : (
@@ -311,58 +444,55 @@ const AddQuestionToSection = () => {
 
               {q.statusMessage && (
                 <div
-                  className={`mb-4 px-4 py-2 rounded text-white text-sm shadow ${
-                    q.statusMessage.startsWith("✅") ? "bg-green-500" : "bg-red-500"
-                  }`}
+                  className={`mb-4 px-4 py-2 rounded text-white text-sm shadow ${q.statusMessage.startsWith("✅") ? "bg-green-500" : "bg-red-500"
+                    }`}
                 >
                   {q.statusMessage}
                 </div>
               )}
 
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 border rounded-md"
-                    value={q.title}
-                    onChange={(e) =>
-                      handleChange(index, "title", e.target.value)
-                    }
-                    required
-                    disabled={q.submitted}
-                  />
-                </div>
+             <div>
+    <label className="block text-sm font-semibold text-gray-700">
+      Title *
+    </label>
+    <textarea
+      className="w-full px-4 py-2 border rounded-md"
+      value={q.title}
+      onChange={(e) => handleChange(index, "title", e.target.value)}
+      rows="3"
+      required
+      disabled={q.submitted}
+      placeholder="Enter your question text here..."
+    />
+  </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Options *
-                  </label>
-                  {q.options.map((opt, idx) => (
-                    <div key={idx} className="flex items-center mb-2 gap-2">
-                      <input
-                        type="radio"
-                        name={`correctOption-${index}`}
-                        checked={q.correctOptionIndex === idx}
-                        onChange={() => handleCorrectOption(index, idx)}
-                        disabled={q.submitted}
-                      />
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border rounded-md"
-                        value={opt}
-                        onChange={(e) =>
-                          handleOptionChange(index, idx, e.target.value)
-                        }
-                        placeholder={`Option ${idx + 1}`}
-                        required
-                        disabled={q.submitted}
-                      />
-                    </div>
-                  ))}
-                </div>
+  <div>
+    <label className="block text-sm font-semibold text-gray-700">
+      Options *
+    </label>
+    {q.options.map((opt, idx) => (
+      <div key={idx} className="flex items-start mb-2 gap-2">
+        <input
+          type="radio"
+          name={`correctOption-${index}`}
+          checked={q.correctOptionIndex === idx}
+          onChange={() => handleCorrectOption(index, idx)}
+          disabled={q.submitted}
+          className="mt-2"
+        />
+        <textarea
+          className="w-full px-3 py-2 border rounded-md"
+          value={opt}
+          onChange={(e) => handleOptionChange(index, idx, e.target.value)}
+          placeholder={`Option ${idx + 1}`}
+          rows="2"
+          required
+          disabled={q.submitted}
+        />
+      </div>
+    ))}
+  </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -430,9 +560,8 @@ const AddQuestionToSection = () => {
             <button
               onClick={handleSubmitAll}
               disabled={globalLoading || !!marksError || currentTotalMarks === 0}
-              className={`bg-indigo-600 text-white font-semibold px-6 py-2 rounded-md shadow ${
-                globalLoading || marksError || currentTotalMarks === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-700"
-              }`}
+              className={`bg-indigo-600 text-white font-semibold px-6 py-2 rounded-md shadow ${globalLoading || marksError || currentTotalMarks === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-indigo-700"
+                }`}
             >
               {globalLoading ? "Submitting..." : "🚀 Submit All Questions"}
             </button>

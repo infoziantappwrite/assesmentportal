@@ -8,6 +8,7 @@ import {
   ArrowLeft, FileText, PlusCircle, Code2, Beaker, ShieldCheck,
   Hash, Star, ListOrdered, Settings, FileCode, TestTube2, ChevronDown, X,
 } from "lucide-react";
+import { toast } from 'react-toastify';
 
 const LANGUAGE_IDS = {
   java: 62,
@@ -51,15 +52,15 @@ const AddQuestionToSectionCode = () => {
         { input: "", output: "", explanation: "" }
       ],
       hidden_test_cases: [
-      {
-        test_case_id: "", 
-        input: "", 
-        expected_output: "",
-        marks_weightage: initialMarks,
-        time_limit_ms: 1000,
-        memory_limit_mb: 256
-      }
-    ],
+        {
+          test_case_id: "",
+          input: "",
+          expected_output: "",
+          marks_weightage: initialMarks,
+          time_limit_ms: 1000,
+          memory_limit_mb: 256
+        }
+      ],
       supported_languages: [
         {
           language: "python3",
@@ -76,94 +77,93 @@ const AddQuestionToSectionCode = () => {
 
 
   const [activeSection, setActiveSection] = useState("basic");
-  const [successMessage, setSuccessMessage] = useState("");
   const [tagInput, setTagInput] = useState("");
 
 
   const handleChange = (e, path = []) => {
-  const { name, value } = e.target;
-  setFormData(prev => {
-    const updated = JSON.parse(JSON.stringify(prev));
-    
-    let target = updated;
-    for (const key of path) target = target[key];
-    target[name] = value;
-    
-    // If marks changed, redistribute weightage
-    if (name === 'marks') {
-      updated.coding_details.hidden_test_cases = distributeMarksWeightage(
-        updated.coding_details.hidden_test_cases,
-        Number(value)
-      );
-    }
-    
-    return updated;
-  });
-};
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const updated = JSON.parse(JSON.stringify(prev));
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    // Validate problem statement
-    const ps = formData.coding_details.problem_statement.trim();
-    if (ps.length < 5) {
-      alert("Problem statement must be at least 5 characters.");
-      return;
-    }
+      let target = updated;
+      for (const key of path) target = target[key];
+      target[name] = value;
 
-    // Validate test cases
-    const hasValidSampleCases = formData.coding_details.sample_test_cases.some(
-      tc => tc.input.trim() !== "" && tc.output.trim() !== ""
-    );
-    
-    const hasValidHiddenCases = formData.coding_details.hidden_test_cases.some(
-      tc => tc.input.trim() !== "" && tc.expected_output.trim() !== ""
-    );
-
-    if (!hasValidSampleCases) {
-      alert("Please add at least one valid sample test case");
-      return;
-    }
-
-    if (!hasValidHiddenCases) {
-      alert("Please add at least one valid hidden test case");
-      return;
-    }
-
-    const submissionData = {
-      ...formData,
-      marks: Number(formData.marks),
-      sequence_order: Number(formData.sequence_order),
-      coding_details: {
-        ...formData.coding_details,
-        algorithm_tags: formData.coding_details.algorithm_tags
-          .filter(tag => tag.trim() !== "")
-          .map(tag => `"${tag.replace(/"/g, '')}"`),
-        sample_test_cases: formData.coding_details.sample_test_cases.filter(
-          tc => tc.input.trim() !== "" && tc.output.trim() !== ""
-        ),
-        hidden_test_cases: formData.coding_details.hidden_test_cases.filter(
-          tc => tc.input.trim() !== "" && tc.expected_output.trim() !== ""
-        )
+      // If marks changed, redistribute weightage
+      if (name === 'marks') {
+        updated.coding_details.hidden_test_cases = distributeMarksWeightage(
+          updated.coding_details.hidden_test_cases,
+          Number(value)
+        );
       }
-    };
 
-    const res = await createQuestionInSection(sectionID, submissionData);
-    const questionId = res?.question?._id;
-    if (questionId) {
-      await addTestCasesToCodingQuestion(questionId, {
-        sampleTestCases: submissionData.coding_details.sample_test_cases,
-        hiddenTestCases: submissionData.coding_details.hidden_test_cases,
-        supportedLanguages: submissionData.coding_details.supported_languages,
-      });
-      setSuccessMessage("Question added successfully!");
-      setTimeout(() => navigate(`/admin/sections/${sectionID}/questions`), 1500);
+      return updated;
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      // Validate problem statement
+      const ps = formData.coding_details.problem_statement.trim();
+      if (ps.length < 5) {
+        toast.error("Problem statement must be at least 5 characters.");
+        return;
+      }
+
+      // Validate test cases
+      const hasValidSampleCases = formData.coding_details.sample_test_cases.some(
+        tc => tc.input.trim() !== "" && tc.output.trim() !== ""
+      );
+
+      const hasValidHiddenCases = formData.coding_details.hidden_test_cases.some(
+        tc => tc.input.trim() !== "" && tc.expected_output.trim() !== ""
+      );
+
+      if (!hasValidSampleCases) {
+        toast.error("Please add at least one valid sample test case");
+        return;
+      }
+
+      if (!hasValidHiddenCases) {
+        toast.error("Please add at least one valid hidden test case");
+        return;
+      }
+
+      const submissionData = {
+        ...formData,
+        marks: Number(formData.marks),
+        sequence_order: Number(formData.sequence_order),
+        coding_details: {
+          ...formData.coding_details,
+          algorithm_tags: formData.coding_details.algorithm_tags
+            .filter(tag => tag.trim() !== "")
+            .map(tag => `"${tag.replace(/"/g, '')}"`),
+          sample_test_cases: formData.coding_details.sample_test_cases.filter(
+            tc => tc.input.trim() !== "" && tc.output.trim() !== ""
+          ),
+          hidden_test_cases: formData.coding_details.hidden_test_cases.filter(
+            tc => tc.input.trim() !== "" && tc.expected_output.trim() !== ""
+          )
+        }
+      };
+
+      const res = await createQuestionInSection(sectionID, submissionData);
+      const questionId = res?.question?._id;
+      if (questionId) {
+        await addTestCasesToCodingQuestion(questionId, {
+          sampleTestCases: submissionData.coding_details.sample_test_cases,
+          hiddenTestCases: submissionData.coding_details.hidden_test_cases,
+          supportedLanguages: submissionData.coding_details.supported_languages,
+        });
+        toast.success("Question added successfully!");
+        setTimeout(() => navigate(`/admin/sections/${sectionID}/questions`), 1500);
+      }
+    } catch (err) {
+      console.error("Failed to submit coding question", err);
+      toast.error(`Error: ${err.response?.data?.message || err.message}`);
     }
-  } catch (err) {
-    console.error("Failed to submit coding question", err);
-    alert(`Error: ${err.response?.data?.message || err.message}`);
-  }
-};
+  };
 
   const handleLanguageChange = (e) => {
     const lang = e.target.value;
@@ -181,60 +181,60 @@ const AddQuestionToSectionCode = () => {
   };
 
   const addTestCase = (type) => {
-  setFormData(prev => {
-    const newData = JSON.parse(JSON.stringify(prev));
-    if (type === 'sample') {
-      newData.coding_details.sample_test_cases.push({
-        input: "", output: "", explanation: ""
-      });
-    } else {
-      const newHiddenTestCases = [
-        ...newData.coding_details.hidden_test_cases,
-        {
-          test_case_id: "", 
-          input: "", 
-          expected_output: "",
-          marks_weightage: 1, // Temporary value, will be updated
-          time_limit_ms: 1000,
-          memory_limit_mb: 256
-        }
-      ];
-      
-      newData.coding_details.hidden_test_cases = distributeMarksWeightage(
-        newHiddenTestCases,
-        newData.marks
-      );
-    }
-    return newData;
-  });
-};
+    setFormData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      if (type === 'sample') {
+        newData.coding_details.sample_test_cases.push({
+          input: "", output: "", explanation: ""
+        });
+      } else {
+        const newHiddenTestCases = [
+          ...newData.coding_details.hidden_test_cases,
+          {
+            test_case_id: "",
+            input: "",
+            expected_output: "",
+            marks_weightage: 1, // Temporary value, will be updated
+            time_limit_ms: 1000,
+            memory_limit_mb: 256
+          }
+        ];
 
-const removeTestCase = (type, index) => {
-  setFormData(prev => {
-    const newData = JSON.parse(JSON.stringify(prev));
-    if (type === 'sample') {
-      if (newData.coding_details.sample_test_cases.length <= 1) {
-        alert("You must have at least one sample test case");
-        return prev;
+        newData.coding_details.hidden_test_cases = distributeMarksWeightage(
+          newHiddenTestCases,
+          newData.marks
+        );
       }
-      newData.coding_details.sample_test_cases.splice(index, 1);
-    } else {
-      if (newData.coding_details.hidden_test_cases.length <= 1) {
-        alert("You must have at least one hidden test case");
-        return prev;
+      return newData;
+    });
+  };
+
+  const removeTestCase = (type, index) => {
+    setFormData(prev => {
+      const newData = JSON.parse(JSON.stringify(prev));
+      if (type === 'sample') {
+        if (newData.coding_details.sample_test_cases.length <= 1) {
+          toast.warn("You must have at least one sample test case");
+          return prev;
+        }
+        newData.coding_details.sample_test_cases.splice(index, 1);
+      } else {
+        if (newData.coding_details.hidden_test_cases.length <= 1) {
+          toast.warn("You must have at least one hidden test case");
+          return prev;
+        }
+
+        const newHiddenTestCases = [...newData.coding_details.hidden_test_cases];
+        newHiddenTestCases.splice(index, 1);
+
+        newData.coding_details.hidden_test_cases = distributeMarksWeightage(
+          newHiddenTestCases,
+          newData.marks
+        );
       }
-      
-      const newHiddenTestCases = [...newData.coding_details.hidden_test_cases];
-      newHiddenTestCases.splice(index, 1);
-      
-      newData.coding_details.hidden_test_cases = distributeMarksWeightage(
-        newHiddenTestCases,
-        newData.marks
-      );
-    }
-    return newData;
-  });
-};
+      return newData;
+    });
+  };
 
   const sections = [
     { id: "basic", title: "Basic Info", icon: Settings },
@@ -245,14 +245,14 @@ const removeTestCase = (type, index) => {
 
 
   const distributeMarksWeightage = (hiddenTestCases, totalMarks) => {
-  if (hiddenTestCases.length === 0) return [];
-  
-  const weightPerCase = Math.round((totalMarks / hiddenTestCases.length) * 100) / 100; // Round to 2 decimal places
-  return hiddenTestCases.map(testCase => ({
-    ...testCase,
-    marks_weightage: weightPerCase
-  }));
-};
+    if (hiddenTestCases.length === 0) return [];
+
+    const weightPerCase = Math.round((totalMarks / hiddenTestCases.length) * 100) / 100; // Round to 2 decimal places
+    return hiddenTestCases.map(testCase => ({
+      ...testCase,
+      marks_weightage: weightPerCase
+    }));
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -264,12 +264,7 @@ const removeTestCase = (type, index) => {
           <ArrowLeft className="w-5 h-5 mr-2" />
           <span className="font-medium">Back to Questions</span>
         </button>
-        {successMessage && (
-          <div className="bg-green-100 border border-green-200 text-green-800 px-4 py-2 rounded-lg flex items-center gap-2">
-            <CheckCircle className="w-5 h-5" />
-            {successMessage}
-          </div>
-        )}
+       
       </div>
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -435,7 +430,9 @@ const removeTestCase = (type, index) => {
                               : [...prev.coding_details.algorithm_tags, tagInput.trim()]
                           }
                         }));
-                        setTagInput(""); // clear input after adding
+                        toast.success("Tag added");
+
+                        setTagInput("");
                       }
                     }}
                   />
@@ -482,7 +479,7 @@ const removeTestCase = (type, index) => {
                           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {field}
                           </label>
-                          <input
+                          <textarea
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
                             value={testCase[field]}
                             onChange={(e) => {
@@ -500,124 +497,124 @@ const removeTestCase = (type, index) => {
 
               {/* Hidden Test Cases */}
               {/* Hidden Test Cases */}
-<div className="space-y-4 pt-6">
-  <div className="flex items-center justify-between">
-    <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
-      <ShieldCheck className="w-5 h-5 text-red-500" />
-      Hidden Test Cases
-    </h3>
-    <button
-      type="button"
-      onClick={() => addTestCase('hidden')}
-      className="text-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1 rounded-lg flex items-center gap-1"
-    >
-      <PlusCircle className="w-4 h-4" /> Add Case
-    </button>
-  </div>
+              <div className="space-y-4 pt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-red-500" />
+                    Hidden Test Cases
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => addTestCase('hidden')}
+                    className="text-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1 rounded-lg flex items-center gap-1"
+                  >
+                    <PlusCircle className="w-4 h-4" /> Add Case
+                  </button>
+                </div>
 
-  {formData.coding_details.hidden_test_cases.map((testCase, index) => (
-    <div key={index} className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-600">Hidden Case #{index + 1}</span>
-        <button
-          type="button"
-          onClick={() => removeTestCase('hidden', index)}
-          className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1"
-        >
-          <X className="w-4 h-4" /> Remove
-        </button>
-      </div>
+                {formData.coding_details.hidden_test_cases.map((testCase, index) => (
+                  <div key={index} className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-600">Hidden Case #{index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeTestCase('hidden', index)}
+                        className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1"
+                      >
+                        <X className="w-4 h-4" /> Remove
+                      </button>
+                    </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        {['test_case_id', 'input', 'expected_output'].map(field => (
-          <div key={field} className="space-y-1">
-            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {field.replace(/_/g, ' ')}
-            </label>
-            {field === 'input' || field === 'expected_output' ? (
-              <textarea
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
-                value={testCase[field]}
-                onChange={(e) => {
-                  const updated = JSON.parse(JSON.stringify(formData));
-                  updated.coding_details.hidden_test_cases[index][field] = e.target.value;
-                  setFormData(updated);
-                }}
-                rows={3}
-              />
-            ) : (
-              <input
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
-                value={testCase[field]}
-                onChange={(e) => {
-                  const updated = JSON.parse(JSON.stringify(formData));
-                  updated.coding_details.hidden_test_cases[index][field] = e.target.value;
-                  setFormData(updated);
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+                    <div className="grid md:grid-cols-3 gap-4">
+                      {['test_case_id', 'input', 'expected_output'].map(field => (
+                        <div key={field} className="space-y-1">
+                          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {field.replace(/_/g, ' ')}
+                          </label>
+                          {field === 'input' || field === 'expected_output' ? (
+                            <textarea
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+                              value={testCase[field]}
+                              onChange={(e) => {
+                                const updated = JSON.parse(JSON.stringify(formData));
+                                updated.coding_details.hidden_test_cases[index][field] = e.target.value;
+                                setFormData(updated);
+                              }}
+                              rows={3}
+                            />
+                          ) : (
+                            <input
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+                              value={testCase[field]}
+                              onChange={(e) => {
+                                const updated = JSON.parse(JSON.stringify(formData));
+                                updated.coding_details.hidden_test_cases[index][field] = e.target.value;
+                                setFormData(updated);
+                              }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
 
-      {/* Test Case Configuration */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-1">
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Marks Weightage
-          </label>
-          <input
-            type="number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
-            value={testCase.marks_weightage || 1}
-            onChange={(e) => {
-              const updated = JSON.parse(JSON.stringify(formData));
-              updated.coding_details.hidden_test_cases[index].marks_weightage = Number(e.target.value);
-              setFormData(updated);
-            }}
-            min="1"
-          />
-        </div>
-        
-        <div className="space-y-1">
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Time Limit (ms)
-          </label>
-          <input
-            type="number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
-            value={testCase.time_limit_ms || 1000}
-            onChange={(e) => {
-              const updated = JSON.parse(JSON.stringify(formData));
-              updated.coding_details.hidden_test_cases[index].time_limit_ms = Number(e.target.value);
-              setFormData(updated);
-            }}
-            min="100"
-            step="100"
-          />
-        </div>
-        
-        <div className="space-y-1">
-          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Memory Limit (MB)
-          </label>
-          <input
-            type="number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
-            value={testCase.memory_limit_mb || 256}
-            onChange={(e) => {
-              const updated = JSON.parse(JSON.stringify(formData));
-              updated.coding_details.hidden_test_cases[index].memory_limit_mb = Number(e.target.value);
-              setFormData(updated);
-            }}
-            min="16"
-            step="16"
-          />
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
+                    {/* Test Case Configuration */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Marks Weightage
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+                          value={testCase.marks_weightage || 1}
+                          onChange={(e) => {
+                            const updated = JSON.parse(JSON.stringify(formData));
+                            updated.coding_details.hidden_test_cases[index].marks_weightage = Number(e.target.value);
+                            setFormData(updated);
+                          }}
+                          min="1"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Time Limit (ms)
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+                          value={testCase.time_limit_ms || 1000}
+                          onChange={(e) => {
+                            const updated = JSON.parse(JSON.stringify(formData));
+                            updated.coding_details.hidden_test_cases[index].time_limit_ms = Number(e.target.value);
+                            setFormData(updated);
+                          }}
+                          min="100"
+                          step="100"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Memory Limit (MB)
+                        </label>
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 transition"
+                          value={testCase.memory_limit_mb || 256}
+                          onChange={(e) => {
+                            const updated = JSON.parse(JSON.stringify(formData));
+                            updated.coding_details.hidden_test_cases[index].memory_limit_mb = Number(e.target.value);
+                            setFormData(updated);
+                          }}
+                          min="16"
+                          step="16"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
