@@ -1204,7 +1204,7 @@ const SolutionSection = ({
                 <option key={lang.language} value={lang.language}>
                   {lang.language.toUpperCase()} - {
                     lang.name || (
-                      lang.language === 'javascript' ? 'JavaScript (Node.js)' :
+                      lang.language === 'javascript' ? 'JavaScript' :
                         lang.language === 'python' ? 'Python 3' :
                           lang.language === 'java' ? 'Java 11+' :
                             lang.language === 'cpp' ? 'C++ (GCC)' :

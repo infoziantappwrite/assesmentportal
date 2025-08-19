@@ -8,6 +8,7 @@ import {
   BarChart2,
   SlidersHorizontal
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 const EditAssessment = () => {
   const { id } = useParams();
@@ -113,41 +114,62 @@ const handleSubmit = async (e) => {
   try {
     // Map sections array to array of strings (IDs)
     const cleanSections = Array.isArray(formData.sections)
-      ? formData.sections.map(section => {
-          // if section is string (already ID), keep it
-          if (typeof section === "string") return section;
-          // otherwise, get the id field, or fallback to empty string (or throw)
-          return section.id || "";
-        }).filter(id => id !== "")  // remove empty strings if any
+      ? formData.sections
+          .map((section) => {
+            // if section is string (already ID), keep it
+            if (typeof section === "string") return section;
+            // otherwise, get the id field
+            return section.id || "";
+          })
+          .filter((id) => id !== "") // remove empty strings
       : [];
 
-    const cleanNegativeMarks = formData.scoring?.negative_marks_per_wrong ?? 0;
+    // Ensure all configuration numbers are actually numbers
+    const cleanConfig = {
+      ...formData.configuration,
+      total_duration_minutes: Number(formData.configuration?.total_duration_minutes || 0),
+      grace_period_minutes: Number(formData.configuration?.grace_period_minutes || 0),
+      max_attempts: Number(formData.configuration?.max_attempts || 1),
+    };
+
+    // Ensure all scoring numbers are actually numbers
+    const cleanScoring = {
+      ...formData.scoring,
+      total_marks: Number(formData.scoring?.total_marks || 0),
+      passing_marks: Number(formData.scoring?.passing_marks || 0),
+      negative_marks_per_wrong: Number(formData.scoring?.negative_marks_per_wrong ?? 0),
+    };
 
     const dataToSend = {
       ...formData,
       sections: cleanSections,
-      scoring: {
-        ...formData.scoring,
-        negative_marks_per_wrong: cleanNegativeMarks,
-      },
+      configuration: cleanConfig,
+      scoring: cleanScoring,
     };
 
     console.log("Data sent to backend:", JSON.stringify(dataToSend, null, 2));
+
     await updateAssessment(id, dataToSend);
-    setMessage("Assessment updated successfully.");
+
+    toast.success("✅ Assessment updated successfully!", { autoClose: 2000 });
     setTimeout(() => navigate(-1), 2000);
   } catch (error) {
     if (error.response && error.response.data) {
       console.error("Backend response error data:", error.response.data);
-      setMessage(`Failed to update: ${JSON.stringify(error.response.data)}`);
+     toast.error(`❌ Failed to update: ${error.response.data.message || "Server error"}`, {
+        autoClose: 3000,
+      });
     } else {
       console.error("Update error:", error);
-      setMessage("Failed to update assessment.");
+      toast.error("❌ Failed to update assessment.", {
+        autoClose: 3000,
+      });
     }
   } finally {
     setSubmitting(false);
   }
 };
+
 
 
   if (loading || !formData) return <Loader />;

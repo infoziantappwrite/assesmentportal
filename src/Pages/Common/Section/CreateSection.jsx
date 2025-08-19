@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createSection } from "../../../Controllers/SectionController";
 import { useUser } from '../../../context/UserContext';
+import { toast } from 'react-toastify';
 
 const SECTION_TYPES = [
   { label: "Quiz", value: "quiz" },
@@ -14,6 +15,7 @@ const CreateSection = () => {
   const { id } = useParams(); // assessment ID
   const { role } = useUser();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -79,8 +81,11 @@ const CreateSection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (loading) return; // 🚫 Prevent multiple clicks
+  setLoading(true);
+
     if (!formData.title || !formData.type || !formData.sequence_order) {
-      setStatusMessage("❌ Please fill all required fields.");
+      toast.error("❌ Please fill all required fields."); // ✅ Error toast
       return;
     }
 
@@ -97,11 +102,11 @@ const CreateSection = () => {
 
     try {
       await createSection(id, cleanData);
-      setStatusMessage("✅ Section created successfully!");
-      setTimeout(() => navigate(`/${role}/assessments/${id}`), 1000);
+      toast.success("✅ Section created successfully!"); // ✅ Success toast
+      setTimeout(() => navigate(`/${role}/assessments/${id}`), 3000);
     } catch (error) {
       console.error("Failed to create section:", error.response?.data || error);
-      setStatusMessage("❌ Error creating section. Check your data.");
+       toast.error("❌ Error creating section. Check your data."); // ✅ Error toast
     }
   };
 
@@ -292,7 +297,7 @@ const CreateSection = () => {
             type="submit"
             className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-md shadow-sm transition"
           >
-            Create Section
+            {loading ? "Creating..." : "Create Section"}
           </button>
         </div>
       </form>

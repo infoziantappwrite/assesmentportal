@@ -113,7 +113,13 @@ const SinglePageViewSection = () => {
                 navigate(
                   section.type === "code"
                     ? `/${role}/sections/${id}/add-question-code`
-                    : `/${role}/sections/${id}/add-question`
+                    : `/${role}/sections/${id}/add-question`,
+                    {
+                      state: {
+                        totalMarks: scoring.total_marks,
+                        questionCount: questions?.length || 0
+                      }
+                    }
                 )
               }
               className="px-4 py-2 text-sm font-medium bg-green-600 hover:bg-green-700 text-white rounded-lg shadow"
@@ -134,7 +140,7 @@ const SinglePageViewSection = () => {
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 onChange={handleFileUpload}
                 disabled={uploading}
-                
+
               />
 
             </label>
@@ -195,10 +201,10 @@ const SinglePageViewSection = () => {
             No questions linked to this section yet.{" "}
             <button
               onClick={() => navigate(
-                  section.type === "code"
-                    ? `/${role}/sections/${id}/add-question-code`
-                    : `/${role}/sections/${id}/add-question`
-                )}
+                section.type === "code"
+                  ? `/${role}/sections/${id}/add-question-code`
+                  : `/${role}/sections/${id}/add-question`
+              )}
               className="underline font-medium hover:text-yellow-900"
             >
               Click here to add questions.
