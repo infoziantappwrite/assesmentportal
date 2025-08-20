@@ -51,16 +51,6 @@ export const bulkImportQuestions = async (formData) => {
   return response.data;
 };
 
-// 🔹 POST add test cases to a coding question
-export const addTestCasesToCodingQuestion = async (questionId, testCases) => {
-  const response = await axiosClient.post(
-    `/questions/${questionId}/test-cases`,
-    testCases,
-    { withCredentials: true }
-  );
-  return response.data;
-};
-
 // 🔹 PUT reorder a question (change sequence)
 export const reorderQuestion = async (questionId, newOrderData) => {
   const response = await axiosClient.put(

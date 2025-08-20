@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   createQuestionInSection,
-  addTestCasesToCodingQuestion,
 } from "../../../Controllers/QuestionController";
 import {
   ArrowLeft, FileText, PlusCircle, Code2, Beaker, ShieldCheck,
-  Hash, Star, ListOrdered, Settings, FileCode, TestTube2, ChevronDown, X,
+  Hash, Star, ListOrdered, Settings, FileCode, TestTube2, ChevronDown, X, Loader 
 } from "lucide-react";
 import { toast } from 'react-toastify';
 
@@ -30,6 +29,7 @@ const AddQuestionToSectionCode = () => {
   const { id: sectionID } = useParams();
   const navigate = useNavigate();
   const initialMarks = 5;
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add loading state
 
   const [formData, setFormData] = useState({
     type: "coding",
@@ -103,6 +103,7 @@ const AddQuestionToSectionCode = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true); // Start loading
     try {
       // Validate problem statement
       const ps = formData.coding_details.problem_statement.trim();
@@ -149,19 +150,21 @@ const AddQuestionToSectionCode = () => {
       };
 
       const res = await createQuestionInSection(sectionID, submissionData);
-      const questionId = res?.question?._id;
+      console.log(res);
+      
+      const questionId = res?.data?.question?._id;
+      // console.log("✅ Question created:", questionId);
+
       if (questionId) {
-        await addTestCasesToCodingQuestion(questionId, {
-          sampleTestCases: submissionData.coding_details.sample_test_cases,
-          hiddenTestCases: submissionData.coding_details.hidden_test_cases,
-          supportedLanguages: submissionData.coding_details.supported_languages,
-        });
         toast.success("Question added successfully!");
+        console.log("✅ Navigate should run now...");
         setTimeout(() => navigate(`/admin/sections/${sectionID}/questions`), 1500);
       }
     } catch (err) {
       console.error("Failed to submit coding question", err);
       toast.error(`Error: ${err.response?.data?.message || err.message}`);
+    }finally {
+      setIsSubmitting(false); // End loading regardless of success/failure
     }
   };
 
@@ -672,13 +675,25 @@ const AddQuestionToSectionCode = () => {
                 </button>
               ))}
             </div>
-            <button
-              type="submit"
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-            >
-              <PlusCircle className="w-5 h-5" />
-              Submit Question
-            </button>
+             <button
+            type="submit"
+            disabled={isSubmitting} // Disable button when submitting
+            className={`bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 ${
+              isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader className="w-5 h-5 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <PlusCircle className="w-5 h-5" />
+                Submit Question
+              </>
+            )}
+          </button>
           </div>
         </form>
       </div>
