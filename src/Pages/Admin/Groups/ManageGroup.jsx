@@ -42,8 +42,6 @@ const ManageGroup = () => {
         getAllGroups(),
         getAllColleges(),
       ]);
-
-      console.log(collegeRes);
       
       const groupList = groupRes?.data?.groups || [];
       const collegeList = collegeRes?.colleges || [];
