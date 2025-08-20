@@ -311,68 +311,124 @@ const SolutionSection = ({
   }, [question?._id, submissionId]);
 
   // CRITICAL FIX: Template loading with race condition prevention for high traffic scenarios
+  // useEffect(() => { issue is from here // taking it down
+  //   if (!question?._id || !selectedLanguage) return;
+
+  //   // CRITICAL FIX: Update refs to prevent stale closures
+  //   currentQuestionRef.current = question._id;
+  //   currentLanguageRef.current = selectedLanguage;
+
+  //   // CRITICAL FIX: Don't load template if user is actively typing
+  //   if (isUserTypingRef.current) {
+  //     console.log('Template loading skipped - user is typing');
+  //     return;
+  //   }
+
+  //   // CRITICAL FIX: Prevent template loading if component is not properly initialized
+  //   if (!isComponentInitialized && answer) {
+  //     setIsComponentInitialized(true);
+  //     return;
+  //   }
+
+  //   // CRITICAL FIX: For new questions, always load template first
+  //   // Only skip if answer already has meaningful NON-template content AND it's the same question
+  //   if (answer && answer.trim() && !isTemplateCode(answer) && currentQuestionId === question._id) {
+  //     // Preserve existing meaningful user code for same question
+  //     setLastSavedCode(answer);
+  //     return;
+  //   }
+
+  //   // CRITICAL FIX: Set loading flag to prevent user input interference
+  //   setIsTemplateLoading(true);
+  //   templateLoadingRef.current = true;
+
+  //   // Load template with delay to allow for proper state settling under high traffic
+  //   const loadTemplate = () => {
+  //     // Double-check that we should still load template (prevent race conditions)
+  //     if (isUserTypingRef.current || currentQuestionRef.current !== question._id) {
+  //       setIsTemplateLoading(false);
+  //       templateLoadingRef.current = false;
+  //       return;
+  //     }
+
+  //     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+  //     onAnswerChange(question._id, template);
+  //     setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
+  //     setLastSavedCode('');
+      
+  //     // Clear loading flags after a short delay
+  //     setTimeout(() => {
+  //       setIsTemplateLoading(false);
+  //       templateLoadingRef.current = false;
+  //       setIsComponentInitialized(true);
+  //     }, 100);
+  //   };
+
+  //   // Use setTimeout to prevent race conditions in high traffic scenarios
+  //   const timeoutId = setTimeout(loadTemplate, 50);
+    
+  //   return () => {
+  //     clearTimeout(timeoutId);
+  //     setIsTemplateLoading(false);
+  //     templateLoadingRef.current = false;
+  //   };
+  // }, [question?._id, selectedLanguage]); // Load template on question/language change
+
+  // FIX 1: This effect ONLY handles navigating to a NEW question.
+// It is much safer and will not overwrite existing work on re-renders.
   useEffect(() => {
-    if (!question?._id || !selectedLanguage) return;
+    if (!question?._id) return;
 
-    // CRITICAL FIX: Update refs to prevent stale closures
+    // Update refs for other parts of the component
     currentQuestionRef.current = question._id;
-    currentLanguageRef.current = selectedLanguage;
-
-    // CRITICAL FIX: Don't load template if user is actively typing
-    if (isUserTypingRef.current) {
-      console.log('Template loading skipped - user is typing');
-      return;
+    
+    // CRITICAL: Reset component state for the new question.
+    // This ensures a clean slate when navigating.
+    if (currentQuestionId !== question._id) {
+        setCurrentQuestionId(question._id);
+        setJudge0Results(null);
+        setLastActionType(null);
+        setCustomInput('');
+        setSubmitStatus(null); // Reset submission status for the new question
+        // Auto-populate custom input with the new question's first test case
+        if (fullDetails?.sample_test_cases?.[0]?.input) {
+            setCustomInput(fullDetails.sample_test_cases[0].input.trim());
+        }
     }
 
-    // CRITICAL FIX: Prevent template loading if component is not properly initialized
-    if (!isComponentInitialized && answer) {
-      setIsComponentInitialized(true);
-      return;
+    // Load a template ONLY IF there is no valid, non-template answer already present.
+    // This is the key logic that prevents your code from being wiped out.
+    if (!answer || isTemplateCode(answer)) {
+      setIsTemplateLoading(true);
+      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
+      onAnswerChange(question._id, template);
+      setStableAnswer(template);
+      setIsTemplateLoading(false);
+    } else {
+      // If valid code already exists, just make sure our stable state is in sync.
+      setStableAnswer(answer);
     }
 
-    // CRITICAL FIX: For new questions, always load template first
-    // Only skip if answer already has meaningful NON-template content AND it's the same question
-    if (answer && answer.trim() && !isTemplateCode(answer) && currentQuestionId === question._id) {
-      // Preserve existing meaningful user code for same question
-      setLastSavedCode(answer);
-      return;
-    }
+  }, [question?._id, answer]); // Depend on question ID and the answer prop itself
 
-    // CRITICAL FIX: Set loading flag to prevent user input interference
-    setIsTemplateLoading(true);
-    templateLoadingRef.current = true;
 
-    // Load template with delay to allow for proper state settling under high traffic
-    const loadTemplate = () => {
-      // Double-check that we should still load template (prevent race conditions)
-      if (isUserTypingRef.current || currentQuestionRef.current !== question._id) {
-        setIsTemplateLoading(false);
-        templateLoadingRef.current = false;
-        return;
+  useEffect(() => {
+      // Ensure this doesn't run on the initial render, only on actual changes.
+      if (previousLanguage && selectedLanguage !== previousLanguage) {
+          // User has intentionally changed the language, so we load the new template.
+          setIsTemplateLoading(true);
+          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
+          onAnswerChange(question._id, template);
+          setStableAnswer(template);
+          setLastSavedCode(''); // The new template is unsaved
+          showNotification('info', `Switched to ${selectedLanguage.toUpperCase()} template.`);
+          setIsTemplateLoading(false);
       }
 
-      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-      onAnswerChange(question._id, template);
-      setStableAnswer(template); // CRITICAL FIX: Update stable answer immediately
-      setLastSavedCode('');
-      
-      // Clear loading flags after a short delay
-      setTimeout(() => {
-        setIsTemplateLoading(false);
-        templateLoadingRef.current = false;
-        setIsComponentInitialized(true);
-      }, 100);
-    };
+      // Keep track of the current language for the next change.
+      setPreviousLanguage(selectedLanguage);
 
-    // Use setTimeout to prevent race conditions in high traffic scenarios
-    const timeoutId = setTimeout(loadTemplate, 50);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      setIsTemplateLoading(false);
-      templateLoadingRef.current = false;
-    };
-  }, [question?._id, selectedLanguage]); // Load template on question/language change
+  }, [selectedLanguage]); // This effect ONLY depends on the selected language.
 
   // REMOVED: Unsaved changes tracking that causes confusion
   // useEffect(() => { ... tracking hasUnsavedChanges ... }, [answer, lastSavedCode]);
