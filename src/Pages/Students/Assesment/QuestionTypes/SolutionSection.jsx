@@ -40,38 +40,34 @@ const SolutionSection = ({
   refreshSectionStatus
 }) => {
   
-  // SIMPLIFIED STATE - Removed unnecessary states
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
+  const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
+  const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); 
   const [isRunningTests, setIsRunningTests] = useState(false); 
   const [lastActionType, setLastActionType] = useState(null);
-  const [notification, setNotification] = useState(null); 
-  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); 
-  const [startTime, setStartTime] = useState(Date.now()); 
-  const [lastSavedCode, setLastSavedCode] = useState(''); 
-
   const { isExecuting, executeCode, } = useJudge0();
+  const [notification, setNotification] = useState(null); 
 
-  const [editorValue, setEditorValue] = useState(() => {
-    return answer || '';
-  });
 
-  const isUserActiveRef = useRef(false);
-  const lastUserActivityRef = useRef(Date.now());
+  const [isComponentInitialized, setIsComponentInitialized] = useState(false);
+  const [isTemplateLoading, setIsTemplateLoading] = useState(false);
   const currentQuestionRef = useRef(question?._id);
-  const isInitializedRef = useRef(false);
+  const currentLanguageRef = useRef(selectedLanguage);
+  const isUserTypingRef = useRef(false);
+  const lastUserInputTime = useRef(Date.now());
+  const templateLoadingRef = useRef(false);
+
+  const [stableAnswer, setStableAnswer] = useState(answer || '');
   
   useEffect(() => {
-    if (answer !== undefined && answer !== null && answer !== editorValue) {
-      // Only update if it's not user typing (prevent overwrites)
-      if (!isUserActiveRef.current) {
-        setEditorValue(answer);
-      }
+    if (answer !== undefined && answer !== null) {
+      setStableAnswer(answer);
     }
   }, [answer]);
 
@@ -87,6 +83,9 @@ const SolutionSection = ({
   });
   const [executionTimer, setExecutionTimer] = useState(null);
   const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); 
+  const [lastSavedCode, setLastSavedCode] = useState(''); 
+  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); 
+  const [startTime, setStartTime] = useState(Date.now()); 
 
   const startExecutionTimer = () => {
     const timer = setInterval(() => {
@@ -163,28 +162,63 @@ const SolutionSection = ({
     }
   }, [executionState.isRunning, executionTimeoutTimer]);
 
-  
   const handleCodeChange = (value) => {
-    if (value === undefined || value === null) return;
-
-    isUserActiveRef.current = true;
-    lastUserActivityRef.current = Date.now();
-    
-    setTimeout(() => {
-      if (Date.now() - lastUserActivityRef.current >= 1800) {
-        isUserActiveRef.current = false;
-      }
-    }, 2000);
-
-    if (isTemplateCode(value) && editorValue && !isTemplateCode(editorValue) && hasValidCode(editorValue)) {
-      console.warn('TEMPLATE OVERWRITE PREVENTED - User code protected');
+    if (value === undefined || value === null) {
       return;
     }
 
-    setEditorValue(value);
-    onAnswerChange(question._id, value);
+    const currentTime = Date.now();
+    isUserTypingRef.current = true;
+    lastUserInputTime.current = currentTime;
+    
+    setTimeout(() => {
+      if (currentTime === lastUserInputTime.current) {
+        isUserTypingRef.current = false;
+      }
+    }, 1000);
+
+    if (templateLoadingRef.current && isUserTypingRef.current && hasValidCode(value)) {
+      console.warn('Prevented template loading during user typing');
+      return;
+    }
+
+    const sessionKey = `session_${sessionId}_${question?._id}`;
+    const lastSessionChange = window[sessionKey] || 0;
+    const timeSinceLastChange = currentTime - lastSessionChange;
+    window[sessionKey] = currentTime;
+
+    if (timeSinceLastChange < 100 && value && answer && value !== answer) {
+      const isNewValueTemplate = isTemplateCode(value);
+      const isCurrentValueTemplate = isTemplateCode(answer);
+      
+      if (isNewValueTemplate && !isCurrentValueTemplate && hasValidCode(answer)) {
+        console.warn('RACE CONDITION PREVENTED: Template overwrite of user code blocked');
+        return;
+      }
+
+      if (!value.trim() && answer && answer.trim()) {
+        console.warn('RACE CONDITION PREVENTED: Empty value overwrite blocked');
+        return;
+      }
+    }
+
+    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer) && !isTemplateLoading) {
+      console.warn('RACE CONDITION PREVENTED: Template replacement of user code blocked');
+      return;
+    }
+
+    if (currentQuestionRef.current !== question?._id) {
+      console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
+      return;
+    }
+
+    // Call the original onChange function
+    onAnswerChange(question._id, value || '');
+    
+    setStableAnswer(value || '');
   };
 
+  // Helper functions for submission state persistence with session isolation
   const getSubmissionStateKey = (questionId, submissionId) => {
     return `submission_state_${submissionId}_${questionId}_${sessionId}`;
   };
@@ -214,18 +248,22 @@ const SolutionSection = ({
     return null;
   };
 
+
+
   const showNotification = (type, message) => {
     setNotification({ type, message });
+    // Auto-dismiss after 5 seconds
     setTimeout(() => setNotification(null), 5000);
   };
 
+  // Helper function to check if code has been modified since last save
   const hasCodeChanged = (code) => {
     if (!hasValidCode(code)) return false;
     return code !== lastSavedCode;
   };
 
   const getAvailableLanguages = () => {
-    if (!fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
+    if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
       return DEFAULT_SUPPORTED_LANGUAGES;
     }
     return fullDetails.supported_languages;
@@ -233,6 +271,7 @@ const SolutionSection = ({
 
   const availableLanguages = getAvailableLanguages();
 
+  // Check for existing submission state when question loads
   useEffect(() => {
     const localSubmissionId = localStorage.getItem("submission_id");
     const currentSubmissionId = submissionId || localSubmissionId;
@@ -248,53 +287,163 @@ const SolutionSection = ({
     }
   }, [question?._id, submissionId]);
 
-  
   useEffect(() => {
-    if (question?._id && currentQuestionId !== question._id) {
-      // Question changed - clean reset
-      currentQuestionRef.current = question._id;
-      setCurrentQuestionId(question._id);
-      setJudge0Results(null);
-      setLastActionType(null);
-      setSubmitStatus(null);
-      setSaveStatus('idle');
-      setStartTime(Date.now());
-      
-      // Auto-populate custom input with first test case
-      if (fullDetails?.sample_test_cases?.[0]?.input) {
-        setCustomInput(fullDetails.sample_test_cases[0].input.trim());
-      } else {
-        setCustomInput('');
-      }
+    if (!question?._id || !selectedLanguage) return;
 
-      if (!answer || answer.trim() === '') {
-        const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
-        setEditorValue(template);
-        onAnswerChange(question._id, template);
-      } else {
-        setEditorValue(answer);
-      }
-      
-      isInitializedRef.current = true;
+    currentQuestionRef.current = question._id;
+    currentLanguageRef.current = selectedLanguage;
+
+    if (isUserTypingRef.current) {
+      console.log('Template loading skipped - user is typing');
+      return;
     }
-  }, [question?._id]);
 
-  useEffect(() => {
-    if (!isInitializedRef.current) return;
-    
-    // Only load template if current code IS a template or empty
-    const currentCode = editorValue || '';
-    const isCurrentlyTemplate = isTemplateCode(currentCode) || currentCode.trim() === '';
-    
-    if (isCurrentlyTemplate && !isUserActiveRef.current) {
-      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
-      setEditorValue(template);
+    if (!isComponentInitialized && answer) {
+      setIsComponentInitialized(true);
+      return;
+    }
+
+    if (answer && answer.trim() && !isTemplateCode(answer) && currentQuestionId === question._id) {
+      // Preserve existing meaningful user code for same question
+      setLastSavedCode(answer);
+      return;
+    }
+
+    setIsTemplateLoading(true);
+    templateLoadingRef.current = true;
+
+    // Load template with delay to allow for proper state settling under high traffic
+    const loadTemplate = () => {
+      // Double-check that we should still load template (prevent race conditions)
+      if (isUserTypingRef.current || currentQuestionRef.current !== question._id) {
+        setIsTemplateLoading(false);
+        templateLoadingRef.current = false;
+        return;
+      }
+
+      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
       onAnswerChange(question._id, template);
-      showNotification('info', `Switched to ${selectedLanguage.toUpperCase()} template.`);
-    }
-  }, [selectedLanguage]);
+      setStableAnswer(template); 
+      setLastSavedCode('');
+      
+      // Clear loading flags after a short delay
+      setTimeout(() => {
+        setIsTemplateLoading(false);
+        templateLoadingRef.current = false;
+        setIsComponentInitialized(true);
+      }, 100);
+    };
 
-  // Auto-populate custom input with sample test case
+    // Use setTimeout to prevent race conditions in high traffic scenarios
+    const timeoutId = setTimeout(loadTemplate, 50);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      setIsTemplateLoading(false);
+      templateLoadingRef.current = false;
+    };
+  }, [question?._id, selectedLanguage]); 
+  useEffect(() => {
+    const newQuestionId = question?._id;
+    
+    currentQuestionRef.current = newQuestionId;
+    
+    if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
+      isUserTypingRef.current = false;
+      templateLoadingRef.current = false;
+
+      setCurrentQuestionId(newQuestionId);
+      setLastSavedCode('');
+      setStartTime(Date.now()); 
+      setJudge0Results(null); 
+      setCustomInput(''); 
+      setLastActionType(null); 
+      setSaveStatus('idle'); 
+      setIsComponentInitialized(false);
+      setIsTemplateLoading(false);
+
+      // Check submission state for the new question
+      const localSubmissionId = localStorage.getItem("submission_id");
+      const currentSubmissionId = submissionId || localSubmissionId;
+      if (newQuestionId && currentSubmissionId) {
+        const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
+        if (submissionState && submissionState.isSubmitted) {
+          setSubmitStatus('success');
+        } else {
+          setSubmitStatus(null); 
+        }
+      }
+
+    } else if (newQuestionId && !currentQuestionId) {
+      // First time initialization
+      setCurrentQuestionId(newQuestionId);
+      setStartTime(Date.now()); 
+      setIsComponentInitialized(false);
+    }
+  }, [question?._id]); 
+
+  useEffect(() => {
+    currentLanguageRef.current = selectedLanguage;
+    
+    const debounceTimer = setTimeout(() => {
+      const languageChanged = previousLanguage && previousLanguage !== selectedLanguage;
+
+      if (languageChanged) {
+        if (isUserTypingRef.current) {
+          console.log('Language change skipped - user is typing');
+          return;
+        }
+        setPreviousLanguage(selectedLanguage);
+
+        setIsTemplateLoading(true);
+        templateLoadingRef.current = true;
+        
+        setTimeout(() => {
+          if (isUserTypingRef.current || currentLanguageRef.current !== selectedLanguage) {
+            setIsTemplateLoading(false);
+            templateLoadingRef.current = false;
+            return;
+          }
+
+          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+          onAnswerChange(question._id, template);
+          setStableAnswer(template); 
+          setLastSavedCode('');
+          
+          // Clear loading flags
+          setTimeout(() => {
+            setIsTemplateLoading(false);
+            templateLoadingRef.current = false;
+          }, 100);
+        }, 50);
+
+      } else if (!previousLanguage && selectedLanguage) {
+        setPreviousLanguage(selectedLanguage);
+      }
+    }, 200); 
+
+    return () => clearTimeout(debounceTimer);
+  }, [selectedLanguage, previousLanguage]);
+
+  useEffect(() => {
+    // Add debouncing to prevent rapid language changes that cause template resets
+    const debounceTimer = setTimeout(() => {
+      if (!availableLanguages || availableLanguages.length === 0) return;
+      
+      const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
+      if (!isValidLanguage) {
+        // Only change language if current selection is truly invalid
+        const defaultLanguage = availableLanguages[0].language;
+        if (selectedLanguage !== defaultLanguage) {
+          setSelectedLanguage(defaultLanguage);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
+
+
   useEffect(() => {
     if (!customInput && fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
       const firstTestCase = fullDetails.sample_test_cases[0];
@@ -304,9 +453,25 @@ const SolutionSection = ({
     }
   }, [fullDetails?.sample_test_cases, customInput]);
 
+  // Clear results when question changes (backup cleanup)
+  useEffect(() => {
+    if (question?._id && currentQuestionId !== question._id) {
+      setJudge0Results(null);
+      setCustomInput('');
+      setLastActionType(null);
+      setSaveStatus('idle');
+      setStartTime(Date.now());
+
+      if (currentQuestionId !== question._id) {
+        setSubmitStatus(null); 
+      }
+    }
+  }, [question?._id, currentQuestionId]);
+
   const isTemplateCode = (code) => {
     if (!code || code.trim() === '') return true;
 
+    // Get current language template
     const template = LANGUAGE_TEMPLATES[selectedLanguage?.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     
     // Normalize both strings for comparison
@@ -345,7 +510,7 @@ const SolutionSection = ({
     return (exactMatches / templateLines.length) >= 0.95;
   };
 
-
+  // Helper function to check if code has meaningful content - enhanced version
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
     
@@ -370,22 +535,40 @@ const SolutionSection = ({
         !trimmed.match(/^(import|from|using|include|package)\s/);
     });
 
-    return meaningfulLines.length > 0; 
+    return meaningfulLines.length > 0;
   };
 
   // Handle language dropdown change
   const handleLanguageChange = (newLanguage) => {
+    // Always proceed with language change - no confirmation modal for language changes
     setSelectedLanguage(newLanguage);
   };
+  useEffect(() => {
+    if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
+      // console.log('Only one language available from question, auto-enabling default languages');
+      setUseDefaultLanguages(true);
+    }
+  }, [fullDetails, useDefaultLanguages]);
+
 
   const handleResetCode = () => {
-    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
-    setEditorValue(template);
+    setIsTemplateLoading(true);
+    templateLoadingRef.current = true;
+    isUserTypingRef.current = false; 
+    
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     onAnswerChange(question._id, template);
+    setStableAnswer(template); 
     setCustomInput('');
     setJudge0Results(null);
     setLastSavedCode('');
+    
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
+    
+    setTimeout(() => {
+      setIsTemplateLoading(false);
+      templateLoadingRef.current = false;
+    }, 100);
   };
 
 
@@ -410,8 +593,8 @@ const SolutionSection = ({
 
   const handleRunWithAPI = async () => {
     const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = editorValue && editorValue.trim() !== ''
-      ? editorValue
+    const codeToRun = answer && answer.trim() !== ''
+      ? answer
       : LANGUAGE_TEMPLATES[selectedLang] || '';
 
     if (!hasValidCode(codeToRun)) {
@@ -419,7 +602,6 @@ const SolutionSection = ({
       return;
     }
 
-    // Check if question is already submitted
     const localSubmissionId = localStorage.getItem("submission_id");
     const currentSubmissionId = submissionId || localSubmissionId;
     const submissionState = getSubmissionState(question._id, currentSubmissionId);
@@ -430,13 +612,14 @@ const SolutionSection = ({
     }
 
     try {
+      // Start execution with dynamic indicators
       updateExecutionState({
         isRunning: true,
         phase: 'compiling',
         progress: 10,
         message: 'Checking syntax...',
         executionTime: 0,
-        queuePosition: Math.floor(Math.random() * 3) + 1 
+        queuePosition: Math.floor(Math.random() * 3) + 1
       });
 
       const timer = startExecutionTimer();
@@ -459,7 +642,7 @@ const SolutionSection = ({
         });
       }, 1200);
 
-      setLastActionType('runCode'); 
+      setLastActionType('runCode');
       const result = await RunCode({
         source_code: codeToRun,
         language_id: getLanguageIdforRunCode(selectedLanguage || 'python'),
@@ -504,8 +687,8 @@ const SolutionSection = ({
 
   const handleRunTestCases = async () => {
     const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = editorValue && editorValue.trim() !== ''
-      ? editorValue
+    const codeToRun = answer && answer.trim() !== ''
+      ? answer
       : LANGUAGE_TEMPLATES[selectedLang] || '';
 
     if (!hasValidCode(codeToRun)) {
@@ -527,7 +710,6 @@ const SolutionSection = ({
       return;
     }
 
-    // Check if question is already submitted
     const submissionState = getSubmissionState(question._id, currentSubmissionId);
     if (submissionState && submissionState.isSubmitted) {
       showNotification('error', 'This question has already been submitted and test cases cannot be run');
@@ -536,10 +718,11 @@ const SolutionSection = ({
     }
 
     setIsRunningTests(true);
-    setLastActionType('testCases');
+    setLastActionType('testCases'); 
 
     const totalTestCases = fullDetails.sample_test_cases.length;
 
+    // Start test execution with dynamic indicators
     updateExecutionState({
       isRunning: true,
       phase: 'testing',
@@ -555,6 +738,7 @@ const SolutionSection = ({
     const timeoutTimer = startExecutionTimeout();
 
     try {
+      // Step 1: Save the answer first
       setTimeout(() => {
         updateExecutionState({
           progress: 15,
@@ -578,6 +762,7 @@ const SolutionSection = ({
 
       setLastSavedCode(codeToRun);
 
+      // Step 2: Prepare for test execution
       setTimeout(() => {
         updateExecutionState({
           progress: 30,
@@ -593,6 +778,8 @@ const SolutionSection = ({
         });
       }, 1000);
 
+
+      // Step 2: Get language ID for Judge0
       const getLanguageId = (language) => {
         const languageMap = {
           'python': 71,
@@ -612,8 +799,9 @@ const SolutionSection = ({
         return languageMap[language.toLowerCase()] || 71;
       };
 
+      // Step 3: Prepare test cases payload
       const testPayload = {
-        code: codeToRun,
+        code: codeToRun, 
         language_id: getLanguageId(selectedLanguage),
        
       };
@@ -663,6 +851,7 @@ const SolutionSection = ({
             message: `Tests completed: ${passedCount}/${totalCount} passed`
           });
 
+          // Clear timers immediately on successful completion
           stopExecutionTimer();
           stopExecutionTimeout();
 
@@ -688,7 +877,6 @@ const SolutionSection = ({
 
           setSaveStatus('saved');
           
-          // Refresh section status to update answer in parent component
           if (refreshSectionStatus) {
             refreshSectionStatus();
           }
@@ -718,12 +906,11 @@ const SolutionSection = ({
     const currentSubmissionId = submissionId || localSubmissionId;
 
     const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = editorValue && editorValue.trim() !== ''
-      ? editorValue
+    const codeToRun = answer && answer.trim() !== ''
+      ? answer
       : LANGUAGE_TEMPLATES[selectedLang] || '';
 
 
-    // Check if user has written meaningful code
     if (!hasValidCode(codeToRun)) {
       showNotification('warning', 'Please write your solution code before saving!');
       setSaveStatus('error');
@@ -736,19 +923,17 @@ const SolutionSection = ({
       return;
     }
 
-    // Check if question is already submitted
     const submissionState = getSubmissionState(question._id, currentSubmissionId);
     if (submissionState && submissionState.isSubmitted) {
       setSaveStatus('error');
       showNotification('error', 'This question has already been submitted and cannot be modified');
-      setSubmitStatus('success'); 
+      setSubmitStatus('success');
       return;
     }
 
     try {
       setSaveStatus('saving');
 
-      // Calculate time taken since question started
       const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
 
       const payload = {
@@ -766,6 +951,7 @@ const SolutionSection = ({
 
       setSaveStatus('saved');
       showNotification('success', 'Answer saved successfully!');
+
       setLastSavedCode(codeToRun);
 
       if (refreshSectionStatus) {
@@ -786,7 +972,7 @@ const SolutionSection = ({
         ) {
           // This question was already submitted - save this state for future reference
           saveSubmissionState(question._id, currentSubmissionId, true);
-          setSubmitStatus('success'); 
+          setSubmitStatus('success');
           showNotification('error', 'This question has already been submitted and cannot be modified');
         } else {
           showNotification('error', 'Failed to save answer');
@@ -803,8 +989,8 @@ const SolutionSection = ({
   const handleSubmitCode = async () => {
 
     const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = editorValue && editorValue.trim() !== ''
-      ? editorValue
+    const codeToRun = answer && answer.trim() !== ''
+      ? answer
       : LANGUAGE_TEMPLATES[selectedLang] || '';
 
     // Check if user has written meaningful code
@@ -933,6 +1119,8 @@ const SolutionSection = ({
     }
   };
 
+
+
   const getStatusIcon = (status) => {
     const description = status?.description;
 
@@ -952,12 +1140,9 @@ const SolutionSection = ({
 
   const expectedSampleOutput = fullDetails?.sample_test_cases?.[0]?.output?.trim();
   const actualOutput = judge0Results?.stdout?.trim();
-
-  // Only compare with sample test case if the last action was "testCases", not "runCode"
   const isSampleTestPassed = expectedSampleOutput === actualOutput;
   const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0 && lastActionType === 'testCases';
 
-  // Dynamic Execution Indicator Component
   const ExecutionIndicator = () => {
     if (!executionState.isRunning) return null;
 
@@ -1136,8 +1321,6 @@ const SolutionSection = ({
           </select>
         </div>
 
-        {/* Buttons */}
-
 
         <div className="flex gap-2 flex-wrap md:flex-nowrap items-center mt-6">
           {/* Reset Button - Only manual way to reload template */}
@@ -1196,13 +1379,14 @@ const SolutionSection = ({
             </button>
           </div>
         </div>
+
       </div>
 
+
       <div className="space-y-6">
-        {/* Modern Editor Container with Neon Theme */}
+
         <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
           
-          {/* Futuristic Header Bar */}
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4">
             <div className="flex items-center justify-between">
               
@@ -1266,7 +1450,7 @@ const SolutionSection = ({
                     selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
                       selectedLanguage.toLowerCase()
               }
-              value={editorValue}
+              value={stableAnswer}
               onChange={handleCodeChange}
               theme="vs-dark"
               key={`${question?._id}_${selectedLanguage}_${sessionId}`}
@@ -1709,7 +1893,6 @@ const SolutionSection = ({
             )}
           </div>
         )}
-
 
       </div>
     </div>
