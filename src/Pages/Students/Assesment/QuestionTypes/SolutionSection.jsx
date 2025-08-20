@@ -45,7 +45,6 @@ const SolutionSection = ({
   const [judge0Results, setJudge0Results] = useState(null);
   const [customInput, setCustomInput] = useState('');
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
-  const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); 
@@ -56,18 +55,16 @@ const SolutionSection = ({
 
 
   const [isComponentInitialized, setIsComponentInitialized] = useState(false);
-  const [isTemplateLoading, setIsTemplateLoading] = useState(false);
-  const currentQuestionRef = useRef(question?._id);
-  const currentLanguageRef = useRef(selectedLanguage);
   const isUserTypingRef = useRef(false);
-  const lastUserInputTime = useRef(Date.now());
-  const templateLoadingRef = useRef(false);
-
+  const userInputTimeoutRef = useRef(null);
+  const lastCodeRef = useRef(answer || '');
+  
   const [stableAnswer, setStableAnswer] = useState(answer || '');
   
   useEffect(() => {
     if (answer !== undefined && answer !== null) {
       setStableAnswer(answer);
+      lastCodeRef.current = answer;
     }
   }, [answer]);
 
@@ -167,55 +164,19 @@ const SolutionSection = ({
       return;
     }
 
-    const currentTime = Date.now();
+    // Set user typing flag - NEVER reset automatically
     isUserTypingRef.current = true;
-    lastUserInputTime.current = currentTime;
     
-    setTimeout(() => {
-      if (currentTime === lastUserInputTime.current) {
-        isUserTypingRef.current = false;
-      }
-    }, 1000);
-
-    if (templateLoadingRef.current && isUserTypingRef.current && hasValidCode(value)) {
-      console.warn('Prevented template loading during user typing');
-      return;
+    // Clear any existing timeout to prevent background operations
+    if (userInputTimeoutRef.current) {
+      clearTimeout(userInputTimeoutRef.current);
+      userInputTimeoutRef.current = null;
     }
 
-    const sessionKey = `session_${sessionId}_${question?._id}`;
-    const lastSessionChange = window[sessionKey] || 0;
-    const timeSinceLastChange = currentTime - lastSessionChange;
-    window[sessionKey] = currentTime;
-
-    if (timeSinceLastChange < 100 && value && answer && value !== answer) {
-      const isNewValueTemplate = isTemplateCode(value);
-      const isCurrentValueTemplate = isTemplateCode(answer);
-      
-      if (isNewValueTemplate && !isCurrentValueTemplate && hasValidCode(answer)) {
-        console.warn('RACE CONDITION PREVENTED: Template overwrite of user code blocked');
-        return;
-      }
-
-      if (!value.trim() && answer && answer.trim()) {
-        console.warn('RACE CONDITION PREVENTED: Empty value overwrite blocked');
-        return;
-      }
-    }
-
-    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer) && !isTemplateLoading) {
-      console.warn('RACE CONDITION PREVENTED: Template replacement of user code blocked');
-      return;
-    }
-
-    if (currentQuestionRef.current !== question?._id) {
-      console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
-      return;
-    }
-
-    // Call the original onChange function
+    // ONLY update the code - no other operations
     onAnswerChange(question._id, value || '');
-    
     setStableAnswer(value || '');
+    lastCodeRef.current = value || '';
   };
 
   // Helper functions for submission state persistence with session isolation
@@ -287,80 +248,54 @@ const SolutionSection = ({
     }
   }, [question?._id, submissionId]);
 
+  // COMPLETELY DISABLED - No automatic template loading during typing
+  // Template will ONLY load when explicitly requested via buttons
   useEffect(() => {
-    if (!question?._id || !selectedLanguage) return;
-
-    currentQuestionRef.current = question._id;
-    currentLanguageRef.current = selectedLanguage;
-
+    // Do absolutely NOTHING if user has typed anything
     if (isUserTypingRef.current) {
-      console.log('Template loading skipped - user is typing');
       return;
     }
 
-    if (!isComponentInitialized && answer) {
-      setIsComponentInitialized(true);
-      return;
-    }
+    // Only load template for BRAND NEW questions with NO existing code
+    // AND only if no user interaction has occurred
+    const shouldLoadTemplate = 
+      (!answer || answer.trim() === '') && 
+      question?._id && 
+      selectedLanguage &&
+      !isUserTypingRef.current &&
+      !lastCodeRef.current; // Extra safety - no code exists
 
-    if (answer && answer.trim() && !isTemplateCode(answer) && currentQuestionId === question._id) {
-      // Preserve existing meaningful user code for same question
-      setLastSavedCode(answer);
-      return;
-    }
-
-    setIsTemplateLoading(true);
-    templateLoadingRef.current = true;
-
-    // Load template with delay to allow for proper state settling under high traffic
-    const loadTemplate = () => {
-      // Double-check that we should still load template (prevent race conditions)
-      if (isUserTypingRef.current || currentQuestionRef.current !== question._id) {
-        setIsTemplateLoading(false);
-        templateLoadingRef.current = false;
-        return;
-      }
-
+    if (shouldLoadTemplate) {
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
       onAnswerChange(question._id, template);
-      setStableAnswer(template); 
-      setLastSavedCode('');
-      
-      // Clear loading flags after a short delay
-      setTimeout(() => {
-        setIsTemplateLoading(false);
-        templateLoadingRef.current = false;
-        setIsComponentInitialized(true);
-      }, 100);
-    };
+      setStableAnswer(template);
+      lastCodeRef.current = template;
+    }
+  }, [question?._id, selectedLanguage]); // Removed 'answer' dependency to prevent loops
 
-    // Use setTimeout to prevent race conditions in high traffic scenarios
-    const timeoutId = setTimeout(loadTemplate, 50);
-    
+  // Clean up timeout on unmount
+  useEffect(() => {
     return () => {
-      clearTimeout(timeoutId);
-      setIsTemplateLoading(false);
-      templateLoadingRef.current = false;
+      if (userInputTimeoutRef.current) {
+        clearTimeout(userInputTimeoutRef.current);
+      }
     };
-  }, [question?._id, selectedLanguage]); 
+  }, []);
+
+  // ONLY handle question changes - NO template loading
   useEffect(() => {
     const newQuestionId = question?._id;
     
-    currentQuestionRef.current = newQuestionId;
-    
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
-      isUserTypingRef.current = false;
-      templateLoadingRef.current = false;
-
+      // Reset all states for new question BUT don't load template automatically
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode('');
-      setStartTime(Date.now()); 
-      setJudge0Results(null); 
-      setCustomInput(''); 
-      setLastActionType(null); 
-      setSaveStatus('idle'); 
-      setIsComponentInitialized(false);
-      setIsTemplateLoading(false);
+      setStartTime(Date.now());
+      setJudge0Results(null);
+      setCustomInput('');
+      setLastActionType(null);
+      setSaveStatus('idle');
+      // DO NOT reset isUserTypingRef.current here - preserve user state
 
       // Check submission state for the new question
       const localSubmissionId = localStorage.getItem("submission_id");
@@ -370,80 +305,20 @@ const SolutionSection = ({
         if (submissionState && submissionState.isSubmitted) {
           setSubmitStatus('success');
         } else {
-          setSubmitStatus(null); 
+          setSubmitStatus(null);
         }
       }
-
     } else if (newQuestionId && !currentQuestionId) {
-      // First time initialization
+      // First time initialization - NO automatic template loading
       setCurrentQuestionId(newQuestionId);
-      setStartTime(Date.now()); 
-      setIsComponentInitialized(false);
+      setStartTime(Date.now());
     }
-  }, [question?._id]); 
+  }, [question?._id]);
 
-  useEffect(() => {
-    currentLanguageRef.current = selectedLanguage;
-    
-    const debounceTimer = setTimeout(() => {
-      const languageChanged = previousLanguage && previousLanguage !== selectedLanguage;
+  // MINIMAL useEffects - only for essential data initialization
+  // NO template loading or user interference
 
-      if (languageChanged) {
-        if (isUserTypingRef.current) {
-          console.log('Language change skipped - user is typing');
-          return;
-        }
-        setPreviousLanguage(selectedLanguage);
-
-        setIsTemplateLoading(true);
-        templateLoadingRef.current = true;
-        
-        setTimeout(() => {
-          if (isUserTypingRef.current || currentLanguageRef.current !== selectedLanguage) {
-            setIsTemplateLoading(false);
-            templateLoadingRef.current = false;
-            return;
-          }
-
-          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-          onAnswerChange(question._id, template);
-          setStableAnswer(template); 
-          setLastSavedCode('');
-          
-          // Clear loading flags
-          setTimeout(() => {
-            setIsTemplateLoading(false);
-            templateLoadingRef.current = false;
-          }, 100);
-        }, 50);
-
-      } else if (!previousLanguage && selectedLanguage) {
-        setPreviousLanguage(selectedLanguage);
-      }
-    }, 200); 
-
-    return () => clearTimeout(debounceTimer);
-  }, [selectedLanguage, previousLanguage]);
-
-  useEffect(() => {
-    // Add debouncing to prevent rapid language changes that cause template resets
-    const debounceTimer = setTimeout(() => {
-      if (!availableLanguages || availableLanguages.length === 0) return;
-      
-      const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
-      if (!isValidLanguage) {
-        // Only change language if current selection is truly invalid
-        const defaultLanguage = availableLanguages[0].language;
-        if (selectedLanguage !== defaultLanguage) {
-          setSelectedLanguage(defaultLanguage);
-        }
-      }
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
-
-
+  // Initialize custom input from test cases (passive data only)
   useEffect(() => {
     if (!customInput && fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
       const firstTestCase = fullDetails.sample_test_cases[0];
@@ -453,20 +328,12 @@ const SolutionSection = ({
     }
   }, [fullDetails?.sample_test_cases, customInput]);
 
-  // Clear results when question changes (backup cleanup)
+  // Auto-enable default languages (passive setting only)
   useEffect(() => {
-    if (question?._id && currentQuestionId !== question._id) {
-      setJudge0Results(null);
-      setCustomInput('');
-      setLastActionType(null);
-      setSaveStatus('idle');
-      setStartTime(Date.now());
-
-      if (currentQuestionId !== question._id) {
-        setSubmitStatus(null); 
-      }
+    if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
+      setUseDefaultLanguages(true);
     }
-  }, [question?._id, currentQuestionId]);
+  }, [fullDetails, useDefaultLanguages]);
 
   const isTemplateCode = (code) => {
     if (!code || code.trim() === '') return true;
@@ -474,13 +341,13 @@ const SolutionSection = ({
     // Get current language template
     const template = LANGUAGE_TEMPLATES[selectedLanguage?.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     
-    // Normalize both strings for comparison
+    // Simple comparison - if code matches template exactly, it's template code
     const normalizeCode = (str) => {
       return str
-        .replace(/\/\*[\s\S]*?\*\//g, '') 
-        .replace(/\/\/.*$/gm, '') 
-        .replace(/#.*$/gm, '') 
-        .replace(/\s+/g, ' ') 
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
+        .replace(/\/\/.*$/gm, '') // Remove line comments
+        .replace(/#.*$/gm, '') // Remove Python comments
+        .replace(/\s+/g, ' ') // Normalize whitespace
         .trim()
         .toLowerCase();
     };
@@ -488,89 +355,65 @@ const SolutionSection = ({
     const normalizedCode = normalizeCode(code);
     const normalizedTemplate = normalizeCode(template);
 
-    if (normalizedCode === normalizedTemplate) return true;
-
-    const templateLines = template.split('\n')
-      .map(line => normalizeCode(line))
-      .filter(line => line.length > 0);
-    
-    const codeLines = code.split('\n')
-      .map(line => normalizeCode(line))
-      .filter(line => line.length > 0);
-
-    if (codeLines.length > templateLines.length + 1) return false;
-
-    let exactMatches = 0;
-    templateLines.forEach(templateLine => {
-      if (codeLines.includes(templateLine)) {
-        exactMatches++;
-      }
-    });
-
-    return (exactMatches / templateLines.length) >= 0.95;
+    return normalizedCode === normalizedTemplate || normalizedCode === '';
   };
 
-  // Helper function to check if code has meaningful content - enhanced version
+  // Check if code has meaningful content beyond template
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
-    
-    if (isTemplateCode(code)) return true;
-
-    // Check if code has meaningful content beyond template
-    const meaningfulLines = code.split('\n').filter(line => {
-      const trimmed = line.trim();
-      return trimmed &&
-        !trimmed.startsWith('//') &&
-        !trimmed.startsWith('#') &&
-        !trimmed.startsWith('/*') &&
-        !trimmed.startsWith('*') &&
-        !trimmed.startsWith('*/') &&
-        trimmed !== '{' &&
-        trimmed !== '}' &&
-        trimmed !== '(' &&
-        trimmed !== ')' &&
-        trimmed !== '[' &&
-        trimmed !== ']' &&
-        trimmed !== ';' &&
-        !trimmed.match(/^(import|from|using|include|package)\s/);
-    });
-
-    return meaningfulLines.length > 0;
+    return !isTemplateCode(code);
   };
 
-  // Handle language dropdown change
+  // Handle language dropdown change - MANUAL ONLY
   const handleLanguageChange = (newLanguage) => {
-    // Always proceed with language change - no confirmation modal for language changes
+    // User explicitly changed language via dropdown - allow this action
+    isUserTypingRef.current = false; // Reset typing flag for manual language change
     setSelectedLanguage(newLanguage);
+    
+    // Only load template if user explicitly wants language change
+    // This is a deliberate user action, not background automation
+    if (isTemplateCode(answer) || !answer || answer.trim() === '') {
+      const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+      onAnswerChange(question._id, template);
+      setStableAnswer(template);
+      lastCodeRef.current = template;
+    }
   };
   useEffect(() => {
     if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
-      // console.log('Only one language available from question, auto-enabling default languages');
       setUseDefaultLanguages(true);
     }
   }, [fullDetails, useDefaultLanguages]);
 
 
   const handleResetCode = () => {
-    setIsTemplateLoading(true);
-    templateLoadingRef.current = true;
-    isUserTypingRef.current = false; 
+    // USER EXPLICITLY CLICKED RESET - This is allowed
+    isUserTypingRef.current = false; // Reset typing flag since user wants to reset
+    
+    if (userInputTimeoutRef.current) {
+      clearTimeout(userInputTimeoutRef.current);
+      userInputTimeoutRef.current = null;
+    }
     
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
     onAnswerChange(question._id, template);
-    setStableAnswer(template); 
+    setStableAnswer(template);
     setCustomInput('');
     setJudge0Results(null);
     setLastSavedCode('');
+    lastCodeRef.current = template;
     
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
-    
-    setTimeout(() => {
-      setIsTemplateLoading(false);
-      templateLoadingRef.current = false;
-    }, 100);
   };
 
+  // Manual template loading function - ONLY called when user explicitly requests it
+  const loadTemplateManually = () => {
+    isUserTypingRef.current = false; // User wants template, so reset typing flag
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    onAnswerChange(question._id, template);
+    setStableAnswer(template);
+    lastCodeRef.current = template;
+  };
 
   const getLanguageIdforRunCode = (language) => {
     const languageMap = {
@@ -592,6 +435,9 @@ const SolutionSection = ({
   };
 
   const handleRunWithAPI = async () => {
+    // USER CLICKED RUN - Allow this action and stop treating as typing
+    isUserTypingRef.current = false;
+    
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
       ? answer
@@ -686,6 +532,9 @@ const SolutionSection = ({
   };
 
   const handleRunTestCases = async () => {
+    // USER CLICKED RUN TEST CASES - Allow this action and stop treating as typing
+    isUserTypingRef.current = false;
+    
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
       ? answer
@@ -902,6 +751,9 @@ const SolutionSection = ({
   };
 
   const handleSaveAnswer = async () => {
+    // USER CLICKED SAVE - Allow this action and stop treating as typing
+    isUserTypingRef.current = false;
+    
     const localSubmissionId = localStorage.getItem("submission_id");
     const currentSubmissionId = submissionId || localSubmissionId;
 
@@ -987,6 +839,8 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
+    // USER CLICKED SUBMIT - Allow this action and stop treating as typing
+    isUserTypingRef.current = false;
 
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
