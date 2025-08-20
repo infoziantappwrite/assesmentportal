@@ -164,16 +164,22 @@ const SolutionSection = ({
       return;
     }
 
-    // Set user typing flag - NEVER reset automatically
+    console.log('User typing - setting typing flag to true');
+    // Set user typing flag - this prevents template loading during typing
     isUserTypingRef.current = true;
     
-    // Clear any existing timeout to prevent background operations
+    // Clear any existing timeout and set new one to reset flag after typing stops
     if (userInputTimeoutRef.current) {
       clearTimeout(userInputTimeoutRef.current);
-      userInputTimeoutRef.current = null;
     }
+    
+    // Reset typing flag after 3 seconds of no typing (longer delay for safety)
+    userInputTimeoutRef.current = setTimeout(() => {
+      console.log('Typing timeout reached - allowing template loading again');
+      isUserTypingRef.current = false;
+    }, 3000); // Increased to 3 seconds for extra safety
 
-    // ONLY update the code - no other operations
+    // Update the code
     onAnswerChange(question._id, value || '');
     setStableAnswer(value || '');
     lastCodeRef.current = value || '';
@@ -248,30 +254,52 @@ const SolutionSection = ({
     }
   }, [question?._id, submissionId]);
 
-  // COMPLETELY DISABLED - No automatic template loading during typing
-  // Template will ONLY load when explicitly requested via buttons
+  // Template loading for new questions and language changes - COMPLETELY DISABLED during typing
   useEffect(() => {
-    // Do absolutely NOTHING if user has typed anything
+    // IMMEDIATELY EXIT if user is typing - NO OPERATIONS ALLOWED
     if (isUserTypingRef.current) {
       return;
     }
 
-    // Only load template for BRAND NEW questions with NO existing code
-    // AND only if no user interaction has occurred
+    // Only proceed if no typing is happening
+    console.log('Template loading effect running - user not typing');
+
+    // Ensure we have a valid language selected
+    if (!selectedLanguage && availableLanguages && availableLanguages.length > 0) {
+      const defaultLang = availableLanguages[0].language;
+      setSelectedLanguage(defaultLang);
+      return; // Let the next effect cycle handle template loading
+    }
+
+    // Load template for:
+    // 1. New questions (initial load)
+    // 2. Language changes when code is template or empty
+    // 3. First time component initialization
+    
     const shouldLoadTemplate = 
-      (!answer || answer.trim() === '') && 
+      (!answer || answer.trim() === '' || isTemplateCode(answer)) && 
       question?._id && 
-      selectedLanguage &&
-      !isUserTypingRef.current &&
-      !lastCodeRef.current; // Extra safety - no code exists
+      selectedLanguage;
 
     if (shouldLoadTemplate) {
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-      onAnswerChange(question._id, template);
-      setStableAnswer(template);
-      lastCodeRef.current = template;
+      
+      // Small delay to ensure proper state settling
+      const timeoutId = setTimeout(() => {
+        // Double-check user isn't typing before applying template
+        if (!isUserTypingRef.current) {
+          console.log('Loading template for language:', selectedLanguage);
+          onAnswerChange(question._id, template);
+          setStableAnswer(template);
+          lastCodeRef.current = template;
+        } else {
+          console.log('Template loading cancelled - user started typing');
+        }
+      }, 50);
+
+      return () => clearTimeout(timeoutId);
     }
-  }, [question?._id, selectedLanguage]); // Removed 'answer' dependency to prevent loops
+  }, [question?._id, selectedLanguage, answer, availableLanguages]);
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -282,12 +310,15 @@ const SolutionSection = ({
     };
   }, []);
 
-  // ONLY handle question changes - NO template loading
+  // Handle question changes and reset states
   useEffect(() => {
     const newQuestionId = question?._id;
     
     if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
-      // Reset all states for new question BUT don't load template automatically
+      // New question - reset typing flag to allow template loading
+      isUserTypingRef.current = false;
+      
+      // Reset all states for new question
       setCurrentQuestionId(newQuestionId);
       setLastSavedCode('');
       setStartTime(Date.now());
@@ -295,7 +326,11 @@ const SolutionSection = ({
       setCustomInput('');
       setLastActionType(null);
       setSaveStatus('idle');
-      // DO NOT reset isUserTypingRef.current here - preserve user state
+
+      // Ensure language is properly set for new question
+      if (!selectedLanguage && availableLanguages && availableLanguages.length > 0) {
+        setSelectedLanguage(availableLanguages[0].language);
+      }
 
       // Check submission state for the new question
       const localSubmissionId = localStorage.getItem("submission_id");
@@ -309,11 +344,17 @@ const SolutionSection = ({
         }
       }
     } else if (newQuestionId && !currentQuestionId) {
-      // First time initialization - NO automatic template loading
+      // First time initialization - allow template loading
+      isUserTypingRef.current = false;
       setCurrentQuestionId(newQuestionId);
       setStartTime(Date.now());
+      
+      // Ensure language is set on first load
+      if (!selectedLanguage && availableLanguages && availableLanguages.length > 0) {
+        setSelectedLanguage(availableLanguages[0].language);
+      }
     }
-  }, [question?._id]);
+  }, [question?._id, availableLanguages]);
 
   // MINIMAL useEffects - only for essential data initialization
   // NO template loading or user interference
@@ -334,6 +375,56 @@ const SolutionSection = ({
       setUseDefaultLanguages(true);
     }
   }, [fullDetails, useDefaultLanguages]);
+
+  // Ensure proper language selection on component mount
+  useEffect(() => {
+    if (!selectedLanguage && availableLanguages && availableLanguages.length > 0) {
+      // Set default language to JavaScript if available, otherwise first language
+      const jsLanguage = availableLanguages.find(lang => lang.language === 'javascript');
+      const defaultLanguage = jsLanguage ? jsLanguage.language : availableLanguages[0].language;
+      setSelectedLanguage(defaultLanguage);
+    }
+  }, [selectedLanguage, availableLanguages]);
+
+  // Get Monaco language mapping with proper file extensions
+  const getMonacoLanguage = (language) => {
+    const langMap = {
+      'javascript': 'javascript',
+      'python': 'python', 
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c',
+      'csharp': 'csharp',
+      'php': 'php',
+      'ruby': 'ruby',
+      'go': 'go',
+      'rust': 'rust',
+      'swift': 'swift',
+      'kotlin': 'kotlin',
+      'typescript': 'typescript'
+    };
+    return langMap[language?.toLowerCase()] || 'javascript';
+  };
+
+  // Get file path with proper extension for Monaco Editor
+  const getFilePath = (language) => {
+    const pathMap = {
+      'javascript': 'solution.js',
+      'python': 'solution.py',
+      'java': 'Main.java',
+      'cpp': 'solution.cpp', 
+      'c': 'solution.c',
+      'csharp': 'solution.cs',
+      'php': 'solution.php',
+      'ruby': 'solution.rb',
+      'go': 'solution.go',
+      'rust': 'solution.rs',
+      'swift': 'solution.swift',
+      'kotlin': 'solution.kt',
+      'typescript': 'solution.ts'
+    };
+    return pathMap[language?.toLowerCase()] || 'solution.js';
+  };
 
   const isTemplateCode = (code) => {
     if (!code || code.trim() === '') return true;
@@ -1298,12 +1389,8 @@ const SolutionSection = ({
             
             <Editor
               height="480px"
-              language={
-                selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
-                  selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
-                    selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
-                      selectedLanguage.toLowerCase()
-              }
+              language={getMonacoLanguage(selectedLanguage)}
+              path={getFilePath(selectedLanguage)}
               value={stableAnswer}
               onChange={handleCodeChange}
               theme="vs-dark"
