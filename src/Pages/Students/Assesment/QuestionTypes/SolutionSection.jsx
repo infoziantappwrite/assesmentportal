@@ -356,18 +356,14 @@ const SolutionSection = ({
     }
   }, [question?._id, availableLanguages]);
 
-  // MINIMAL useEffects - only for essential data initialization
-  // NO template loading or user interference
-
-  // Initialize custom input from test cases (passive data only)
   useEffect(() => {
-    if (!customInput && fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
+    if (fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
       const firstTestCase = fullDetails.sample_test_cases[0];
       if (firstTestCase?.input && firstTestCase.input.trim()) {
         setCustomInput(firstTestCase.input.trim());
       }
     }
-  }, [fullDetails?.sample_test_cases, customInput]);
+  }, [fullDetails?.sample_test_cases, question?._id]);
 
   // Auto-enable default languages (passive setting only)
   useEffect(() => {
@@ -461,14 +457,11 @@ const SolutionSection = ({
     isUserTypingRef.current = false; // Reset typing flag for manual language change
     setSelectedLanguage(newLanguage);
     
-    // Only load template if user explicitly wants language change
-    // This is a deliberate user action, not background automation
-    if (isTemplateCode(answer) || !answer || answer.trim() === '') {
-      const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-      onAnswerChange(question._id, template);
-      setStableAnswer(template);
-      lastCodeRef.current = template;
-    }
+    // ALWAYS load template when user changes language - this is intentional user action
+    const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    onAnswerChange(question._id, template);
+    setStableAnswer(template);
+    lastCodeRef.current = template;
   };
   useEffect(() => {
     if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
@@ -1440,7 +1433,7 @@ const SolutionSection = ({
                   horizontalSliderSize: 14,
                   arrowSize: 12
                 },
-                contextmenu: true,
+                contextmenu: false,
                 selectOnLineNumbers: true,
                 roundedSelection: true,
                 readOnly: false,
