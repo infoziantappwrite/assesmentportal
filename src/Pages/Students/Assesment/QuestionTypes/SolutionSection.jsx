@@ -169,7 +169,7 @@ const SolutionSection = ({
 
   // CRITICAL FIX: Handle code changes with enhanced protection against race conditions under high traffic
   const handleCodeChange = (value) => {
-    // CRITICAL: Enhanced protection against template resets and race conditions
+    // CRITICAL: Basic validation
     if (value === undefined || value === null) {
       return;
     }
@@ -184,41 +184,13 @@ const SolutionSection = ({
       if (currentTime === lastUserInputTime.current) {
         isUserTypingRef.current = false;
       }
-    }, 1000);
+    }, 3000);
 
-    // CRITICAL FIX: Prevent template loading from overwriting user input
-    if (templateLoadingRef.current && isUserTypingRef.current && hasValidCode(value)) {
-      console.warn('Prevented template loading during user typing');
-      return;
-    }
-
-    // CRITICAL FIX: Enhanced session isolation with better race condition detection
-    const sessionKey = `session_${sessionId}_${question?._id}`;
-    const lastSessionChange = window[sessionKey] || 0;
-    const timeSinceLastChange = currentTime - lastSessionChange;
-    window[sessionKey] = currentTime;
-
-    // CRITICAL FIX: Prevent rapid fire changes that indicate race conditions (reduced threshold)
-    if (timeSinceLastChange < 100 && value && answer && value !== answer) {
-      const isNewValueTemplate = isTemplateCode(value);
-      const isCurrentValueTemplate = isTemplateCode(answer);
-      
-      // CRITICAL: Never overwrite meaningful code with template
-      if (isNewValueTemplate && !isCurrentValueTemplate && hasValidCode(answer)) {
-        console.warn('RACE CONDITION PREVENTED: Template overwrite of user code blocked');
-        return;
-      }
-
-      // CRITICAL FIX: Prevent empty/undefined values from overwriting code
-      if (!value.trim() && answer && answer.trim()) {
-        console.warn('RACE CONDITION PREVENTED: Empty value overwrite blocked');
-        return;
-      }
-    }
-
-    // CRITICAL FIX: Additional protection - Don't allow template to replace existing meaningful code
-    if (isTemplateCode(value) && answer && !isTemplateCode(answer) && hasValidCode(answer) && !isTemplateLoading) {
-      console.warn('RACE CONDITION PREVENTED: Template replacement of user code blocked');
+    // CRITICAL FIX: While user is typing, avoid all heavy computations like normalizeCode
+    if (isUserTypingRef.current) {
+      // Simple validation - just call onChange and update stable answer
+      onAnswerChange(question._id, value || '');
+      setStableAnswer(value || '');
       return;
     }
 
