@@ -368,9 +368,9 @@ const SolutionSection = ({
         }
     }
 
-    // Load a template ONLY IF there is no valid, non-template answer already present.
+    // Load a template ONLY IF there is no answer or if answer is empty/just whitespace
     // This is the key logic that prevents your code from being wiped out.
-    if (!answer || isTemplateCode(answer)) {
+    if (!answer || answer.trim() === '') {
       setIsTemplateLoading(true);
       const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
       onAnswerChange(question._id, template);
@@ -603,34 +603,13 @@ const SolutionSection = ({
     return (exactMatches / templateLines.length) >= 0.95;
   };
 
-  // Helper function to check if code has meaningful content - enhanced version
+  // Helper function to check if code has meaningful content - simplified version
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
     
-    // Always consider template code as valid starting point
-    if (isTemplateCode(code)) return true;
-
-    // Check if code has meaningful content beyond template
-    const meaningfulLines = code.split('\n').filter(line => {
-      const trimmed = line.trim();
-      return trimmed &&
-        !trimmed.startsWith('//') &&
-        !trimmed.startsWith('#') &&
-        !trimmed.startsWith('/*') &&
-        !trimmed.startsWith('*') &&
-        !trimmed.startsWith('*/') &&
-        trimmed !== '{' &&
-        trimmed !== '}' &&
-        trimmed !== '(' &&
-        trimmed !== ')' &&
-        trimmed !== '[' &&
-        trimmed !== ']' &&
-        trimmed !== ';' &&
-        !trimmed.match(/^(import|from|using|include|package)\s/);
-    });
-
-    // Be more lenient: allow any meaningful code beyond basic structure
-    return meaningfulLines.length > 0; // Just need at least one meaningful line
+    // Simple check: if there's any non-whitespace content, consider it valid
+    // This avoids heavy normalizeCode processing while typing
+    return code.trim().length > 0;
   };
 
   // Handle language dropdown change
