@@ -217,40 +217,79 @@ const ManageGroup = () => {
             noDataText="No groups found."
           />
 
-          {/* ✅ Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-6 flex justify-center items-center gap-2 text-sm">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-              >
-                Prev
-              </button>
+         {/* ✅ Pagination */}
+{totalPages > 1 && (
+  <div className="mt-6 flex justify-center items-center gap-2 text-sm">
 
-              {[...Array(totalPages)].map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handlePageChange(idx + 1)}
-                  className={`px-3 py-1 rounded ${
-                    currentPage === idx + 1
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 hover:bg-gray-200"
-                  }`}
-                >
-                  {idx + 1}
-                </button>
-              ))}
+    {/* First */}
+    <button
+      onClick={() => handlePageChange(1)}
+      disabled={currentPage === 1}
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+    >
+      « First
+    </button>
 
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
+    {/* Prev */}
+    <button
+      onClick={() => handlePageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+    >
+      Prev
+    </button>
+
+    {/* Page Numbers */}
+    {(() => {
+      const isMobile = window.innerWidth < 640; // sm breakpoint
+      const maxButtons = isMobile ? 3 : 5;
+
+      let start = Math.max(currentPage - Math.floor(maxButtons / 2), 1);
+      let end = start + maxButtons - 1;
+
+      if (end > totalPages) {
+        end = totalPages;
+        start = Math.max(end - maxButtons + 1, 1);
+      }
+
+      return Array.from({ length: end - start + 1 }, (_, i) => start + i).map(
+        (pageNum) => (
+          <button
+            key={pageNum}
+            onClick={() => handlePageChange(pageNum)}
+            className={`px-3 py-1 rounded-lg border text-sm ${
+              currentPage === pageNum
+                ? "bg-blue-600 text-white border-blue-600" // active page
+                : "border-gray-300 text-gray-700 hover:bg-blue-50"
+            }`}
+          >
+            {pageNum}
+          </button>
+        )
+      );
+    })()}
+
+    {/* Next */}
+    <button
+      onClick={() => handlePageChange(currentPage + 1)}
+      disabled={currentPage === totalPages}
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+    >
+      Next
+    </button>
+
+    {/* Last */}
+    <button
+      onClick={() => handlePageChange(totalPages)}
+      disabled={currentPage === totalPages}
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+    >
+      Last »
+    </button>
+  </div>
+)}
+
+
 
           {/* ✅ Modal */}
           {showCreateModal && (
