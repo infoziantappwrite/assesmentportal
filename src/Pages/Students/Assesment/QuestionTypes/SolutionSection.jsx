@@ -289,7 +289,6 @@ const SolutionSection = ({
           onAnswerChange(question._id, template);
           setStableAnswer(template);
           setLastSavedCode(''); // The new template is unsaved
-          showNotification('info', `Switched to ${selectedLanguage.toUpperCase()} template.`);
           setIsTemplateLoading(false);
       }
       setPreviousLanguage(selectedLanguage);
@@ -395,13 +394,13 @@ const SolutionSection = ({
   }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
 
   useEffect(() => {
-    if (!customInput && fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
+    if (fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
       const firstTestCase = fullDetails.sample_test_cases[0];
       if (firstTestCase?.input && firstTestCase.input.trim()) {
         setCustomInput(firstTestCase.input.trim());
       }
     }
-  }, [fullDetails?.sample_test_cases, customInput]);
+  }, [fullDetails?.sample_test_cases, question?._id]);
 
   useEffect(() => {
     if (question?._id && currentQuestionId !== question._id) {
@@ -1419,7 +1418,7 @@ const SolutionSection = ({
                   horizontalSliderSize: 14,
                   arrowSize: 12
                 },
-                contextmenu: true,
+                contextmenu: false,
                 selectOnLineNumbers: true,
                 roundedSelection: true,
                 readOnly: false,
