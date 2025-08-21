@@ -193,60 +193,97 @@ const columns = [
 
 
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="mt-6 flex justify-center  items-center flex-wrap gap-2  px-4 py-2">
+     {/* Pagination */}
+{pagination.totalPages > 1 && (
+  <div className="mt-6 flex justify-center items-center flex-wrap gap-2 px-4 py-2">
 
-          {/* Previous */}
+    {/* First */}
+    <button
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+      onClick={() =>
+        setFilters((prev) => ({ ...prev, page: 1 }))
+      }
+      disabled={filters.page === 1}
+    >
+      « First
+    </button>
+
+    {/* Previous */}
+    <button
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+      onClick={() =>
+        setFilters((prev) => ({
+          ...prev,
+          page: Math.max(prev.page - 1, 1),
+        }))
+      }
+      disabled={filters.page <= 1}
+    >
+      ← Prev
+    </button>
+
+    {/* Page Numbers */}
+    <div className="flex items-center gap-1">
+      {(() => {
+        const isMobile = window.innerWidth < 640; // sm breakpoint
+        const maxButtons = isMobile ? 3 : 5;
+
+        let start = Math.max(filters.page - Math.floor(maxButtons / 2), 1);
+        let end = start + maxButtons - 1;
+
+        if (end > pagination.totalPages) {
+          end = pagination.totalPages;
+          start = Math.max(end - maxButtons + 1, 1);
+        }
+
+        return Array.from(
+          { length: end - start + 1 },
+          (_, i) => start + i
+        ).map((pageNum) => (
           <button
-            className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+            key={pageNum}
+            className={`px-3 py-1 rounded-lg border text-sm ${
+              filters.page === pageNum
+                ? "bg-blue-600 text-white border-blue-600"
+                : "border-gray-300 text-gray-700 hover:bg-blue-50"
+            }`}
             onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                page: Math.max(prev.page - 1, 1),
-              }))
+              setFilters((prev) => ({ ...prev, page: pageNum }))
             }
-            disabled={filters.page <= 1}
           >
-            ← Prev
+            {pageNum}
           </button>
+        ));
+      })()}
+    </div>
 
-          {/* Page Numbers */}
-          <div className="flex items-center gap-1">
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                className={`px-3 py-1 rounded-lg border text-sm ${filters.page === pageNum
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'border-gray-300 text-gray-700 hover:bg-blue-50'
-                  }`}
-                onClick={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    page: pageNum,
-                  }))
-                }
-              >
-                {pageNum}
-              </button>
-            ))}
-          </div>
+    {/* Next */}
+    <button
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+      onClick={() =>
+        setFilters((prev) => ({
+          ...prev,
+          page: Math.min(prev.page + 1, pagination.totalPages),
+        }))
+      }
+      disabled={filters.page >= pagination.totalPages}
+    >
+      Next →
+    </button>
 
-          {/* Next */}
-          <button
-            className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
-            onClick={() =>
-              setFilters((prev) => ({
-                ...prev,
-                page: prev.page + 1,
-              }))
-            }
-            disabled={filters.page >= pagination.totalPages}
-          >
-            Next →
-          </button>
-        </div>
-      )}
+    {/* Last */}
+    <button
+      className="px-3 py-1 rounded-lg border border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+      onClick={() =>
+        setFilters((prev) => ({ ...prev, page: pagination.totalPages }))
+      }
+      disabled={filters.page === pagination.totalPages}
+    >
+      Last »
+    </button>
+  </div>
+)}
+
 
 
     </div>
