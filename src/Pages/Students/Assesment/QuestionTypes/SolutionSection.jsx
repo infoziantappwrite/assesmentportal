@@ -1296,7 +1296,12 @@ const SolutionSection = ({
             </button>
           </div>
         </div>
+      </div>
 
+
+      <div className="bg-blue-200 border-blue-900 shadow-lg rounded-lg p-4 text-blue-800 text-sm font-medium">
+        ⓘ You cannot clear the entire code, doing so will reset the code. Write your solution according to the boilerplate
+        code given. <strong>If code is resetting while typing, press CTRL+Z and click on the Save Button.</strong>
       </div>
 
 
