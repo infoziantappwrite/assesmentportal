@@ -1,6 +1,7 @@
 import LayoutManager from './LayoutManager';
 import { saveTimeTaken } from '../../../Controllers/SubmissionController';
 import { useState } from 'react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 
 const AssessmentSection = ({
   layout = 'default',
@@ -41,6 +42,22 @@ const AssessmentSection = ({
     setQuestionStartTime(Date.now());
     refreshSectionStatus();
   };
+  const baseBtnClass =
+    "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium border border-gray-300 transition duration-150 disabled:opacity-40";
+
+
+  const [page, setPage] = useState(0); // current page index (0-based)
+  const questionsPerPage = 10;
+
+  const totalQuestions = activeSection.questions.length;
+  const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+
+  // calculate the slice for current page
+  const startIndex = page * questionsPerPage;
+  const currentQuestions = activeSection.questions.slice(
+    startIndex,
+    startIndex + questionsPerPage
+  );
 
   const renderHeader = () => (
     <div className="bg-white rounded-xl p-4">
@@ -77,23 +94,72 @@ const AssessmentSection = ({
 
   const renderQuestionPalette = () => (
     <div className="bg-white rounded-xl p-4">
-      <h3 className="text-md font-semibold text-gray-700 mb-3">Questions</h3>
-      <div className="flex flex-wrap gap-2">
-        {activeSection.questions.map((q, idx) => (
+      
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-md font-semibold text-gray-700">
+            Questions ({totalQuestions})
+          </h3>
+          <p className="text-xs text-gray-500">
+            Page {page + 1} of {totalPages}
+          </p>
+        </div>
+      
+
+
+      {/* Buttons Row */}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        {/* First & Prev */}
+        <button
+          disabled={page === 0}
+          onClick={() => setPage(0)}
+          className={baseBtnClass}
+        >
+          <ChevronsLeft size={18} />
+        </button>
+        <button
+          disabled={page === 0}
+          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          className={baseBtnClass}
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        {/* Question Numbers */}
+        {currentQuestions.map((q, idx) => (
           <button
             key={q._id}
-            onClick={() => handleQuestionChange(idx)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition duration-150 ${getQuestionStatusClass(
+            onClick={() => handleQuestionChange(startIndex + idx)}
+            className={`${baseBtnClass} ${getQuestionStatusClass(
               q._id,
-              idx
+              startIndex + idx
             )}`}
           >
-            {idx + 1}
+            {startIndex + idx + 1}
           </button>
         ))}
+
+        {/* Next & Last */}
+        <button
+          disabled={page === totalPages - 1}
+          onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+          className={baseBtnClass}
+        >
+          <ChevronRight size={18} />
+        </button>
+        <button
+          disabled={page === totalPages - 1}
+          onClick={() => setPage(totalPages - 1)}
+          className={baseBtnClass}
+        >
+          <ChevronsRight size={18} />
+        </button>
       </div>
+
+      {/* Page Info */}
+
     </div>
   );
+
 
   const renderQuestionContent = () => (
     <div>
