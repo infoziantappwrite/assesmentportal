@@ -11,16 +11,16 @@ export const DEFAULT_SUPPORTED_LANGUAGES = [
 export const LANGUAGE_TEMPLATES = {
   javascript: `//starter code to read input - instead of prompt (Do Not Delete anything after this)
 const fs = require("fs");
-let input = fs.readFileSync(0, "utf-8").trim();
+let input = fs.readFileSync(0, "utf-8").trim(); // the input is read here 
 // do your changes after this only
 
 
 function solution(num){
     // your code here
-    console.log(n); //input is in the variable
+    console.log(num); //input is in the variable
 }
 
-solution(n);`,
+solution(input);`,
 
   python: `# Python Solution
 def solution():
