@@ -268,11 +268,17 @@ const SolutionSection = ({
         if (fullDetails?.sample_test_cases?.[0]?.input) {
             setCustomInput(fullDetails.sample_test_cases[0].input.trim());
         }
+        
+        // Set language from question data if available
+        const questionDefaultLanguage = getQuestionDefaultLanguage();
+        if (questionDefaultLanguage && questionDefaultLanguage !== selectedLanguage) {
+            setSelectedLanguage(questionDefaultLanguage);
+        }
     }
 
     if (!answer || answer.trim() === '') {
       setIsTemplateLoading(true);
-      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
+      const template = getTemplateCode(selectedLanguage);
       onAnswerChange(question._id, template);
       setStableAnswer(template);
       setIsTemplateLoading(false);
@@ -285,7 +291,7 @@ const SolutionSection = ({
   useEffect(() => {
       if (previousLanguage && selectedLanguage !== previousLanguage) {
           setIsTemplateLoading(true);
-          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
+          const template = getTemplateCode(selectedLanguage);
           onAnswerChange(question._id, template);
           setStableAnswer(template);
           setLastSavedCode(''); // The new template is unsaved
@@ -357,7 +363,7 @@ const SolutionSection = ({
             return;
           }
 
-          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+          const template = getTemplateCode(selectedLanguage);
           onAnswerChange(question._id, template);
           setStableAnswer(template); 
           setLastSavedCode('');
@@ -383,9 +389,18 @@ const SolutionSection = ({
       
       const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
       if (!isValidLanguage) {
-        const defaultLanguage = availableLanguages[0].language;
-        if (selectedLanguage !== defaultLanguage) {
-          setSelectedLanguage(defaultLanguage);
+        // First try to use question's default language
+        const questionDefaultLanguage = getQuestionDefaultLanguage();
+        if (questionDefaultLanguage && availableLanguages.some(lang => lang.language === questionDefaultLanguage)) {
+          if (selectedLanguage !== questionDefaultLanguage) {
+            setSelectedLanguage(questionDefaultLanguage);
+          }
+        } else {
+          // Fallback to first available language
+          const defaultLanguage = availableLanguages[0].language;
+          if (selectedLanguage !== defaultLanguage) {
+            setSelectedLanguage(defaultLanguage);
+          }
         }
       }
     }, 300); 
@@ -419,7 +434,7 @@ const SolutionSection = ({
   const isTemplateCode = (code) => {
     if (!code || code.trim() === '') return true;
 
-    const template = LANGUAGE_TEMPLATES[selectedLanguage?.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    const template = getTemplateCode(selectedLanguage);
     
     const normalizeCode = (str) => {
       return str
@@ -456,6 +471,54 @@ const SolutionSection = ({
     return (exactMatches / templateLines.length) >= 0.95;
   };
 
+  // Helper function to get template code - first from question data, then fallback to languageConfig
+  const getTemplateCode = (language) => {
+    // First try to get starter_code from question's supported_languages
+    if (fullDetails?.supported_languages && Array.isArray(fullDetails.supported_languages)) {
+      const supportedLang = fullDetails.supported_languages.find(lang => 
+        lang.language?.toLowerCase() === language?.toLowerCase() || 
+        lang.language?.toLowerCase() === `${language?.toLowerCase()}3` // Handle python3 case
+      );
+      
+      if (supportedLang?.starter_code) {
+        return supportedLang.starter_code;
+      }
+    }
+    
+    // Fallback to LANGUAGE_TEMPLATES from languageConfig.js
+    return LANGUAGE_TEMPLATES[language?.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
+  };
+
+  // Helper function to get the default language from question data
+  const getQuestionDefaultLanguage = () => {
+    if (fullDetails?.supported_languages && fullDetails.supported_languages.length > 0) {
+      const questionLang = fullDetails.supported_languages[0].language?.toLowerCase();
+      
+      // Map question language to UI language
+      const languageMap = {
+        'python3': 'python',
+        'javascript': 'javascript',
+        'java': 'java',
+        'c': 'c',
+        'cpp': 'cpp',
+        'c++': 'cpp',
+        'csharp': 'csharp',
+        'c#': 'csharp',
+        'php': 'php',
+        'ruby': 'ruby',
+        'go': 'go',
+        'rust': 'rust',
+        'swift': 'swift',
+        'kotlin': 'kotlin',
+        'typescript': 'typescript'
+      };
+      
+      return languageMap[questionLang] || questionLang;
+    }
+    
+    return null;
+  };
+
   const hasValidCode = (code) => {
     if (!code || code.trim() === '') return false;
     
@@ -476,7 +539,7 @@ const SolutionSection = ({
     templateLoadingRef.current = true;
     isUserTypingRef.current = false; 
     
-    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
+    const template = getTemplateCode(selectedLanguage);
     onAnswerChange(question._id, template);
     setStableAnswer(template); 
     setCustomInput('');
@@ -515,7 +578,7 @@ const SolutionSection = ({
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
       ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
+      : getTemplateCode(selectedLang);
 
     if (!hasValidCode(codeToRun)) {
       showNotification('warning', 'Please write your solution code before running!');
@@ -607,7 +670,7 @@ const SolutionSection = ({
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
       ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
+      : getTemplateCode(selectedLang);
 
     if (!hasValidCode(codeToRun)) {
       showNotification('warning', 'Please write your solution code before running test cases!');
@@ -822,7 +885,7 @@ const SolutionSection = ({
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
       ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
+      : getTemplateCode(selectedLang);
 
 
     if (!hasValidCode(codeToRun)) {
@@ -904,7 +967,7 @@ const SolutionSection = ({
     const selectedLang = selectedLanguage.toLowerCase();
     const codeToRun = answer && answer.trim() !== ''
       ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
+      : getTemplateCode(selectedLang);
 
     // Check if user has written meaningful code
     if (!hasValidCode(codeToRun)) {
