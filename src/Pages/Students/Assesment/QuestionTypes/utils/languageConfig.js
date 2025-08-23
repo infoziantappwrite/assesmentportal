@@ -12,9 +12,8 @@ export const LANGUAGE_TEMPLATES = {
   javascript: `//starter code to read input - instead of prompt (Do Not Delete anything after this)
 const fs = require("fs");
 let input = fs.readFileSync(0, "utf-8").trim();
-let inputs = input.split(/\s+/);
-let n = parseInt(inputs[0], 10); // do not modify this line
 // do your changes after this only
+
 
 function solution(num){
     // your code here
