@@ -155,6 +155,8 @@ export const getExportHistory = async () => {
   const response = await axiosClient.get(`/reports/history`, {
     withCredentials: true,
   });
+  console.log(response);
+  
   return response.data;
 };
 
