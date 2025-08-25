@@ -16,7 +16,8 @@ const getSessionInfo = () => ({
   page_url: window.location.href,
 });
 
-const useProctoringEvents = ({ submission_id, student_id, assignment_id }) => {
+const useProctoringEvents = ({ submission_id, student_id, assignment_id,enabled }) => {
+  
   const navigate = useNavigate();
   const MAX_ATTEMPTS = 5;
   const [popupMessage, setPopupMessage] = useState('');
@@ -24,6 +25,7 @@ const useProctoringEvents = ({ submission_id, student_id, assignment_id }) => {
   const [needsFullscreenPrompt, setNeedsFullscreenPrompt] = useState(false);
 
   const logViolation = async (event_type, description, severity = 'medium', additionalData = {}) => {
+     if (!enabled) return; // do nothing if disabled
     try {
       await logEvent({
         submission_id,
@@ -70,11 +72,13 @@ const useProctoringEvents = ({ submission_id, student_id, assignment_id }) => {
   };
 
   const showWarning = (message) => {
+     if (!enabled) return;
     setPopupMessage(message);
     setShowPopup(true);
   };
 
   useEffect(() => {
+     if (!enabled) return;
     let lastTabSwitch = false;
     let fullscreenExitTimer = null;
 
@@ -192,7 +196,7 @@ const useProctoringEvents = ({ submission_id, student_id, assignment_id }) => {
       clearTimeout(idleTimer);
       clearTimeout(fullscreenExitTimer);
     };
-  }, [submission_id, student_id, assignment_id]);
+  }, [enabled,submission_id, student_id, assignment_id]);
 
   return { showPopup, popupMessage, setShowPopup, needsFullscreenPrompt };
 };

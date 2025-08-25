@@ -108,7 +108,7 @@ const Dashboard = () => {
       try {
         const res = await getMyAssignments();
         const all = res.data || [];
-        console.log(all);
+       // console.log(all);
 
         if (!isRetry && (!all || all.length === 0)) {
           // Retry after 1 second if data is empty

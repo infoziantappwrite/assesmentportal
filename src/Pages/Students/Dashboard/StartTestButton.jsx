@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayCircle, Loader2 } from 'lucide-react';
+import { PlayCircle, Loader2, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import FullscreenConfirmModal from '../Assesment/FullscreenConfirmModal';
 import NotificationMessage from '../../../Components/NotificationMessage';
@@ -65,10 +65,7 @@ if (label === 'Resume Test') {
       if (!submissionId) return;
 
       localStorage.setItem('submission_id', submissionId);
-      localStorage.setItem(
-        'show_results_immediately',
-        JSON.stringify(assessment.configuration.show_results_immediately)
-      );
+      
 
       const totalDuration = sections.reduce(
         (sum, sec) => sum + (sec.configuration?.duration_minutes || 0),
@@ -87,7 +84,7 @@ if (label === 'Resume Test') {
       // Delay before navigation
       setTimeout(() => {
         navigate(label === 'Resume Test' ? '/assesment' : '/instructions', {
-          state: { submission, assessment, sections }
+          state: { submission, assessment, sections,settings:test.settings }
         });
       }, 1500);
     } 
