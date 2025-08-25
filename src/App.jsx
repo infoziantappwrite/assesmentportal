@@ -136,6 +136,7 @@ const App = () => {
           <Route path="/college_rep/groups/:id" element={<ViewGroup />} />
           <Route path="/college_rep/analytics" element={<CollegeAnalytics />} />
           <Route path="/college_rep/reports" element={<ReportsPage />} />
+           <Route path="/college_rep/reports/history" element={<ReportHistoryPage />} />
           <Route path="/college_rep/profile" element={<CollegeProfile />} />
           <Route path="college_rep/test/:testId/candidates" element={<CandidateList />} />
           <Route path="college_rep/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
@@ -183,7 +184,7 @@ const App = () => {
           <Route path="/admin/assignments/:id" element={<ViewAssignment />} />
           <Route path="/admin/assignments/edit/:id" element={<EditAssignment />} />
           <Route path="/admin/submissions/:submissionId" element={<ViewFullSubmission />} />
-          <Route path="/reports/history" element={<ReportHistoryPage />} />
+          <Route path="/admin/reports/history" element={<ReportHistoryPage />} />
           <Route path='/admin/results' element={<Results/>}/>
           <Route path="/admin/result/:id" element={<ViewResult />} />
           <Route path="/admin/proctoring_report/:id" element={<ProctoringReport />} />
@@ -229,7 +230,8 @@ const App = () => {
           <Route path="/trainer/students/create" element={<CreateUser />} />
           <Route path="/trainer/students/:id" element={<UserDetails />} />
           <Route path="/trainer/analytics" element={<div>Trainer Analytics</div>} />
-          <Route path="/trainer/reports" element={<ReportHistoryPage />} />
+          <Route path="/trainer/reports" element={<ReportsPage />} />
+          <Route path="/trainer/reports/history" element={<ReportHistoryPage />} />
           <Route path="/trainer/profile" element={<div>Trainer Profile</div>} />
           <Route path="/trainer/test/:testId/candidate/:candidateId" element={<CandidatePerformance />} />
           <Route path="/trainer/students/:studentId" element={<StudentDetails />} />
