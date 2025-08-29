@@ -49,7 +49,21 @@ export const saveAnswer = async (submissionId, payload) => {
   });
   return response.data;
 };
-
+// Add to your saveAnswer function temporarily
+// export const saveAnswer = async (submissionId, payload) => {
+//   // Simulate random failures (70% failure rate for testing)
+//   if (Math.random() < 1) {
+//     await new Promise(resolve => setTimeout(resolve, 20000));
+//     console.log('🚨 Simulating API failure for testing');
+//     throw new Error('Simulated network error');
+//   }
+  
+//   // Simulate slow responses
+//   await new Promise(resolve => setTimeout(resolve, 20000));
+  
+//   // Your actual API call here
+//   return saveAnswerr(submissionId, payload);
+// };
 export const getAnsweredStatus = async (submissionId, questionId) => {
   const response = await axiosClient.get(`/submissions/answered-status/${submissionId}`, {
     params: { questionId },

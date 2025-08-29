@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
@@ -22,11 +22,9 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-import { useJudge0 } from '../../../../hooks/useJudge0';
 import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, RunCode } from "../../../../Controllers/SubmissionController"
 import { DEFAULT_SUPPORTED_LANGUAGES, LANGUAGE_TEMPLATES } from "./utils/languageConfig";
 import NotificationMessage from '../../../../Components/NotificationMessage';
-
 
 const SolutionSection = ({
   question,
@@ -40,40 +38,35 @@ const SolutionSection = ({
   refreshSectionStatus
 }) => {
   
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  // CRITICAL: Prevent code reset - stable state management
+  const [editorCode, setEditorCode] = useState('');
+  const [isInitialized, setIsInitialized] = useState(false);
+  const currentQuestionIdRef = useRef(null);
+  const currentLanguageRef = useRef(null);
+  const initializationRef = useRef(false);
+  
+  // UI State
   const [showCustomInput, setShowCustomInput] = useState(false);
-  const [judge0Results, setJudge0Results] = useState(null);
-
   const [customInput, setCustomInput] = useState('');
+  const [judge0Results, setJudge0Results] = useState(null);
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
-  const [previousLanguage, setPreviousLanguage] = useState(selectedLanguage);
+  const [notification, setNotification] = useState(null);
+  const [lastActionType, setLastActionType] = useState(null);
+  
+  // Execution state
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState(null); 
-  const [isRunningTests, setIsRunningTests] = useState(false); 
-  const [lastActionType, setLastActionType] = useState(null);
-  const { isExecuting, executeCode, } = useJudge0();
-  const [notification, setNotification] = useState(null); 
-
-  const [isComponentInitialized, setIsComponentInitialized] = useState(false);
-  const [isTemplateLoading, setIsTemplateLoading] = useState(false);
-  const currentQuestionRef = useRef(question?._id);
-  const currentLanguageRef = useRef(selectedLanguage);
-  const isUserTypingRef = useRef(false);
-  const lastUserInputTime = useRef(Date.now());
-  const templateLoadingRef = useRef(false);
-
-  const [stableAnswer, setStableAnswer] = useState(answer || '');
+  const [submitStatus, setSubmitStatus] = useState(null);
+  const [isRunningTests, setIsRunningTests] = useState(false);
   
-  useEffect(() => {
-    if (answer !== undefined && answer !== null) {
-      setStableAnswer(answer);
-    }
-  }, [answer]);
-
+  // Session and timing
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [startTime] = useState(Date.now());
+  
+  // Execution state management
   const [executionState, setExecutionState] = useState({
     isRunning: false,
-    phase: '', 
+    phase: '',
     progress: 0,
     message: '',
     currentTest: 0,
@@ -81,13 +74,160 @@ const SolutionSection = ({
     executionTime: 0,
     queuePosition: 0
   });
+  
+  // Timers
   const [executionTimer, setExecutionTimer] = useState(null);
-  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null); 
-  const [lastSavedCode, setLastSavedCode] = useState(''); 
-  const [currentQuestionId, setCurrentQuestionId] = useState(question?._id); 
-  const [startTime, setStartTime] = useState(Date.now()); 
+  const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null);
+  const debounceTimeoutRef = useRef(null);
 
-  const startExecutionTimer = () => {
+  // CRITICAL FIX: Initialize code ONLY when question changes, not on every render
+  const initializeEditorCode = useCallback((questionId, language, initialAnswer) => {
+    // Prevent re-initialization of same question
+    if (currentQuestionIdRef.current === questionId && 
+        currentLanguageRef.current === language && 
+        initializationRef.current) {
+      return;
+    }
+
+    console.log(`Initializing editor for question ${questionId} with language ${language}`);
+    
+    if (initialAnswer && initialAnswer.trim() !== '') {
+      console.log('Loading existing code');
+      setEditorCode(initialAnswer);
+    } else {
+      const template = LANGUAGE_TEMPLATES[language.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
+      console.log('Loading template for', language);
+      setEditorCode(template);
+    }
+    
+    // Mark as initialized
+    currentQuestionIdRef.current = questionId;
+    currentLanguageRef.current = language;
+    initializationRef.current = true;
+    setIsInitialized(true);
+  }, []);
+
+  // CRITICAL FIX: Only reset when question actually changes
+  useEffect(() => {
+    if (!question?._id) return;
+    
+    const questionChanged = currentQuestionIdRef.current !== question._id;
+    
+    if (questionChanged) {
+      console.log(`Question changed to ${question._id}, resetting state`);
+      
+      // Clear debounce timeout for previous question
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      
+      // Reset initialization tracking
+      initializationRef.current = false;
+      setIsInitialized(false);
+      
+      // Reset UI state
+      setJudge0Results(null);
+      setCustomInput('');
+      setLastActionType(null);
+      setSaveStatus('idle');
+      setSubmitStatus(null);
+      
+      // Set sample input if available
+      if (fullDetails?.sample_test_cases?.[0]?.input) {
+        setCustomInput(fullDetails.sample_test_cases[0].input.trim());
+      }
+    }
+  }, [question._id, fullDetails]);
+
+  // CRITICAL FIX: Initialize code only once per question
+  useEffect(() => {
+    if (!question?._id || !selectedLanguage || isInitialized) return;
+    
+    console.log('Initializing code for question', question._id);
+    initializeEditorCode(question._id, selectedLanguage, answer);
+  }, [question._id, selectedLanguage, answer, isInitialized, initializeEditorCode]);
+
+  // STABLE: Code change handler with proper debouncing
+  const handleCodeChange = useCallback((value) => {
+    if (value === undefined || value === null) return;
+    
+    // Always update local state immediately for responsive UI
+    setEditorCode(value);
+    
+    // Clear existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    // Debounced update to parent (only for current question)
+    debounceTimeoutRef.current = setTimeout(() => {
+      if (currentQuestionIdRef.current === question._id) {
+        onAnswerChange(question._id, value);
+      }
+    }, 1000); // Increased to 1 second to prevent issues
+  }, [question._id, onAnswerChange]);
+
+  // FIXED: Language change handler
+  const handleLanguageChange = useCallback((newLanguage) => {
+    if (newLanguage === selectedLanguage) return;
+    
+    console.log(`Changing language from ${selectedLanguage} to ${newLanguage}`);
+    
+    // If user has written significant code, ask for confirmation
+    if (editorCode && editorCode.trim().length > 50) {
+      const shouldKeepCode = window.confirm(
+        `You have written code in ${selectedLanguage}. Do you want to keep your current code when switching to ${newLanguage}?\n\nClick OK to keep your code, Cancel to load the ${newLanguage} template.`
+      );
+      
+      if (shouldKeepCode) {
+        setSelectedLanguage(newLanguage);
+        currentLanguageRef.current = newLanguage;
+        return;
+      }
+    }
+    
+    // Load new language template
+    setSelectedLanguage(newLanguage);
+    currentLanguageRef.current = newLanguage;
+    
+    const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
+    setEditorCode(template);
+    onAnswerChange(question._id, template);
+  }, [selectedLanguage, editorCode, question._id, onAnswerChange]);
+
+  // FIXED: Simple reset handler
+  const handleResetCode = useCallback(() => {
+    const confirmReset = window.confirm('Are you sure you want to reset your code? This will delete all your current code and load the template.');
+    if (!confirmReset) return;
+    
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
+    setEditorCode(template);
+    onAnswerChange(question._id, template);
+    setCustomInput('');
+    setJudge0Results(null);
+    
+    showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
+  }, [selectedLanguage, question._id, onAnswerChange]);
+
+  // Utility functions
+  const showNotification = useCallback((type, message) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  }, []);
+
+  const hasValidCode = useCallback((code) => {
+    return code && code.trim().length > 0;
+  }, []);
+
+  const getAvailableLanguages = useCallback(() => {
+    if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
+      return DEFAULT_SUPPORTED_LANGUAGES;
+    }
+    return fullDetails.supported_languages;
+  }, [useDefaultLanguages, fullDetails]);
+
+  // Timer management
+  const startExecutionTimer = useCallback(() => {
     const timer = setInterval(() => {
       setExecutionState(prev => ({
         ...prev,
@@ -96,9 +236,9 @@ const SolutionSection = ({
     }, 100);
     setExecutionTimer(timer);
     return timer;
-  };
+  }, []);
 
-  const startExecutionTimeout = () => {
+  const startExecutionTimeout = useCallback(() => {
     if (executionTimeoutTimer) {
       clearTimeout(executionTimeoutTimer);
     }
@@ -106,30 +246,30 @@ const SolutionSection = ({
     const timeoutTimer = setTimeout(() => {
       resetExecutionState();
       showNotification('warning', 'Execution timed out after 60 seconds. Please try again.');
-    }, 60000); 
+    }, 60000);
     setExecutionTimeoutTimer(timeoutTimer);
     return timeoutTimer;
-  };
+  }, [executionTimeoutTimer]);
 
-  const stopExecutionTimer = () => {
+  const stopExecutionTimer = useCallback(() => {
     if (executionTimer) {
       clearInterval(executionTimer);
       setExecutionTimer(null);
     }
-  };
+  }, [executionTimer]);
 
-  const stopExecutionTimeout = () => {
+  const stopExecutionTimeout = useCallback(() => {
     if (executionTimeoutTimer) {
       clearTimeout(executionTimeoutTimer);
       setExecutionTimeoutTimer(null);
     }
-  };
+  }, [executionTimeoutTimer]);
 
-  const updateExecutionState = (updates) => {
+  const updateExecutionState = useCallback((updates) => {
     setExecutionState(prev => ({ ...prev, ...updates }));
-  };
+  }, []);
 
-  const resetExecutionState = () => {
+  const resetExecutionState = useCallback(() => {
     stopExecutionTimer();
     stopExecutionTimeout();
     setExecutionState({
@@ -142,61 +282,14 @@ const SolutionSection = ({
       executionTime: 0,
       queuePosition: 0
     });
-  };
+  }, [stopExecutionTimer, stopExecutionTimeout]);
 
-  useEffect(() => {
-    return () => {
-      if (executionTimer) {
-        clearInterval(executionTimer);
-      }
-      if (executionTimeoutTimer) {
-        clearTimeout(executionTimeoutTimer);
-      }
-    };
-  }, [executionTimer, executionTimeoutTimer]);
-
-  useEffect(() => {
-    if (!executionState.isRunning && executionTimeoutTimer) {
-      stopExecutionTimeout();
-    }
-  }, [executionState.isRunning, executionTimeoutTimer]);
-
-  const handleCodeChange = (value) => {
-    if (value === undefined || value === null) {
-      return;
-    }
-
-    const currentTime = Date.now();
-    isUserTypingRef.current = true;
-    lastUserInputTime.current = currentTime;
-    
-    setTimeout(() => {
-      if (currentTime === lastUserInputTime.current) {
-        isUserTypingRef.current = false;
-      }
-    }, 3000);
-
-    if (isUserTypingRef.current) {
-      onAnswerChange(question._id, value || '');
-      setStableAnswer(value || '');
-      return;
-    }
-
-    if (currentQuestionRef.current !== question?._id) {
-      console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
-      return;
-    }
-
-    onAnswerChange(question._id, value || '');
-    
-    setStableAnswer(value || '');
-  };
-
-  const getSubmissionStateKey = (questionId, submissionId) => {
+  // Submission state management
+  const getSubmissionStateKey = useCallback((questionId, submissionId) => {
     return `submission_state_${submissionId}_${questionId}_${sessionId}`;
-  };
+  }, [sessionId]);
 
-  const saveSubmissionState = (questionId, submissionId, isSubmitted) => {
+  const saveSubmissionState = useCallback((questionId, submissionId, isSubmitted) => {
     const key = getSubmissionStateKey(questionId, submissionId);
     const stateData = {
       isSubmitted,
@@ -204,11 +297,10 @@ const SolutionSection = ({
       questionId,
       submissionId
     };
-    console.log('Saving submission state:', key, stateData);
     localStorage.setItem(key, JSON.stringify(stateData));
-  };
+  }, [getSubmissionStateKey]);
 
-  const getSubmissionState = (questionId, submissionId) => {
+  const getSubmissionState = useCallback((questionId, submissionId) => {
     const key = getSubmissionStateKey(questionId, submissionId);
     const stored = localStorage.getItem(key);
     if (stored) {
@@ -219,279 +311,9 @@ const SolutionSection = ({
       }
     }
     return null;
-  };
+  }, [getSubmissionStateKey]);
 
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
-  };
-
-  const hasCodeChanged = (code) => {
-    if (!hasValidCode(code)) return false;
-    return code !== lastSavedCode;
-  };
-
-  const getAvailableLanguages = () => {
-    if (useDefaultLanguages || !fullDetails?.supported_languages || fullDetails.supported_languages.length <= 1) {
-      return DEFAULT_SUPPORTED_LANGUAGES;
-    }
-    return fullDetails.supported_languages;
-  };
-
-  const availableLanguages = getAvailableLanguages();
-
-  useEffect(() => {
-    const localSubmissionId = localStorage.getItem("submission_id");
-    const currentSubmissionId = submissionId || localSubmissionId;
-    const currentQuestionId = question?._id;
-
-    if (currentQuestionId && currentSubmissionId) {
-      const submissionState = getSubmissionState(currentQuestionId, currentSubmissionId);
-      if (submissionState && submissionState.isSubmitted) {
-        setSubmitStatus('success');
-        showNotification('info', 'This question has already been submitted');
-      }
-    }
-  }, [question?._id, submissionId]);
-
-  useEffect(() => {
-    if (!question?._id) return;
-
-    currentQuestionRef.current = question._id;
-    
-    if (currentQuestionId !== question._id) {
-        setCurrentQuestionId(question._id);
-        setJudge0Results(null);
-        setLastActionType(null);
-        setCustomInput('');
-        setSubmitStatus(null); 
-        if (fullDetails?.sample_test_cases?.[0]?.input) {
-            setCustomInput(fullDetails.sample_test_cases[0].input.trim());
-        }
-    }
-
-    if (!answer || answer.trim() === '') {
-      setIsTemplateLoading(true);
-      const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
-      onAnswerChange(question._id, template);
-      setStableAnswer(template);
-      setIsTemplateLoading(false);
-    } else {
-      setStableAnswer(answer);
-    }
-  }, [question?._id, answer]); 
-
-
-  useEffect(() => {
-      if (previousLanguage && selectedLanguage !== previousLanguage) {
-          setIsTemplateLoading(true);
-          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || '';
-          onAnswerChange(question._id, template);
-          setStableAnswer(template);
-          setLastSavedCode(''); // The new template is unsaved
-          setIsTemplateLoading(false);
-      }
-      setPreviousLanguage(selectedLanguage);
-
-  }, [selectedLanguage]); 
-
-  useEffect(() => {
-    const newQuestionId = question?._id;
-    
-    currentQuestionRef.current = newQuestionId;
-    
-    if (currentQuestionId && newQuestionId && currentQuestionId !== newQuestionId) {
-      isUserTypingRef.current = false;
-      templateLoadingRef.current = false;
-
-      setCurrentQuestionId(newQuestionId);
-      setLastSavedCode(''); 
-      setStartTime(Date.now()); 
-
-      setJudge0Results(null);
-      setCustomInput(''); 
-      setLastActionType(null); 
-      setSaveStatus('idle');
-      setIsComponentInitialized(false); 
-      setIsTemplateLoading(false); 
-
-      const localSubmissionId = localStorage.getItem("submission_id");
-      const currentSubmissionId = submissionId || localSubmissionId;
-      if (newQuestionId && currentSubmissionId) {
-        const submissionState = getSubmissionState(newQuestionId, currentSubmissionId);
-        if (submissionState && submissionState.isSubmitted) {
-          setSubmitStatus('success');
-        } else {
-          setSubmitStatus(null); 
-        }
-      }
-
-    } else if (newQuestionId && !currentQuestionId) {
-      setCurrentQuestionId(newQuestionId);
-      setStartTime(Date.now()); // Set start time for the first question
-      setIsComponentInitialized(false);
-    }
-  }, [question?._id]); 
-
-  useEffect(() => {
-    currentLanguageRef.current = selectedLanguage;
-    
-    const debounceTimer = setTimeout(() => {
-      const languageChanged = previousLanguage && previousLanguage !== selectedLanguage;
-
-      if (languageChanged) {
-        if (isUserTypingRef.current) {
-          console.log('Language change skipped - user is typing');
-          return;
-        }
-
-        setPreviousLanguage(selectedLanguage);
-
-        setIsTemplateLoading(true);
-        templateLoadingRef.current = true;
-        
-        setTimeout(() => {
-          if (isUserTypingRef.current || currentLanguageRef.current !== selectedLanguage) {
-            setIsTemplateLoading(false);
-            templateLoadingRef.current = false;
-            return;
-          }
-
-          const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-          onAnswerChange(question._id, template);
-          setStableAnswer(template); 
-          setLastSavedCode('');
-          
-          setTimeout(() => {
-            setIsTemplateLoading(false);
-            templateLoadingRef.current = false;
-          }, 100);
-        }, 50);
-
-      } else if (!previousLanguage && selectedLanguage) {
-        // First time language setup
-        setPreviousLanguage(selectedLanguage);
-      }
-    }, 200); 
-
-    return () => clearTimeout(debounceTimer);
-  }, [selectedLanguage, previousLanguage]); 
-
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (!availableLanguages || availableLanguages.length === 0) return;
-      
-      const isValidLanguage = availableLanguages.some(lang => lang.language === selectedLanguage);
-      if (!isValidLanguage) {
-        const defaultLanguage = availableLanguages[0].language;
-        if (selectedLanguage !== defaultLanguage) {
-          setSelectedLanguage(defaultLanguage);
-        }
-      }
-    }, 300); 
-
-    return () => clearTimeout(debounceTimer);
-  }, [availableLanguages, selectedLanguage, setSelectedLanguage]);
-
-  useEffect(() => {
-    if (fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0) {
-      const firstTestCase = fullDetails.sample_test_cases[0];
-      if (firstTestCase?.input && firstTestCase.input.trim()) {
-        setCustomInput(firstTestCase.input.trim());
-      }
-    }
-  }, [fullDetails?.sample_test_cases, question?._id]);
-
-  useEffect(() => {
-    if (question?._id && currentQuestionId !== question._id) {
-      setJudge0Results(null);
-      setCustomInput('');
-      setLastActionType(null);
-      setSaveStatus('idle');
-      setStartTime(Date.now()); 
-
-      if (currentQuestionId !== question._id) {
-        setSubmitStatus(null); // Reset submit status for new question
-      }
-    }
-  }, [question?._id, currentQuestionId]);
-
-  const isTemplateCode = (code) => {
-    if (!code || code.trim() === '') return true;
-
-    const template = LANGUAGE_TEMPLATES[selectedLanguage?.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-    
-    const normalizeCode = (str) => {
-      return str
-        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove block comments
-        .replace(/\/\/.*$/gm, '') // Remove line comments
-        .replace(/#.*$/gm, '') // Remove Python comments
-        .replace(/\s+/g, ' ') // Normalize whitespace
-        .trim()
-        .toLowerCase();
-    };
-
-    const normalizedCode = normalizeCode(code);
-    const normalizedTemplate = normalizeCode(template);
-
-    if (normalizedCode === normalizedTemplate) return true;
-
-    const templateLines = template.split('\n')
-      .map(line => normalizeCode(line))
-      .filter(line => line.length > 0);
-    
-    const codeLines = code.split('\n')
-      .map(line => normalizeCode(line))
-      .filter(line => line.length > 0);
-
-    if (codeLines.length > templateLines.length + 1) return false;
-
-    let exactMatches = 0;
-    templateLines.forEach(templateLine => {
-      if (codeLines.includes(templateLine)) {
-        exactMatches++;
-      }
-    });
-
-    return (exactMatches / templateLines.length) >= 0.95;
-  };
-
-  const hasValidCode = (code) => {
-    if (!code || code.trim() === '') return false;
-    
-    return code.trim().length > 0;
-  };
-
-  const handleLanguageChange = (newLanguage) => {
-    setSelectedLanguage(newLanguage);
-  };
-  useEffect(() => {
-    if (!useDefaultLanguages && fullDetails?.supported_languages && fullDetails.supported_languages.length === 1) {
-      setUseDefaultLanguages(true);
-    }
-  }, [fullDetails, useDefaultLanguages]);
-
-  const handleResetCode = () => {
-    setIsTemplateLoading(true);
-    templateLoadingRef.current = true;
-    isUserTypingRef.current = false; 
-    
-    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'];
-    onAnswerChange(question._id, template);
-    setStableAnswer(template); 
-    setCustomInput('');
-    setJudge0Results(null);
-    setLastSavedCode('');
-    
-    showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
-    
-    setTimeout(() => {
-      setIsTemplateLoading(false);
-      templateLoadingRef.current = false;
-    }, 100);
-  };
-
-
+  // Language ID mapping
   const getLanguageIdforRunCode = (language) => {
     const languageMap = {
       'python': 71,
@@ -511,13 +333,9 @@ const SolutionSection = ({
     return languageMap[language.toLowerCase()] || 71;
   };
 
+  // API handlers
   const handleRunWithAPI = async () => {
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-    if (!hasValidCode(codeToRun)) {
+    if (!hasValidCode(editorCode)) {
       showNotification('warning', 'Please write your solution code before running!');
       return;
     }
@@ -541,8 +359,8 @@ const SolutionSection = ({
         queuePosition: Math.floor(Math.random() * 3) + 1 
       });
 
-      const timer = startExecutionTimer();
-      const timeoutTimer = startExecutionTimeout();
+      startExecutionTimer();
+      startExecutionTimeout();
 
       setTimeout(() => {
         updateExecutionState({
@@ -560,21 +378,19 @@ const SolutionSection = ({
         });
       }, 1200);
 
-      setLastActionType('runCode'); // Mark this as run code action
+      setLastActionType('runCode');
       const result = await RunCode({
-        source_code: codeToRun,
+        source_code: editorCode,
         language_id: getLanguageIdforRunCode(selectedLanguage || 'python'),
         stdin: customInput || ''
       });
 
-      // Complete execution
       updateExecutionState({
         phase: 'completed',
         progress: 100,
         message: 'Execution completed!'
       });
 
-      // Clear timers immediately on successful completion
       stopExecutionTimer();
       stopExecutionTimeout();
 
@@ -604,12 +420,7 @@ const SolutionSection = ({
   };
 
   const handleRunTestCases = async () => {
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-    if (!hasValidCode(codeToRun)) {
+    if (!hasValidCode(editorCode)) {
       showNotification('warning', 'Please write your solution code before running test cases!');
       return;
     }
@@ -628,20 +439,18 @@ const SolutionSection = ({
       return;
     }
 
-    // Check if question is already submitted
     const submissionState = getSubmissionState(question._id, currentSubmissionId);
     if (submissionState && submissionState.isSubmitted) {
       showNotification('error', 'This question has already been submitted and test cases cannot be run');
-      setSubmitStatus('success'); // Ensure buttons stay disabled
+      setSubmitStatus('success');
       return;
     }
 
     setIsRunningTests(true);
-    setLastActionType('testCases'); // Mark this as test cases action
+    setLastActionType('testCases');
 
     const totalTestCases = fullDetails.sample_test_cases.length;
 
-    // Start test execution with dynamic indicators
     updateExecutionState({
       isRunning: true,
       phase: 'testing',
@@ -653,11 +462,10 @@ const SolutionSection = ({
       queuePosition: Math.floor(Math.random() * 2) + 1
     });
 
-    const timer = startExecutionTimer();
-    const timeoutTimer = startExecutionTimeout();
+    startExecutionTimer();
+    startExecutionTimeout();
 
     try {
-      // Step 1: Save the answer first
       setTimeout(() => {
         updateExecutionState({
           progress: 15,
@@ -670,7 +478,7 @@ const SolutionSection = ({
         sectionId: question.section_id,
         questionId: question._id,
         type: 'coding',
-        codeSolution: codeToRun,
+        codeSolution: editorCode,
         programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
@@ -678,8 +486,7 @@ const SolutionSection = ({
       };
 
       await saveCodingAnswer(currentSubmissionId, savePayload);
-
-      setLastSavedCode(codeToRun);
+      
       setTimeout(() => {
         updateExecutionState({
           progress: 30,
@@ -695,113 +502,84 @@ const SolutionSection = ({
         });
       }, 1000);
 
-      const getLanguageId = (language) => {
-        const languageMap = {
-          'python': 71,
-          'javascript': 63,
-          'java': 62,
-          'c': 50,
-          'cpp': 54,
-          'csharp': 51,
-          'php': 68,
-          'ruby': 72,
-          'go': 60,
-          'rust': 73,
-          'swift': 83,
-          'kotlin': 78,
-          'typescript': 74,
-        };
-        return languageMap[language.toLowerCase()] || 71;
-      };
-
       const testPayload = {
-        code: codeToRun, 
-        language_id: getLanguageId(selectedLanguage),
-       
+        code: editorCode, 
+        language_id: getLanguageIdforRunCode(selectedLanguage),
       };
 
-      try {
-        // Simulate test progress
-        for (let i = 2; i <= totalTestCases; i++) {
-          setTimeout(() => {
-            updateExecutionState({
-              progress: 50 + (i * 30 / totalTestCases),
-              message: `Running test case ${i} of ${totalTestCases}...`,
-              currentTest: i
-            });
-          }, 1200 + (i * 400));
-        }
-
+      for (let i = 2; i <= totalTestCases; i++) {
         setTimeout(() => {
           updateExecutionState({
-            progress: 85,
-            message: 'Evaluating results...'
+            progress: 50 + (i * 30 / totalTestCases),
+            message: `Running test case ${i} of ${totalTestCases}...`,
+            currentTest: i
           });
-        }, 1200 + (totalTestCases * 400));
+        }, 1200 + (i * 400));
+      }
 
-        const response = await runSampleTestCases(currentQuestionId, testPayload);
+      setTimeout(() => {
+        updateExecutionState({
+          progress: 85,
+          message: 'Evaluating results...'
+        });
+      }, 1200 + (totalTestCases * 400));
 
-        let testResults = null;
-        if (response.sample_results && Array.isArray(response.sample_results)) {
-          testResults = response.sample_results;
-        } else if (response.results && Array.isArray(response.results)) {
-          testResults = response.results;
-        } else if (response.data && Array.isArray(response.data)) {
-          testResults = response.data;
-        } else if (Array.isArray(response)) {
-          testResults = response;
-        }
+      const response = await runSampleTestCases(currentQuestionId, testPayload);
 
-        if (testResults && testResults.length > 0) {
-          const passedCount = testResults.filter(result =>
-            result.status === 'PASSED' || result.status === 'Accepted' || result.passed === true
-          ).length;
-          const totalCount = testResults.length;
+      let testResults = null;
+      if (response.sample_results && Array.isArray(response.sample_results)) {
+        testResults = response.sample_results;
+      } else if (response.results && Array.isArray(response.results)) {
+        testResults = response.results;
+      } else if (response.data && Array.isArray(response.data)) {
+        testResults = response.data;
+      } else if (Array.isArray(response)) {
+        testResults = response;
+      }
 
-          updateExecutionState({
-            progress: 100,
-            message: `Tests completed: ${passedCount}/${totalCount} passed`
-          });
+      if (testResults && testResults.length > 0) {
+        const passedCount = testResults.filter(result =>
+          result.status === 'PASSED' || result.status === 'Accepted' || result.passed === true
+        ).length;
+        const totalCount = testResults.length;
 
-          stopExecutionTimer();
-          stopExecutionTimeout();
+        updateExecutionState({
+          progress: 100,
+          message: `Tests completed: ${passedCount}/${totalCount} passed`
+        });
 
-          setTimeout(() => {
-            resetExecutionState();
-          }, 1500);
+        stopExecutionTimer();
+        stopExecutionTimeout();
 
-          // Set status based on test results
-          const allPassed = passedCount === totalCount;
-          const statusDescription = allPassed ? 'Correct' : 'Incorrect';
-
-          setJudge0Results({
-            testResults: testResults,
-            status: { description: statusDescription },
-            message: `Test cases completed: ${passedCount}/${totalCount} passed`
-          });
-
-          if (allPassed) {
-            showNotification('success', `All test cases passed! (${passedCount}/${totalCount})`);
-          } else {
-            showNotification('error', `Some test cases failed. (${passedCount}/${totalCount} passed)`);
-          }
-
-          setSaveStatus('saved');
-          
-          // Refresh section status to update answer in parent component
-          if (refreshSectionStatus) {
-            refreshSectionStatus();
-          }
-          
-          setTimeout(() => setSaveStatus('idle'), 3000);
-        } else {
+        setTimeout(() => {
           resetExecutionState();
-          showNotification('error', 'Test cases completed but no valid results received');
+        }, 1500);
+
+        const allPassed = passedCount === totalCount;
+        const statusDescription = allPassed ? 'Correct' : 'Incorrect';
+
+        setJudge0Results({
+          testResults: testResults,
+          status: { description: statusDescription },
+          message: `Test cases completed: ${passedCount}/${totalCount} passed`
+        });
+
+        if (allPassed) {
+          showNotification('success', `All test cases passed! (${passedCount}/${totalCount})`);
+        } else {
+          showNotification('error', `Some test cases failed. (${passedCount}/${totalCount} passed)`);
         }
-      } catch (apiError) {
+
+        setSaveStatus('saved');
+        
+        if (refreshSectionStatus) {
+          refreshSectionStatus();
+        }
+        
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      } else {
         resetExecutionState();
-        showNotification('error', 'Failed to run test cases. Please try again.');
-        console.error('Test cases API error:', apiError);
+        showNotification('error', 'Test cases completed but no valid results received');
       }
 
     } catch (error) {
@@ -813,19 +591,11 @@ const SolutionSection = ({
     }
   };
 
-
-
   const handleSaveAnswer = async () => {
     const localSubmissionId = localStorage.getItem("submission_id");
     const currentSubmissionId = submissionId || localSubmissionId;
 
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-
-    if (!hasValidCode(codeToRun)) {
+    if (!hasValidCode(editorCode)) {
       showNotification('warning', 'Please write your solution code before saving!');
       setSaveStatus('error');
       return;
@@ -837,12 +607,11 @@ const SolutionSection = ({
       return;
     }
 
-    // Check if question is already submitted
     const submissionState = getSubmissionState(question._id, currentSubmissionId);
     if (submissionState && submissionState.isSubmitted) {
       setSaveStatus('error');
       showNotification('error', 'This question has already been submitted and cannot be modified');
-      setSubmitStatus('success'); // Ensure buttons stay disabled
+      setSubmitStatus('success');
       return;
     }
 
@@ -854,7 +623,7 @@ const SolutionSection = ({
         sectionId: question.section_id,
         questionId: question._id,
         type: 'coding',
-        codeSolution: codeToRun,
+        codeSolution: editorCode,
         programmingLanguage: selectedLanguage,
         isMarkedForReview: false,
         isSkipped: false,
@@ -865,8 +634,7 @@ const SolutionSection = ({
 
       setSaveStatus('saved');
       showNotification('success', 'Answer saved successfully!');
-
-      setLastSavedCode(codeToRun);
+      
       if (refreshSectionStatus) {
         refreshSectionStatus();
       }
@@ -883,9 +651,8 @@ const SolutionSection = ({
           (error.response.data.message.includes("cannot update a coding questions answer") ||
             error.response.data.message.includes("Once it is submitted, it cannot be changed"))
         ) {
-          // This question was already submitted - save this state for future reference
           saveSubmissionState(question._id, currentSubmissionId, true);
-          setSubmitStatus('success'); // Disable buttons
+          setSubmitStatus('success');
           showNotification('error', 'This question has already been submitted and cannot be modified');
         } else {
           showNotification('error', 'Failed to save answer');
@@ -900,21 +667,13 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
-
-    const selectedLang = selectedLanguage.toLowerCase();
-    const codeToRun = answer && answer.trim() !== ''
-      ? answer
-      : LANGUAGE_TEMPLATES[selectedLang] || '';
-
-    // Check if user has written meaningful code
-    if (!hasValidCode(codeToRun)) {
+    if (!hasValidCode(editorCode)) {
       showNotification('warning', 'Please write your solution code before submitting!');
       return;
     }
 
     let res;
 
-    // Start submission with dynamic indicators
     updateExecutionState({
       isRunning: true,
       phase: 'submitting',
@@ -923,8 +682,8 @@ const SolutionSection = ({
       executionTime: 0
     });
 
-    const timer = startExecutionTimer();
-    const timeoutTimer = startExecutionTimeout();
+    startExecutionTimer();
+    startExecutionTimeout();
 
     try {
       setTimeout(() => {
@@ -972,42 +731,21 @@ const SolutionSection = ({
         });
       }, 1200);
 
-      const getLanguageId = (language) => {
-        const languageMap = {
-          'python': 71,
-          'javascript': 63,
-          'java': 62,
-          'c': 50,
-          'cpp': 54,
-          'csharp': 51,
-          'php': 68,
-          'ruby': 72,
-          'go': 60,
-          'rust': 73,
-          'swift': 83,
-          'kotlin': 78,
-          'typescript': 74,
-        };
-        return languageMap[language.toLowerCase()] || 71;
-      };
-
       const payload = {
         question_id: currentQuestionId,
-        code: codeToRun,
+        code: editorCode,
         language: selectedLanguage,
-        language_id: getLanguageId(selectedLanguage),
+        language_id: getLanguageIdforRunCode(selectedLanguage),
         answer_id: answerId,
       };
 
       await evaluateCodingSubmission(currentSubmissionId, payload);
 
-      // Complete submission
       updateExecutionState({
         progress: 100,
         message: 'Submission completed successfully!'
       });
 
-      // Clear timers immediately on successful completion
       stopExecutionTimer();
       stopExecutionTimeout();
 
@@ -1016,10 +754,7 @@ const SolutionSection = ({
       }, 1500);
 
       setSubmitStatus("success");
-
-      // Save submission state to localStorage for persistence
       saveSubmissionState(currentQuestionId, currentSubmissionId, true);
-
       showNotification('success', 'Code submitted successfully!');
 
     } catch (error) {
@@ -1032,8 +767,31 @@ const SolutionSection = ({
     }
   };
 
+  // Check submission state on load
+  useEffect(() => {
+    const localSubmissionId = localStorage.getItem("submission_id");
+    const currentSubmissionId = submissionId || localSubmissionId;
+    const currentQuestionId = question?._id;
 
+    if (currentQuestionId && currentSubmissionId) {
+      const submissionState = getSubmissionState(currentQuestionId, currentSubmissionId);
+      if (submissionState && submissionState.isSubmitted) {
+        setSubmitStatus('success');
+        showNotification('info', 'This question has already been submitted');
+      }
+    }
+  }, [question?._id, submissionId, getSubmissionState]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (executionTimer) clearInterval(executionTimer);
+      if (executionTimeoutTimer) clearTimeout(executionTimeoutTimer);
+      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+    };
+  }, [executionTimer, executionTimeoutTimer]);
+
+  // Helper functions
   const getStatusIcon = (status) => {
     const description = status?.description;
 
@@ -1049,14 +807,6 @@ const SolutionSection = ({
       return <AlertCircle className="w-4 h-4 text-yellow-500" />;
     }
   };
-
-
-  const expectedSampleOutput = fullDetails?.sample_test_cases?.[0]?.output?.trim();
-  const actualOutput = judge0Results?.stdout?.trim();
-
-  // Only compare with sample test case if the last action was "testCases", not "runCode"
-  const isSampleTestPassed = expectedSampleOutput === actualOutput;
-  const shouldShowSampleComparison = judge0Results?.stdout && fullDetails?.sample_test_cases?.length > 0 && lastActionType === 'testCases';
 
   // Dynamic Execution Indicator Component
   const ExecutionIndicator = () => {
@@ -1100,7 +850,6 @@ const SolutionSection = ({
     return (
       <div className={`fixed top-4 right-4 z-50 min-w-80 bg-gradient-to-r ${getPhaseColor()} border-2 rounded-xl shadow-lg backdrop-blur-sm transition-all duration-300 animate-in slide-in-from-right-4`}>
         <div className="p-4">
-          {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               {getPhaseIcon()}
@@ -1113,7 +862,6 @@ const SolutionSection = ({
             </div>
           </div>
 
-          {/* Progress Bar */}
           <div className="mb-3">
             <div className="flex justify-between text-xs text-gray-600 mb-1">
               <span>Progress</span>
@@ -1127,13 +875,11 @@ const SolutionSection = ({
             </div>
           </div>
 
-          {/* Status Message */}
           <div className="text-sm text-gray-700 mb-2">
             {executionState.message}
             {executionState.phase === 'compiling' && <span className="animate-pulse">{getDots()}</span>}
           </div>
 
-          {/* Additional Info */}
           <div className="flex items-center justify-between text-xs text-gray-600">
             {executionState.phase === 'testing' && executionState.totalTests > 0 && (
               <div className="flex items-center gap-1">
@@ -1160,10 +906,16 @@ const SolutionSection = ({
     );
   };
 
+  // Get available languages
+  const availableLanguages = getAvailableLanguages();
+
+  if (!fullDetails) return <div className="text-center py-10">Loading question details...</div>;
+
   return (
-    <div className=" space-y-6">
+    <div className="space-y-6">
       {/* Dynamic Execution Indicator */}
       <ExecutionIndicator />
+      
       {notification && (
         <NotificationMessage
           type={notification.type}
@@ -1178,15 +930,12 @@ const SolutionSection = ({
           Code Editor & Execution Environment
         </h2>
 
-        {/* System Status Indicators */}
         <div className="flex items-center gap-4 text-sm">
-          {/* Compiler Status */}
           <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-200">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-green-700 font-medium">Compiler Ready</span>
           </div>
 
-          {/* Judge0 API Status */}
           <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-200">
             <Zap className="w-3 h-3 text-blue-500" />
             <span className="text-blue-700 font-medium">API Online</span>
@@ -1195,8 +944,7 @@ const SolutionSection = ({
       </div>
 
       {/* Language Selection */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4  ">
-        {/* Language Selector */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="w-full md:w-1/2 space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <FileCode className="w-4 h-4" />
@@ -1236,11 +984,7 @@ const SolutionSection = ({
           </select>
         </div>
 
-        {/* Buttons */}
-
-
         <div className="flex gap-2 flex-wrap md:flex-nowrap items-center mt-6">
-          {/* Reset Button - Only manual way to reload template */}
           <button
             onClick={handleResetCode}
             className="px-3 py-2 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 rounded-md text-sm font-medium flex items-center gap-1"
@@ -1250,7 +994,6 @@ const SolutionSection = ({
             Reset Code
           </button>
 
-          {/* Save Answer */}
           <div className="flex gap-2">
             <button
               type="button"
@@ -1264,7 +1007,7 @@ const SolutionSection = ({
                     ? 'bg-green-100 text-green-800 border border-green-300'
                     : saveStatus === 'error'
                       ? 'bg-red-100 text-red-800 border border-red-300'
-                      : 'bg-cyan-50 text-cyan-700  border border-cyan-300 hover:bg-cyan-100 '
+                      : 'bg-cyan-50 text-cyan-700 border border-cyan-300 hover:bg-cyan-100'
                 }`}
             >
               {submitStatus === 'success' ? (
@@ -1298,23 +1041,28 @@ const SolutionSection = ({
         </div>
       </div>
 
-
-      <div className="bg-blue-200 border-blue-900 shadow-lg rounded-lg p-4 text-blue-800 text-sm font-medium">
-        ⓘ You cannot clear the entire code, doing so will reset the code. Write your solution according to the boilerplate
-        code given. <strong>If code is resetting while typing, press CTRL+Z and click on the Save Button.</strong>
+      {/* User-friendly guidance */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium mb-1">Code Editor Guidelines:</p>
+            <ul className="space-y-1 text-sm">
+              <li>• Save your code before moving to another question</li>
+              <li>• Language changes will ask if you want to keep your current code</li>
+              <b><li>• If you face code disappearing or resetting issues, click Ctrl + Z and to restore your code and click Save to avoid losing it again.</li></b>
+            </ul>
+          </div>
+        </div>
       </div>
 
-
       <div className="space-y-6">
-        
-        {/* Modern Editor Container with Neon Theme */}
+        {/* Enhanced Monaco Editor Container */}
         <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
           
-          {/* Futuristic Header Bar */}
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4">
             <div className="flex items-center justify-between">
               
-              {/* Left: Editor Info with Animated Icons */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-red-400 rounded-full shadow-lg"></div>
@@ -1345,25 +1093,23 @@ const SolutionSection = ({
                 </div>
               </div>
 
-              {/* Right: Live Statistics */}
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-4 text-white/90">
                   <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
                     <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span className="text-xs font-mono">{answer ? answer.split('\n').length : 0} lines</span>
+                    <span className="text-xs font-mono">{editorCode ? editorCode.split('\n').length : 0} lines</span>
                   </div>
                   <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-xs font-mono">{answer ? answer.length : 0} chars</span>
+                    <span className="text-xs font-mono">{editorCode ? editorCode.length : 0} chars</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Advanced Monaco Editor with Enhanced Styling */}
+          {/* Monaco Editor with stable state management */}
           <div className="relative">
-            {/* Gradient Overlay for Modern Look */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none"></div>
             
             <Editor
@@ -1374,10 +1120,10 @@ const SolutionSection = ({
                     selectedLanguage.toLowerCase() === 'typescript' ? 'typescript' :
                       selectedLanguage.toLowerCase()
               }
-              value={stableAnswer}
+              value={editorCode}
               onChange={handleCodeChange}
               theme="vs-dark"
-              key={`${question?._id}_${selectedLanguage}_${sessionId}`}
+              key={`editor_${question?._id}_${selectedLanguage}`}
               options={{
                 minimap: { 
                   enabled: true,
@@ -1456,13 +1202,11 @@ const SolutionSection = ({
               }}
             />
             
-            {/* Futuristic Corner Accent */}
             <div className="absolute bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-2 opacity-80">
               <Code2 className="w-4 h-4 text-white" />
             </div>
           </div>
 
-          {/* Modern Footer with Gradient */}
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-3 border-t border-purple-500/20">
             <div className="flex items-center justify-between">
               <div className="text-xs font-mono text-purple-300">
@@ -1472,8 +1216,8 @@ const SolutionSection = ({
           </div>
         </div>
       </div>
+
       <div className="space-y-6">
-        {/* Button Row */}
         {submitStatus === "success" ? (
           <div className="w-full flex items-center justify-center mt-4">
             <button
@@ -1487,7 +1231,6 @@ const SolutionSection = ({
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-4">
-            {/* Toggle Custom Input */}
             <button
               type="button"
               onClick={() => setShowCustomInput(!showCustomInput)}
@@ -1502,7 +1245,6 @@ const SolutionSection = ({
             </button>
 
             <div className="flex flex-wrap gap-3">
-              {/* Run Code */}
               <button
                 type="button"
                 onClick={handleRunWithAPI}
@@ -1529,7 +1271,6 @@ const SolutionSection = ({
                 )}
               </button>
 
-              {/* Run Test Cases */}
               <button
                 type="button"
                 onClick={handleRunTestCases}
@@ -1554,7 +1295,6 @@ const SolutionSection = ({
                 )}
               </button>
 
-              {/* Submit */}
               <button
                 type="button"
                 onClick={handleSubmitCode}
@@ -1582,7 +1322,6 @@ const SolutionSection = ({
           </div>
         )}
       </div>
-
       {/* Custom Input Section */}
       {showCustomInput && (
         <div className="border-t border-gray-200 pt-6">
@@ -1624,200 +1363,170 @@ const SolutionSection = ({
               <div className="flex items-center justify-between mt-2 px-2 pb-1 text-xs text-gray-500">
                 <div>This input will be passed to your program via stdin</div>
                 <div>
-                  Characters: {customInput.length} | Lines:{" "}
-                  {customInput.split("\n").length}
+                  Characters: {customInput.length} | Lines: {customInput.split("\n").length}
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
-      <div>
 
-        {/* Judge0 Execution Results */}
-        {judge0Results && (
-          <div>
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-blue-500" />
-              Execution Results
-            </h3>
+      {/* Results Display */}
+      {judge0Results && (
+        <div>
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-blue-500" />
+            Execution Results
+          </h3>
 
-            <div className="grid md:grid-cols-3 gap-4 mb-4">
-              <div className="bg-white p-3 rounded-lg border border-gray-300">
-                <div className="flex items-center gap-2 mb-1">
-                  {getStatusIcon(judge0Results.status)}
-                  <p className="text-sm font-medium text-gray-600">Status</p>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${judge0Results.status?.description === 'Compiled' || judge0Results.status?.description === 'Accepted'
-                  ? 'bg-blue-100 text-blue-800'
-                  : judge0Results.status?.description === 'Correct'
-                    ? 'bg-green-100 text-green-800'
-                    : judge0Results.status?.description === 'Incorrect'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                  {judge0Results.status?.description || 'Unknown'}
-                </span>
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <div className="bg-white p-3 rounded-lg border border-gray-300">
+              <div className="flex items-center gap-2 mb-1">
+                <MemoryStick className="w-4 h-4 text-purple-500" />
+                <p className="text-sm font-medium text-gray-600">Memory Used</p>
               </div>
-
-              <div className="bg-white p-3 rounded-lg border border-gray-300">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="w-4 h-4 text-blue-500" />
-                  <p className="text-sm font-medium text-gray-600">Execution Time</p>
-                </div>
-                <span className="text-sm text-gray-800 font-mono">
-                  {judge0Results.time ? `${judge0Results.time}s` : 'N/A'}
-                </span>
-              </div>
-
-              <div className="bg-white p-3 rounded-lg border border-gray-300">
-                <div className="flex items-center gap-2 mb-1">
-                  <MemoryStick className="w-4 h-4 text-purple-500" />
-                  <p className="text-sm font-medium text-gray-600">Memory Used</p>
-                </div>
-                <span className="text-sm text-gray-800 font-mono">
-                  {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
-                </span>
-              </div>
+              <span className="text-sm text-gray-800 font-mono">
+                {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
+              </span>
             </div>
-
-            {/* Show output for Run Code without comparison */}
-            {lastActionType === 'runCode' && judge0Results && (
-                <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-                    <Terminal className="w-5 h-5 text-blue-600" />
-                    <span>Program Output</span>
-                  </div>
-
-                  <div className="text-sm font-mono space-y-2">
-                    <div className="flex items-start gap-2">
-                      <Upload className="w-4 h-4 text-indigo-500 mt-1" />
-                      <div className="flex-1">
-                        <span className="font-semibold">Output:</span>
-                        <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
-                          {judge0Results.stdout || judge0Results.stdout === '' ? 
-                            (judge0Results.stdout.trim() === '' ? 
-                              "No output produced\n\n Your program ran successfully but didn't print anything.\n   Try adding print statements to see output." : 
-                              judge0Results.stdout
-                            ) : 
-                            "No output available"
-                          }
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            {judge0Results.stderr && (
-              <div className="mb-4">
-                <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                  <XCircle className="w-4 h-4 text-red-500" />
-                  Error Output
-                </p>
-                <pre className="bg-red-950 text-red-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                  {judge0Results.stderr}
-                </pre>
-              </div>
-            )}
-
-            {judge0Results.compile_output && (
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                  <Cpu className="w-4 h-4 text-yellow-500" />
-                  Compile Output
-                </p>
-                <pre className="bg-yellow-950 text-yellow-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                  {judge0Results.compile_output}
-                </pre>
-              </div>
-            )}
           </div>
-        )}
 
-        {/* Test Results Display */}
-        {(testResults || judge0Results?.testResults) && (
-          <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              Sample Test Case Results
-            </h3>
+          {/* Show output for Run Code without comparison */}
+          {lastActionType === 'runCode' && judge0Results && (
+              <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
+                  <Terminal className="w-5 h-5 text-blue-600" />
+                  <span>Program Output</span>
+                </div>
 
-            {/* Display sample test results from judge0Results */}
-            {judge0Results?.testResults && (
-              <div className="mb-4">
-                <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
-                <div className="space-y-3">
-                  {judge0Results.testResults.map((result, index) => (
-                    <div key={index} className={`p-3 rounded-lg border bg-white ${result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
-                      }`}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">Test Case {index + 1}</span>
-                        <span className={`px-2 py-1 rounded text-xs ${result.status === 'PASSED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                          }`}>
-                          {result.status || 'COMPLETED'}
-                        </span>
-                      </div>
+                <div className="text-sm font-mono space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+                    <div className="flex-1">
+                      <span className="font-semibold">Output:</span>
+                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
+                        {judge0Results.stdout || judge0Results.stdout === '' ? 
+                          (judge0Results.stdout.trim() === '' ? 
+                            "No output produced\n\n Your program ran successfully but didn't print anything.\n   Try adding print statements to see output." : 
+                            judge0Results.stdout
+                          ) : 
+                          "No output available"
+                        }
+                      </pre>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Display existing testResults */}
-            {testResults && (
-              <div className="space-y-4">
-                {testResults.map((result, index) => (
-                  <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
-                    ? 'border-green-200'
-                    : 'border-red-200'
+          {judge0Results.stderr && (
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
+                <XCircle className="w-4 h-4 text-red-500" />
+                Error Output
+              </p>
+              <pre className="bg-red-950 text-red-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
+                {judge0Results.stderr}
+              </pre>
+            </div>
+          )}
+
+          {judge0Results.compile_output && (
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
+                <Cpu className="w-4 h-4 text-yellow-500" />
+                Compile Output
+              </p>
+              <pre className="bg-yellow-950 text-yellow-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
+                {judge0Results.compile_output}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Test Results Display */}
+      {(testResults || judge0Results?.testResults) && (
+        <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            Sample Test Case Results
+          </h3>
+
+          {/* Display sample test results from judge0Results */}
+          {judge0Results?.testResults && (
+            <div className="mb-4">
+              <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
+              <div className="space-y-3">
+                {judge0Results.testResults.map((result, index) => (
+                  <div key={index} className={`p-3 rounded-lg border bg-white ${result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
                     }`}>
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-semibold text-lg">Test Case {index + 1}</span>
-                      <div className="flex items-center gap-2">
-                        {result.status === 'PASSED' ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <XCircle className="w-5 h-5 text-red-500" />
-                        )}
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                          }`}>
-                          {result.status}
-                        </span>
-                      </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Test Case {index + 1}</span>
+                      <span className={`px-2 py-1 rounded text-xs ${result.status === 'PASSED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}>
+                        {result.status || 'COMPLETED'}
+                      </span>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
-                        <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                          {result.input}
-                        </pre>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
-                        <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                          {result.actual_output}
-                        </pre>
-                      </div>
-                    </div>
-                    {result.expected_output && (
-                      <div className="mt-3">
-                        <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
-                        <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                          {result.expected_output}
-                        </pre>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+
+          {/* Display existing testResults */}
+          {testResults && (
+            <div className="space-y-4">
+              {testResults.map((result, index) => (
+                <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
+                  ? 'border-green-200'
+                  : 'border-red-200'
+                  }`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="font-semibold text-lg">Test Case {index + 1}</span>
+                    <div className="flex items-center gap-2">
+                      {result.status === 'PASSED' ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                        }`}>
+                        {result.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
+                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                        {result.input}
+                      </pre>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
+                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                        {result.actual_output}
+                      </pre>
+                    </div>
+                  </div>
+                  {result.expected_output && (
+                    <div className="mt-3">
+                      <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
+                      <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
+                        {result.expected_output}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

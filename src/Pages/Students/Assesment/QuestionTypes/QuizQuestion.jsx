@@ -16,10 +16,52 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
   // "idle" | "saving" | "saved"
   const [saveStatus, setSaveStatus] = useState('idle');
   const debounceRef = useRef(null);
+  const timeoutRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   const showNotification = (type, message) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 2000);
+  };
+
+  // Retry logic with exponential backoff
+  const retryWithBackoff = async (operation, maxRetries = 3, baseDelay = 1000) => {
+    let lastError;
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Create timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+          const id = setTimeout(() => reject(new Error('Request timeout')), 10000);
+          return id;
+        });
+        
+        // Race between the operation and timeout
+        const result = await Promise.race([
+          operation(),
+          timeoutPromise
+        ]);
+        
+        return result; // Success
+      } catch (error) {
+        lastError = error;
+        console.warn(`Attempt ${attempt + 1} failed:`, error.message);
+        
+        // Don't retry on the last attempt
+        if (attempt === maxRetries) {
+          break;
+        }
+        
+        // Calculate exponential backoff delay
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Retrying in ${delay}ms...`);
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    
+    throw lastError; // All attempts failed
   };
 
   // Fetch previous answer when question changes
@@ -33,13 +75,15 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
       try {
         const answer = answerStatus;
         if (!answer || answer.selected_options?.length === 0) {
-          await questionVisited({
-            submissionID: submissionId,
-            sectionID: question.section_id,
-            questionID: question._id,
-            type: question.type,
-            isMarkedForReview: false,
-            isSkipped: true,
+          await retryWithBackoff(async () => {
+            return await questionVisited({
+              submissionID: submissionId,
+              sectionID: question.section_id,
+              questionID: question._id,
+              type: question.type,
+              isMarkedForReview: false,
+              isSkipped: true,
+            });
           });
         } else {
           if (Array.isArray(answer.selected_options)) {
@@ -63,12 +107,24 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
     }
   }, [submissionId, question._id]);
 
-  // Debounced save
+  // Debounced save with timeout and retry
   const debouncedSaveAnswer = useCallback(
     debounce(async (opts, marked) => {
       if (saveStatus === 'saving') return;
 
       setSaveStatus('saving');
+      
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set a failsafe timeout to reset loading state (15 seconds max)
+      timeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+        showNotification('error', 'Request timed out. Please try again.');
+      }, 15000);
+
       const timeTakenSeconds = Math.floor((Date.now() - startTime) / 1000);
 
       const payload = {
@@ -82,12 +138,27 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
       };
 
       try {
-        await saveAnswer(submissionId, payload);
+        await retryWithBackoff(async () => {
+          return await saveAnswer(submissionId, payload);
+        });
+        
+        // Clear the failsafe timeout on success
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         if (typeof refreshSectionStatus === 'function') refreshSectionStatus();
         showNotification('success', 'Answer saved');
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1500);
       } catch {
+        // Clear the failsafe timeout on error
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
+        
         showNotification('error', 'Error saving answer');
         setSaveStatus('idle');
       }
@@ -96,6 +167,15 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
   );
 
   debounceRef.current = debouncedSaveAnswer;
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleOptionClick = (optionId) => {
     let updatedOptions;
