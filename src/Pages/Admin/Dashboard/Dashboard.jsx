@@ -10,7 +10,13 @@ import {
   FiBarChart2, 
   FiLayers,
   FiSearch,
-  FiBell
+  FiBell,
+  FiTrendingUp,
+  FiActivity,
+  FiStar,
+  FiZap,
+  FiShield,
+  FiClock
 } from 'react-icons/fi';
 import { useUser } from '../../../context/UserContext';
 import { getRoleBasedDashboardData } from '../../../Controllers/AnalyticsController';
@@ -102,22 +108,22 @@ const AdminDashboard = () => {
           { 
             title: 'Total Users', 
             value: userData.total.toString(), 
-            icon: <FiUsers className="text-blue-500" /> 
+            icon: <FiUsers className="text-blue-500" />
           },
           { 
             title: 'Candidates', 
             value: userData.breakdown.candidate.toString(), 
-            icon: <FiUsers className="text-emerald-500" /> 
+            icon: <FiUsers className="text-emerald-500" />
           },
           { 
             title: 'College Reps', 
             value: userData.breakdown.college_rep.toString(), 
-            icon: <FiBook className="text-purple-500" /> 
+            icon: <FiBook className="text-purple-500" />
           },
           { 
             title: 'Trainers', 
             value: userData.breakdown.trainer.toString(), 
-            icon: <FiFileText className="text-amber-500" /> 
+            icon: <FiFileText className="text-amber-500" />
           },
         ];
       }
@@ -164,13 +170,13 @@ const AdminDashboard = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {getStatsData().map((stat, index) => (
-            <div key={index} className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <div key={index} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-slate-600 mb-1">{stat.title}</p>
-                  <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                  <p className="text-3xl font-bold text-gray-800">{stat.value}</p>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-inner">
+                <div className="p-4 bg-gray-50 rounded-2xl">
                   {stat.icon}
                 </div>
               </div>
@@ -178,65 +184,73 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
-          <div className="xl:col-span-1">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 hover:shadow-xl transition-all duration-300">
-              <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
-                <FiLayers className="w-6 h-6 mr-3 text-indigo-500" />
-                Quick Actions
-              </h3>
-              <div className="space-y-4">
-                {quickLinks.map((link, index) => (
-                  <NavLink
-                    key={index}
-                    to={link.path}
-                    className="group flex items-center p-4 rounded-xl border-2 border-slate-200/50 hover:border-indigo-300 hover:bg-indigo-50/50 transition-all duration-300"
-                  >
-                    <div className="mr-4 p-3 rounded-xl bg-slate-100 group-hover:bg-white transition-colors">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <FiLayers className="w-6 h-6 text-blue-500 mr-2" />
+              Quick Actions
+            </h3>
+            <div className="space-y-4">
+              {quickLinks.map((link, index) => (
+                <NavLink
+                  key={index}
+                  to={link.path}
+                  className="group block rounded-xl p-4 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 hover:shadow-lg"
+                >
+                  <div className="flex items-center">
+                    <div className={`p-3 rounded-xl bg-${link.color}-500 text-white mr-4 group-hover:scale-110 transition-transform duration-300`}>
                       {link.icon}
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-slate-800 group-hover:text-indigo-700">{link.label}</p>
-                      <p className="text-sm text-slate-500">{link.description}</p>
+                      <p className="font-semibold text-gray-800 group-hover:text-blue-700 transition-colors duration-300">{link.label}</p>
+                      <p className="text-sm text-gray-600">{link.description}</p>
                     </div>
-                  </NavLink>
-                ))}
-              </div>
+                  </div>
+                </NavLink>
+              ))}
             </div>
           </div>
 
           {/* Recent Activities */}
-          <div className="xl:col-span-2">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 hover:shadow-xl transition-all duration-300">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-800 flex items-center">
-                  <FiBarChart2 className="w-6 h-6 mr-3 text-indigo-500" />
-                  Recent Activities
-                </h3>
-                <button className="px-4 py-2 text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors">
-                  View All
-                </button>
-              </div>
-              <div className="space-y-4">
-                {getActivitiesData().slice(0, 6).map(activity => (
-                  <div key={activity.id} className="flex items-start p-4 rounded-xl bg-slate-50/50 hover:bg-slate-100/50 transition-colors">
-                    <div className="flex-shrink-0 mt-1">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 flex items-center justify-center text-white shadow-md">
-                        <FiUsers size={18} />
-                      </div>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <p className="font-medium text-slate-800">{activity.action}</p>
-                      <div className="flex items-center text-sm text-slate-500 mt-1">
-                        <span className="font-medium">{activity.user}</span>
-                        <span className="mx-2">•</span>
-                        <span>{activity.time}</span>
-                      </div>
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                <FiActivity className="w-6 h-6 text-emerald-500 mr-2" />
+                Recent Activities
+              </h3>
+              <button className="px-4 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-300">
+                View All
+              </button>
+            </div>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : getActivitiesData().slice(0, 6).map((activity, index) => (
+                <div 
+                  key={activity.id} 
+                  className="group flex items-start p-4 rounded-xl bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-300"
+                >
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors duration-300">
+                      <FiUsers size={18} />
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="ml-4 flex-1">
+                    <p className="font-medium text-gray-800 group-hover:text-blue-700 transition-colors duration-300">{activity.action}</p>
+                    <div className="flex items-center text-sm text-gray-500 mt-1">
+                      <span className="font-medium text-blue-600">{activity.user}</span>
+                      <span className="mx-2 text-gray-400">•</span>
+                      <span className="flex items-center">
+                        <FiClock className="w-3 h-3 mr-1" />
+                        {activity.time}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
