@@ -36,6 +36,7 @@ const Instruction = () => {
   const submission = state?.submission;
   const assessment = state?.assessment;
   const sections = state?.sections;
+  const settings=state?.settings;
 
   // Timer only for production
   useEffect(() => {
@@ -97,8 +98,8 @@ const Instruction = () => {
 
   const handleProceed = () => {
     localStorage.setItem('submission_id', submission._id);
-    console.log(submission)
-    navigate('/assesment', { state: { submission, assessment, sections } });
+    //console.log(submission)
+    navigate('/assesment', { state: { submission, assessment, sections,settings } });
   };
 
   const handleExit = () => {
