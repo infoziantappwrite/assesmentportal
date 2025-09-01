@@ -253,6 +253,8 @@ const CodingQuestion = ({
             <ErrorBoundary>
               <SolutionSection
                 question={question}
+                // if code is changed it calls onAnswerChange, which sets `answer` and passes down, but
+                // child has `stableAnswer` and manages its own state, but also stableAnswer is changed to `answer`.
                 answer={answer}
                 onAnswerChange={handleAnswerChange}
                 selectedLanguage={selectedLanguage}

@@ -73,13 +73,16 @@ const SolutionSection = ({
   const lastUserInputTime = useRef(Date.now());
   const templateLoadingRef = useRef(false);
 
+  // Code reset issues - CodeEditor directly uses `answer` from parent to manage state, not stableAnswer.
+  // setStableAnswer usages is still not removed, but they are not affecting the current functionality.
   const [stableAnswer, setStableAnswer] = useState(answer || '_');
   
-  useEffect(() => {
-    if (answer !== undefined && answer !== null) {
-      setStableAnswer(answer);
-    }
-  }, [answer]);
+  // code reset issues - don't care if user clears all code, for now.
+  // useEffect(() => {
+  //   if (answer !== undefined && answer !== null) {
+  //     setStableAnswer(answer);
+  //   }
+  // }, [answer]);
 
   const [executionState, setExecutionState] = useState({
     isRunning: false,
@@ -172,10 +175,8 @@ const SolutionSection = ({
   }, [executionState.isRunning, executionTimeoutTimer]);
 
   const handleCodeChange = (value) => {
-    if (value === undefined || value === null) {
-      return;
-    }
-    setStableAnswer(value);
+    onAnswerChange(question._id, value);
+    // setStableAnswer(value);
 
   //   const currentTime = Date.now();
   //   isUserTypingRef.current = true;
@@ -199,7 +200,7 @@ const SolutionSection = ({
   //     return;
   //   }
 
-  //   onAnswerChange(question._id, value || '');
+    // onAnswerChange(question._id, value || '');
     
     // setStableAnswer(value || 'B');
     // for debug.
@@ -289,15 +290,16 @@ const SolutionSection = ({
         }
     }
 
-    if (!answer || answer.trim() === '') {
-      setIsTemplateLoading(true);
-      const template = getTemplateCode(selectedLanguage);
-      onAnswerChange(question._id, template);
-      setStableAnswer(template);
-      setIsTemplateLoading(false);
-    } else {
-      setStableAnswer(answer);
-    }
+    // Code reset issues - for now dont care if user has cleared all code.
+    // if (!answer || answer.trim() === '') {
+    //   setIsTemplateLoading(true);
+    //   const template = getTemplateCode(selectedLanguage);
+    //   onAnswerChange(question._id, template);
+    //   setStableAnswer(template);
+    //   setIsTemplateLoading(false);
+    // } else {
+    //   setStableAnswer(answer);
+    // }
   }, [question?._id, answer]); 
 
 
@@ -1447,7 +1449,7 @@ const SolutionSection = ({
                 width='100%'
                 mode={selectedLanguage}
                 theme="monokai"
-                value={stableAnswer}
+                value={answer}
                 onChange={handleCodeChange}
                 name="aceEditor"
                 editorProps={{ $blockScrolling: true }}
