@@ -14,7 +14,8 @@ const Assessment = () => {
   const { state } = useLocation();
   const {user}=useUser();
   
-  const { sections,submission } = state;
+  const { sections,submission,settings } = state;
+  console.log(settings)
   const submissionId = submission._id;
   const assignmentId=submission.assignment_id;
   const studentId=user._id
@@ -29,6 +30,7 @@ const Assessment = () => {
     submission_id: submissionId,
     assignment_id: assignmentId,
     student_id: studentId,
+    enabled: settings?.proctoring_enabled
   });
 
 

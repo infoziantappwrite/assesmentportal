@@ -52,15 +52,10 @@ const Header = () => {
     try {
       setIsSubmitting(true);
       const submissionId = localStorage.getItem('submission_id');
-      const showResults = JSON.parse(localStorage.getItem('show_results_immediately'));
-      const response = await submitSubmission(submissionId);
+      await submitSubmission(submissionId);
       localStorage.clear();
-
-      if (showResults) {
-        navigate('/result', { state: { result: response.data.results } });
-      } else {
-        navigate('/thank-you');
-      }
+      navigate('/thank-you');
+      
     } catch (err) {
       console.error('Submission failed:', err);
     } finally {
