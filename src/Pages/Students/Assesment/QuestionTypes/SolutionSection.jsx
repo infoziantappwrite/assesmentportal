@@ -178,7 +178,8 @@ const SolutionSection = ({
 
     if (isUserTypingRef.current) {
       onAnswerChange(question._id, value || '');
-      setStableAnswer(value || '');
+      setStableAnswer(value || 'X');
+      // for debug; if code "resets" to 'X' we can pinpoint 
       return;
     }
 
@@ -189,7 +190,8 @@ const SolutionSection = ({
 
     onAnswerChange(question._id, value || '');
     
-    setStableAnswer(value || '');
+    setStableAnswer(value || 'B');
+    // for debug.
   };
 
   const getSubmissionStateKey = (questionId, submissionId) => {
