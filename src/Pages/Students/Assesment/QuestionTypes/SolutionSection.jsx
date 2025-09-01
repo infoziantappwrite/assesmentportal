@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
+
+import AceEditor from "react-ace";
+
+import "ace-builds/src-noconflict/mode-java";
+import "ace-builds/src-noconflict/mode-python";
+import "ace-builds/src-noconflict/mode-javascript";
+import "ace-builds/src-noconflict/mode-c_cpp";
+import "ace-builds/src-noconflict/theme-monokai";
+import "ace-builds/src-noconflict/ext-language_tools";
+
 import {
   Code2,
   Terminal,
@@ -63,7 +73,7 @@ const SolutionSection = ({
   const lastUserInputTime = useRef(Date.now());
   const templateLoadingRef = useRef(false);
 
-  const [stableAnswer, setStableAnswer] = useState(answer || '');
+  const [stableAnswer, setStableAnswer] = useState(answer || '_');
   
   useEffect(() => {
     if (answer !== undefined && answer !== null) {
@@ -165,32 +175,33 @@ const SolutionSection = ({
     if (value === undefined || value === null) {
       return;
     }
+    setStableAnswer(value);
 
-    const currentTime = Date.now();
-    isUserTypingRef.current = true;
-    lastUserInputTime.current = currentTime;
+  //   const currentTime = Date.now();
+  //   isUserTypingRef.current = true;
+  //   lastUserInputTime.current = currentTime;
     
-    setTimeout(() => {
-      if (currentTime === lastUserInputTime.current) {
-        isUserTypingRef.current = false;
-      }
-    }, 3000);
+  //   setTimeout(() => {
+  //     if (currentTime === lastUserInputTime.current) {
+  //       isUserTypingRef.current = false;
+  //     }
+  //   }, 3000);
 
-    if (isUserTypingRef.current) {
-      onAnswerChange(question._id, value || '');
-      setStableAnswer(value || 'X');
-      // for debug; if code "resets" to 'X' we can pinpoint 
-      return;
-    }
+  //   if (isUserTypingRef.current) {
+  //     onAnswerChange(question._id, value || '');
+  //     setStableAnswer(value || 'X');
+  //     // for debug; if code "resets" to 'X' we can pinpoint 
+  //     return;
+  //   }
 
-    if (currentQuestionRef.current !== question?._id) {
-      console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
-      return;
-    }
+  //   if (currentQuestionRef.current !== question?._id) {
+  //     console.warn('RACE CONDITION PREVENTED: Question ID mismatch');
+  //     return;
+  //   }
 
-    onAnswerChange(question._id, value || '');
+  //   onAnswerChange(question._id, value || '');
     
-    setStableAnswer(value || 'B');
+    // setStableAnswer(value || 'B');
     // for debug.
   };
 
@@ -528,6 +539,7 @@ const SolutionSection = ({
   };
 
   const handleLanguageChange = (newLanguage) => {
+    console.log(`Language changed to ${newLanguage}`)
     setSelectedLanguage(newLanguage);
   };
   useEffect(() => {
@@ -1430,8 +1442,18 @@ const SolutionSection = ({
           <div className="relative">
             {/* Gradient Overlay for Modern Look */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none"></div>
+
+            <AceEditor
+                width='100%'
+                mode={selectedLanguage}
+                theme="monokai"
+                value={stableAnswer}
+                onChange={handleCodeChange}
+                name="aceEditor"
+                editorProps={{ $blockScrolling: true }}
+              />,
             
-            <Editor
+            {/* <Editor
               height="480px"
               language={
                 selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
@@ -1519,7 +1541,7 @@ const SolutionSection = ({
                   preview: true
                 }
               }}
-            />
+            /> */}
             
             {/* Futuristic Corner Accent */}
             <div className="absolute bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-2 opacity-80">
