@@ -22,6 +22,9 @@ const AssessmentSection = ({
     const timeTakenSeconds = Math.floor((Date.now() - questionStartTime) / 1000);
     const currentQuestion = sections[sectionIndex]?.questions[questionIndex];
 
+    // check if some var like `currentQuestionSaved?`, which is controlled by SolutionSection.jsx.
+    // if not saved, show error.
+
     if (timeTakenSeconds > 0 && currentQuestion?._id) {
       try {
         await saveTimeTaken({
