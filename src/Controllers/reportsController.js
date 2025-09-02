@@ -16,18 +16,33 @@ export const generateReport = async (payload) => {
   return response.data;
 };
 
-// ✅ POST /reports/assignment/:assignmentId
 // POST /reports/assignment/:assignmentId
-export const generateAssignmentReport = async (assignmentId, format = 'excel') => {
-  const response = await axiosClient.post(`/reports/assignment/${assignmentId}`, {
+export const generateAssignmentReport = async (finalPayload, format = "excel") => {
+  // Build request body
+  const requestBody = {
     format,
-    filters: {}, // optional
     includeDetails: true,
-  }, {
-    withCredentials: true,
-  });
+  };
+
+  if (finalPayload.targetColleges?.length) {
+    requestBody.targetColleges = finalPayload.targetColleges;
+  }
+  if (finalPayload.targetGroups?.length) {
+    requestBody.targetGroups = finalPayload.targetGroups;
+  }
+  if (finalPayload.targetStudents?.length) {
+    requestBody.targetStudents = finalPayload.targetStudents;
+  }
+
+  const response = await axiosClient.post(
+    `/reports/assignment/${finalPayload.assignmentId}`,
+    requestBody,
+    { withCredentials: true }
+  );
+
   return response.data;
 };
+
 
 
 // ✅ POST /reports/review/:submissionId
