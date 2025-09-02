@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlarmClock, Power, X, AlertTriangle } from 'lucide-react';
+import { AlarmClock, Power, X, AlertTriangle, Maximize } from 'lucide-react';
 import { submitSubmission } from '../../../Controllers/SubmissionController';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +7,7 @@ const Header = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const navigate = useNavigate();
 
@@ -34,19 +35,22 @@ const Header = () => {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   const formatTime = (totalSeconds) => {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  const pad = (n) => String(n).padStart(2, '0');
-
-  if (hours > 0) {
-    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-  } else {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     return `${pad(minutes)}:${pad(seconds)}`;
-  }
-};
+  };
 
   const handleSubmit = async () => {
     try {
@@ -55,7 +59,6 @@ const Header = () => {
       await submitSubmission(submissionId);
       localStorage.clear();
       navigate('/thank-you');
-      
     } catch (err) {
       console.error('Submission failed:', err);
     } finally {
@@ -63,34 +66,56 @@ const Header = () => {
     }
   };
 
+  const handleFullscreen = () => {
+    if (!isFullscreen) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
     <>
-      <header className="w-full bg-white border-b border-gray-200 shadow-sm py-2 sm:py-3 px-4 sm:px-6 flex flex-wrap gap-2 items-center justify-between">
-        <img src="/Logo.png" alt="Logo" className="h-8 sm:h-10 w-auto" />
+      <header className="w-full bg-white border-b border-gray-200 shadow-sm py-2 px-4 flex items-center justify-between flex-wrap sm:flex-nowrap gap-2">
+        {/* Left: Logo + Fullscreen */}
+       {/* Left: Logo + Fullscreen */}
+<div className="flex items-center gap-2">
+  <img src="/Logo.png" alt="Logo" className="h-8 sm:h-10 w-auto" />
+  
+  {/* Show fullscreen button only if NOT in fullscreen */}
+  {!isFullscreen && (
+    <button
+      onClick={handleFullscreen}
+      className="flex items-center justify-center p-2 bg-gray-100 hover:bg-gray-200 rounded-md transition"
+    >
+      <Maximize className="w-5 h-5 sm:mr-2" />
+      <span className="hidden sm:inline text-sm">Go Fullscreen</span>
+    </button>
+  )}
+</div>
 
-        <div className="flex items-center gap-2">
-          {/* Time Left */}
+
+        {/* Right: Timer + End Test */}
+        <div className="flex items-center gap-2 ml-auto">
           {timeLeft !== null && (
-            <div className="flex items-center gap-2 border border-blue-200 rounded-md px-3 py-1.5 bg-blue-50 text-blue-700 font-medium text-sm">
-              <AlarmClock className="w-5 h-5 text-blue-600" />
-              <span className='sm:hidden' >{formatTime(timeLeft)}</span>
-              <span className="hidden sm:inline">Time Left: {formatTime(timeLeft)}</span>
+            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 border border-blue-200 rounded-md bg-blue-50 text-blue-700 font-medium text-sm">
+              <AlarmClock className="w-5 h-5" />
+              <span className="text-xs sm:text-sm">{formatTime(timeLeft)}</span>
+              <span className="hidden sm:inline">Time Left</span>
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             onClick={() => setShowConfirm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg shadow transition"
+            className="flex items-center justify-center p-2 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg shadow transition"
           >
-            <Power className="w-4 h-4" />
-            <span >End Test</span>
-
+            <Power className="w-5 h-5 sm:mr-2" />
+            <span className="hidden sm:inline">End Test</span>
           </button>
         </div>
-
       </header>
 
+      {/* Confirm Modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
           <div className="bg-white rounded-xl p-5 w-full max-w-sm shadow-lg border border-gray-300 relative">
@@ -127,6 +152,7 @@ const Header = () => {
         </div>
       )}
 
+      {/* Submitting Overlay */}
       {isSubmitting && (
         <div className="fixed inset-0 bg-white/100 z-50 flex items-center justify-center">
           <div className="text-center">
