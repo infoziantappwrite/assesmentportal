@@ -122,34 +122,8 @@ export default function SubmissionControls({
 
           {/* ✅ Collapsible Custom Input */}
           {showCustomInput && (
-  <div ref={customInputRef} className="flex flex-col w-full gap-2">
-    {/* Header: label + stats + reset button */}
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        {/* Label */}
-        <label className="flex items-center gap-1 text-sm font-medium text-gray-800">
-          <Terminal className="w-4 h-4" />
-          Custom Input (stdin)
-        </label>
-
-        {/* Inline info */}
-        <span className="text-xs text-gray-500">
-          Will be passed to stdin | {customInput.split("\n").length} lines | {customInput.length} chars
-        </span>
-      </div>
-
-      {/* Reset button */}
-      {fullDetails?.sample_test_cases?.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setCustomInput(fullDetails.sample_test_cases[0].input)}
-          className="text-xs text-indigo-600 hover:underline"
-          title="Reset to sample test case"
-        >
-          Reset
-        </button>
-      )}
-    </div>
+  <div  className="flex flex-col w-full gap-2 mt-2">
+    
 
     {/* Textarea */}
     <textarea

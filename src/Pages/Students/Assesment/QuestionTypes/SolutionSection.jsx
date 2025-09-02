@@ -1098,7 +1098,7 @@ const SolutionSection = ({
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none"></div>
 
             <Editor
-              height="250px"
+              height="300px"
               language={
                 selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
                   selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
