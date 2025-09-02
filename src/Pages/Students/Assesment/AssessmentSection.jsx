@@ -48,34 +48,41 @@ const AssessmentSection = ({
   );
 
   // Change Question (with save time)
-  const handleQuestionChange = async (
-    newQuestionIndex,
-    newSectionIndex = sectionIndex
-  ) => {
-    const timeTakenSeconds = Math.floor(
-      (Date.now() - questionStartTime) / 1000
-    );
-    const currentQuestion = sections[sectionIndex]?.questions[questionIndex];
+const handleQuestionChange = async (
+  newQuestionIndex,
+  newSectionIndex = sectionIndex,
+  isMobile = false
+) => {
+  const timeTakenSeconds = Math.floor((Date.now() - questionStartTime) / 1000);
+  const currentQuestion = sections[sectionIndex]?.questions[questionIndex];
 
-    if (timeTakenSeconds > 0 && currentQuestion?._id) {
-      try {
-        await saveTimeTaken({
-          timeTakenSeconds,
-          assignmentID,
-          submissionID,
-          questionID: currentQuestion._id,
-        });
-      } catch (err) {
-        console.error("Failed to save time taken:", err);
-      }
+  if (timeTakenSeconds > 0 && currentQuestion?._id) {
+    try {
+      await saveTimeTaken({
+        timeTakenSeconds,
+        assignmentID,
+        submissionID,
+        questionID: currentQuestion._id,
+      });
+    } catch (err) {
+      console.error("Failed to save time taken:", err);
     }
+  }
 
-    setSectionIndex(newSectionIndex);
-    setQuestionIndex(newQuestionIndex);
-    setQuestionStartTime(Date.now());
-    refreshSectionStatus();
-    setPage(0); // reset when section changes
-  };
+  // Check if section changed
+  const sectionChanged = newSectionIndex !== sectionIndex;
+
+  setSectionIndex(newSectionIndex);
+  setQuestionIndex(newQuestionIndex);
+  setQuestionStartTime(Date.now());
+  refreshSectionStatus();
+
+  // Reset desktop page ONLY if section changed
+  if (!isMobile && sectionChanged) {
+    setPage(0);
+  }
+};
+
 
   const baseBtnClass =
     "w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium border border-gray-300 transition disabled:opacity-40";
@@ -290,21 +297,19 @@ const AssessmentSection = ({
             ))}
 
           {isMobile &&
-            mobileQuestions.map((q, idx) => {
-              const globalIdx = mobileStartIndex + idx;
-              return (
-                <button
-                  key={q._id}
-                  onClick={() => handleQuestionChange(globalIdx)}
-                  className={`${baseBtnClass} ${getQuestionStatusClass(
-                    q._id,
-                    globalIdx
-                  )}`}
-                >
-                  {globalIdx + 1}
-                </button>
-              );
-            })}
+  mobileQuestions.map((q, idx) => {
+    const globalIdx = mobileStartIndex + idx;
+    return (
+      <button
+        key={q._id}
+        onClick={() => handleQuestionChange(globalIdx, sectionIndex, true)}
+        className={`${baseBtnClass} ${getQuestionStatusClass(q._id, globalIdx)}`}
+      >
+        {globalIdx + 1}
+      </button>
+    );
+  })}
+
 
           {/* Next & Last */}
           <button
