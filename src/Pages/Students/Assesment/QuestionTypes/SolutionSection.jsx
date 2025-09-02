@@ -2,25 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import {
   Code2,
-  Terminal,
   FlaskConical,
   Play,
-  Settings,
-  Zap,
-  FileCode,
   Cpu,
   Clock,
   MemoryStick,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   Upload,
-  Save,
   Loader2,
-  FileCheck2,
-  ChevronDown,
-  ChevronRight,
-  RotateCcw
+  
 } from 'lucide-react';
 
 import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, RunCode } from "../../../../Controllers/SubmissionController"
@@ -50,7 +39,7 @@ const SolutionSection = ({
   const initializationRef = useRef(false);
 
   // UI State
-  const [showCustomInput, setShowCustomInput] = useState(false);
+
   const [customInput, setCustomInput] = useState('');
   const [judge0Results, setJudge0Results] = useState(null);
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
@@ -62,6 +51,10 @@ const SolutionSection = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
+
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [pendingLanguage, setPendingLanguage] = useState(null);
+  
 
   // Session and timing
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -172,43 +165,60 @@ const SolutionSection = ({
   }, [question._id, onAnswerChange]);
 
   // FIXED: Language change handler
-  const handleLanguageChange = useCallback((newLanguage) => {
-    if (newLanguage === selectedLanguage) return;
+const handleLanguageChange = useCallback(
+    (newLanguage) => {
+      if (newLanguage === selectedLanguage) return;
 
-    console.log(`Changing language from ${selectedLanguage} to ${newLanguage}`);
-
-    // If user has written significant code, ask for confirmation
-    if (editorCode && editorCode.trim().length > 50) {
-      const shouldKeepCode = window.confirm(
-        `You have written code in ${selectedLanguage}. Do you want to keep your current code when switching to ${newLanguage}?\n\nClick OK to keep your code, Cancel to load the ${newLanguage} template.`
-      );
-
-      if (shouldKeepCode) {
-        setSelectedLanguage(newLanguage);
-        currentLanguageRef.current = newLanguage;
+      // If user has written significant code, show modal
+      if (editorCode && editorCode.trim().length > 50) {
+        setPendingLanguage(newLanguage);
+        setShowLanguageModal(true);
         return;
       }
-    }
 
-    // Load new language template
+      // Otherwise switch immediately
+      switchLanguage(newLanguage);
+    },
+    [editorCode, selectedLanguage,question]
+  );
+
+  const switchLanguage = (newLanguage) => {
     setSelectedLanguage(newLanguage);
     currentLanguageRef.current = newLanguage;
 
-    const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
+    const template =
+      LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] ||
+      LANGUAGE_TEMPLATES["javascript"] ||
+      "";
     setEditorCode(template);
     onAnswerChange(question._id, template);
-  }, [selectedLanguage, editorCode, question._id, onAnswerChange]);
+  };
+
+  const handleKeepCode = () => {
+    setSelectedLanguage(pendingLanguage);
+    currentLanguageRef.current = pendingLanguage;
+    setShowLanguageModal(false);
+  };
+
+  const handleLoadTemplate = () => {
+    switchLanguage(pendingLanguage);
+    setShowLanguageModal(false);
+  };
+
+    const [showResetModal, setShowResetModal] = useState(false);
+
+     const handleResetCode = useCallback(() => {
+    setShowResetModal(true)
+     }, []);
 
   // FIXED: Simple reset handler
-  const handleResetCode = useCallback(() => {
-    const confirmReset = window.confirm('Are you sure you want to reset your code? This will delete all your current code and load the template.');
-    if (!confirmReset) return;
-
+  const handleResetCodeconfirm = useCallback(() => {
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
     setEditorCode(template);
     onAnswerChange(question._id, template);
     setCustomInput('');
     setJudge0Results(null);
+    setShowResetModal(false)
 
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
   }, [selectedLanguage, question._id, onAnswerChange]);
@@ -796,21 +806,7 @@ const SolutionSection = ({
   }, [executionTimer, executionTimeoutTimer]);
 
   // Helper functions
-  const getStatusIcon = (status) => {
-    const description = status?.description;
-
-    if (description === 'Compiled' || description === 'Accepted') {
-      return <CheckCircle className="w-4 h-4 text-blue-500" />;
-    } else if (description === 'Correct') {
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
-    } else if (description === 'Incorrect') {
-      return <XCircle className="w-4 h-4 text-red-500" />;
-    } else if (description?.includes('Error') || description?.includes('Failed')) {
-      return <XCircle className="w-4 h-4 text-red-500" />;
-    } else {
-      return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-    }
-  };
+  
 
   // Dynamic Execution Indicator Component
   const ExecutionIndicator = () => {
@@ -928,152 +924,109 @@ const SolutionSection = ({
         />
       )}
 
-     
-        {/* Header Title */}
-        {/* <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-    <Code2 className="w-5 h-5 text-indigo-500" />
-    Code Editor & Execution Environment
-  </h2> */}
+     {showLanguageModal && (
+  <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    {/* Modal Card */}
+    <div className="bg-white rounded-xl shadow-2xl w-96 p-6 text-center relative overflow-hidden">
+      {/* Gradient Header */}
+      <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
-        {/* Action Buttons */}
-        {/* <div className="flex gap-2">
-    
-    <button
-      type="button"
-      onClick={handleRunWithAPI}
-      disabled={executionState.isRunning || submitStatus === "success"}
-      className={`relative group p-2 rounded-md flex items-center justify-center transition-all border
-        ${
-          executionState.isRunning
-            ? "bg-blue-500 text-white border-blue-600 cursor-not-allowed animate-pulse"
-            : submitStatus === "success"
-            ? "bg-gray-200 text-gray-600 border-gray-300 cursor-not-allowed"
-            : "bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
-        }`}
-    >
-      {executionState.isRunning ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : (
-        <Play className="w-4 h-4" />
-      )}
-      <span className="absolute bottom-full mb-1 hidden group-hover:block text-xs bg-black text-white px-2 py-1 rounded shadow">
-        {executionState.isRunning ? "Running..." : "Run Code"}
-      </span>
-    </button>
+      {/* Icon */}
+      <div className="flex justify-center mb-3">
+        <svg
+          className="w-12 h-12 text-blue-500"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 8v4l3 3"
+          />
+        </svg>
+      </div>
 
-    
-    <button
-      onClick={handleResetCode}
-      className="relative group p-2 rounded-md flex items-center justify-center transition-all bg-orange-50 text-orange-700 border border-orange-300 hover:bg-orange-100"
-    >
-      <RotateCcw className="w-4 h-4" />
-      <span className="absolute bottom-full mb-1 hidden group-hover:block text-xs bg-black text-white px-2 py-1 rounded shadow">
-        Reset Code
-      </span>
-    </button>
+      {/* Title */}
+      <h2 className="text-xl font-bold text-gray-900 mb-2">
+        Switch Language
+      </h2>
 
-    
-    <button
-      type="button"
-      onClick={handleSaveAnswer}
-      disabled={saveStatus === "saving" || submitStatus === "success"}
-      className={`relative group p-2 rounded-md flex items-center justify-center transition-all border
-        ${
-          submitStatus === "success"
-            ? "bg-gray-200 text-gray-600 border-gray-300 cursor-not-allowed"
-            : saveStatus === "saving"
-            ? "bg-cyan-400 text-white border-cyan-500 cursor-not-allowed"
-            : saveStatus === "saved"
-            ? "bg-green-100 text-green-700 border-green-300"
-            : saveStatus === "error"
-            ? "bg-red-100 text-red-700 border-red-300"
-            : "bg-cyan-50 text-cyan-700 border-cyan-300 hover:bg-cyan-100"
-        }`}
-    >
-      {submitStatus === "success" ? (
-        <FileCheck2 className="w-4 h-4" />
-      ) : saveStatus === "saving" ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
-      ) : saveStatus === "saved" ? (
-        <CheckCircle className="w-4 h-4" />
-      ) : saveStatus === "error" ? (
-        <XCircle className="w-4 h-4" />
-      ) : (
-        <Save className="w-4 h-4" />
-      )}
-      <span className="absolute bottom-full mb-1 hidden group-hover:block text-xs bg-black text-white px-2 py-1 rounded shadow">
-        {submitStatus === "success"
-          ? "Submitted"
-          : saveStatus === "saving"
-          ? "Saving..."
-          : saveStatus === "saved"
-          ? "Saved!"
-          : saveStatus === "error"
-          ? "Error Saving"
-          : "Save"}
-      </span>
-    </button>
-  </div> */}
-      
+      {/* Message */}
+      <p className="text-gray-700 mb-6 text-sm">
+        You have written code in <strong>{selectedLanguage}</strong>. Do you want to keep your current code when switching to <strong>{pendingLanguage}</strong>?
+      </p>
 
-      {/* Language Selection */}
-      {/* <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="w-full md:w-1/2 space-y-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <FileCode className="w-4 h-4" />
-            Programming Language
-          </label>
-          <select
-            value={selectedLanguage}
-            onChange={(e) => handleLanguageChange(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
-          >
-            {availableLanguages.length > 0 ? (
-              availableLanguages.map((lang) => (
-                <option key={lang.language} value={lang.language}>
-                  {lang.language.toUpperCase()} - {
-                    lang.name || (
-                      lang.language === 'javascript' ? 'JavaScript' :
-                        lang.language === 'python' ? 'Python 3' :
-                          lang.language === 'java' ? 'Java 11+' :
-                            lang.language === 'cpp' ? 'C++ (GCC)' :
-                              lang.language === 'c' ? 'C (GCC)' :
-                                lang.language === 'csharp' ? 'C# (.NET)' :
-                                  lang.language === 'php' ? 'PHP 8+' :
-                                    lang.language === 'ruby' ? 'Ruby 3+' :
-                                      lang.language === 'go' ? 'Go 1.19+' :
-                                        lang.language === 'rust' ? 'Rust 1.60+' :
-                                          lang.language === 'swift' ? 'Swift 5+' :
-                                            lang.language === 'kotlin' ? 'Kotlin 1.7+' :
-                                              lang.language === 'typescript' ? 'TypeScript 4+' :
-                                                lang.language.charAt(0).toUpperCase() + lang.language.slice(1)
-                    )
-                  }
-                </option>
-              ))
-            ) : (
-              <option value="javascript">No languages available - using JavaScript</option>
-            )}
-          </select>
-        </div>
+      {/* Buttons */}
+      <div className="flex justify-center gap-4">
+        <button
+          onClick={handleKeepCode}
+          className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 transition"
+        >
+          Keep Code
+        </button>
+        <button
+          onClick={handleLoadTemplate}
+          className="px-5 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold shadow-md hover:bg-gray-200 transition"
+        >
+          Load Template
+        </button>
+      </div>
 
-       
-      </div> */}
+      {/* Close button */}
+      <button
+        onClick={() => setShowLanguageModal(false)}
+        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
+      >
+        &times;
+      </button>
+    </div>
+  </div>
+)}
+{showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-96 p-6 text-center relative overflow-hidden">
+            {/* Gradient header */}
+            <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600"></div>
 
-      {/* User-friendly guidance */}
-      {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-medium mb-1">Code Editor Guidelines:</p>
-            <ul className="space-y-1 text-sm">
-              <li>• Save your code before moving to another question</li>
-              <li>• Language changes will ask if you want to keep your current code</li>
-              <b><li>• If you face code disappearing or resetting issues, click Ctrl + Z and to restore your code and click Save to avoid losing it again.</li></b>
-            </ul>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">
+              Reset Code
+            </h2>
+            <p className="text-gray-700 mb-6 text-sm">
+              Are you sure you want to reset your code? This will delete all
+              your current code and load the {selectedLanguage} template.
+            </p>
+
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="px-5 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold shadow-md hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetCodeconfirm}
+                className="px-5 py-2 bg-orange-500 text-white rounded-lg font-semibold shadow-md hover:bg-orange-600 transition"
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Close icon */}
+            <button
+              onClick={() => setShowResetModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
+            >
+              &times;
+            </button>
           </div>
         </div>
-      </div> */}
+      )}
+
+
+     
+        
 
       <div className="space-y-0">
         {/* Enhanced Monaco Editor Container */}
