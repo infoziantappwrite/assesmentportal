@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  FileText,
   Download,
   Upload,
   AlertCircle,
@@ -10,15 +9,6 @@ import {
   Timer,
   MemoryStick,
   Info,
-  ShieldQuestion,
-  Code2,
-  ChevronDown,
-  ChevronRight,
-  Terminal,
-  Cpu,
-  Clock,
-  Award,
-  HardDrive,
   Hash
 } from 'lucide-react';
 import { getCodingQuestionById } from '../../../../Controllers/QuestionController';
