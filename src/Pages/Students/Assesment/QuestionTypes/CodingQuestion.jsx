@@ -28,7 +28,7 @@ const CodingQuestion = ({
 
   const [answer, setAnswer] = useState('');
   const [fullDetails, setFullDetails] = useState(null);
-  const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [selectedLanguage, setSelectedLanguage] = useState('java');
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(null); // null = loading
 
   // Function to handle answer changes
