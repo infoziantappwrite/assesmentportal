@@ -9,42 +9,46 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-export default function ExecutionResults({ 
-  judge0Results, 
-  testResults, 
-  lastActionType 
+export default function ExecutionResults({
+  judge0Results,
+  testResults,
+  lastActionType
 }) {
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full ">
       {/* Execution Results */}
       {judge0Results && (
         <div className="space-y-4">
-          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-500" />
-            Execution Results
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            {/* Execution Results */}
+            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-blue-500" />
+              Execution Results
+            </h3>
 
-          {/* Memory */}
-          <div className="bg-white p-3 rounded-lg border border-gray-300 flex items-center gap-2">
-            <MemoryStick className="w-4 h-4 text-purple-500" />
-            <span className="text-sm font-medium text-gray-600">Memory Used:</span>
-            <span className="text-sm text-gray-800 font-mono">
-              {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
-            </span>
+            {/* Memory */}
+            <div className="bg-white flex items-center gap-2">
+              <MemoryStick className="w-4 h-4 text-purple-500" />
+              <span className="text-sm font-medium text-gray-600">Memory Used:</span>
+              <span className="text-sm text-gray-800 font-mono">
+                {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
+              </span>
+            </div>
           </div>
+
 
           {/* Program Output */}
           {lastActionType === 'runCode' && (
-            <div className="bg-white p-3 rounded-lg border border-gray-300 shadow-sm">
+            <div className="">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                 <Terminal className="w-5 h-5 text-blue-600" />
                 Program Output
               </div>
               <div className="flex items-start gap-2">
-                <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+
                 <pre className="flex-1 bg-gray-900 text-gray-100 p-2 rounded-md overflow-x-auto text-sm font-mono">
                   {judge0Results.stdout || judge0Results.stdout === '' ? (
-                    judge0Results.stdout.trim() === '' 
+                    judge0Results.stdout.trim() === ''
                       ? "No output produced. Your program ran successfully but didn't print anything.\nTry adding print statements."
                       : judge0Results.stdout
                   ) : "No output available"}

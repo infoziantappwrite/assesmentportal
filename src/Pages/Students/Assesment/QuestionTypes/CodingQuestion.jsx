@@ -255,7 +255,7 @@ const CodingQuestion = ({
       >
         {/* Problem Statement Panel */}
         <div className='col-span-2 bg-white border border-gray-200 rounded-xl p-2'>
-          <div className="h-[90vh] overflow-y-auto p-3 ">
+          <div className="h-[90vh] overflow-y-auto p-3 space-y-6">
 
             {/* Header Section */}
             <div>
