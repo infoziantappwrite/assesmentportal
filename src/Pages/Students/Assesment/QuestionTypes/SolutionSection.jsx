@@ -1206,6 +1206,7 @@ const SolutionSection = ({
         submitStatus={submitStatus}
         executionState={executionState}
         handleRunTestCases={handleRunTestCases}
+        handleRunWithAPI={handleRunWithAPI}
         handleSubmitCode={handleSubmitCode}
         fullDetails={fullDetails}
         customInput={customInput}
