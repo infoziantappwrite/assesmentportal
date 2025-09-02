@@ -105,7 +105,8 @@ const QuizQuestion = ({ question, refreshSectionStatus, answerStatus, questionIn
     if (submissionId && question?._id) {
       fetchAnswer();
     }
-  },  [submissionId, question._id, answerStatus]);
+  }, [submissionId, question._id]);
+
   // Debounced save with timeout and retry
   const debouncedSaveAnswer = useCallback(
     debounce(async (opts, marked) => {
