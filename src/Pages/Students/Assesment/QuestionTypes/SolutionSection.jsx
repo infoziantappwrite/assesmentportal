@@ -19,12 +19,16 @@ import {
   Loader2,
   FileCheck2,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react';
 
 import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, RunCode } from "../../../../Controllers/SubmissionController"
 import { DEFAULT_SUPPORTED_LANGUAGES, LANGUAGE_TEMPLATES } from "./utils/languageConfig";
 import NotificationMessage from '../../../../Components/NotificationMessage';
+import CodeEditorHeader from './CodeEditorHeader';
+import SubmissionControls from './SubmissionControls';
+import ExecutionResults from './ExecutionResults';
 
 const SolutionSection = ({
   question,
@@ -37,14 +41,14 @@ const SolutionSection = ({
   submissionId,
   refreshSectionStatus
 }) => {
-  
+
   // CRITICAL: Prevent code reset - stable state management
   const [editorCode, setEditorCode] = useState('');
   const [isInitialized, setIsInitialized] = useState(false);
   const currentQuestionIdRef = useRef(null);
   const currentLanguageRef = useRef(null);
   const initializationRef = useRef(false);
-  
+
   // UI State
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customInput, setCustomInput] = useState('');
@@ -52,17 +56,17 @@ const SolutionSection = ({
   const [useDefaultLanguages, setUseDefaultLanguages] = useState(false);
   const [notification, setNotification] = useState(null);
   const [lastActionType, setLastActionType] = useState(null);
-  
+
   // Execution state
   const [saveStatus, setSaveStatus] = useState('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
-  
+
   // Session and timing
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [startTime] = useState(Date.now());
-  
+
   // Execution state management
   const [executionState, setExecutionState] = useState({
     isRunning: false,
@@ -74,7 +78,7 @@ const SolutionSection = ({
     executionTime: 0,
     queuePosition: 0
   });
-  
+
   // Timers
   const [executionTimer, setExecutionTimer] = useState(null);
   const [executionTimeoutTimer, setExecutionTimeoutTimer] = useState(null);
@@ -83,14 +87,14 @@ const SolutionSection = ({
   // CRITICAL FIX: Initialize code ONLY when question changes, not on every render
   const initializeEditorCode = useCallback((questionId, language, initialAnswer) => {
     // Prevent re-initialization of same question
-    if (currentQuestionIdRef.current === questionId && 
-        currentLanguageRef.current === language && 
-        initializationRef.current) {
+    if (currentQuestionIdRef.current === questionId &&
+      currentLanguageRef.current === language &&
+      initializationRef.current) {
       return;
     }
 
     console.log(`Initializing editor for question ${questionId} with language ${language}`);
-    
+
     if (initialAnswer && initialAnswer.trim() !== '') {
       console.log('Loading existing code');
       setEditorCode(initialAnswer);
@@ -99,7 +103,7 @@ const SolutionSection = ({
       console.log('Loading template for', language);
       setEditorCode(template);
     }
-    
+
     // Mark as initialized
     currentQuestionIdRef.current = questionId;
     currentLanguageRef.current = language;
@@ -110,28 +114,28 @@ const SolutionSection = ({
   // CRITICAL FIX: Only reset when question actually changes
   useEffect(() => {
     if (!question?._id) return;
-    
+
     const questionChanged = currentQuestionIdRef.current !== question._id;
-    
+
     if (questionChanged) {
       console.log(`Question changed to ${question._id}, resetting state`);
-      
+
       // Clear debounce timeout for previous question
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
       }
-      
+
       // Reset initialization tracking
       initializationRef.current = false;
       setIsInitialized(false);
-      
+
       // Reset UI state
       setJudge0Results(null);
       setCustomInput('');
       setLastActionType(null);
       setSaveStatus('idle');
       setSubmitStatus(null);
-      
+
       // Set sample input if available
       if (fullDetails?.sample_test_cases?.[0]?.input) {
         setCustomInput(fullDetails.sample_test_cases[0].input.trim());
@@ -142,7 +146,7 @@ const SolutionSection = ({
   // CRITICAL FIX: Initialize code only once per question
   useEffect(() => {
     if (!question?._id || !selectedLanguage || isInitialized) return;
-    
+
     console.log('Initializing code for question', question._id);
     initializeEditorCode(question._id, selectedLanguage, answer);
   }, [question._id, selectedLanguage, answer, isInitialized, initializeEditorCode]);
@@ -150,15 +154,15 @@ const SolutionSection = ({
   // STABLE: Code change handler with proper debouncing
   const handleCodeChange = useCallback((value) => {
     if (value === undefined || value === null) return;
-    
+
     // Always update local state immediately for responsive UI
     setEditorCode(value);
-    
+
     // Clear existing timeout
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
-    
+
     // Debounced update to parent (only for current question)
     debounceTimeoutRef.current = setTimeout(() => {
       if (currentQuestionIdRef.current === question._id) {
@@ -170,26 +174,26 @@ const SolutionSection = ({
   // FIXED: Language change handler
   const handleLanguageChange = useCallback((newLanguage) => {
     if (newLanguage === selectedLanguage) return;
-    
+
     console.log(`Changing language from ${selectedLanguage} to ${newLanguage}`);
-    
+
     // If user has written significant code, ask for confirmation
     if (editorCode && editorCode.trim().length > 50) {
       const shouldKeepCode = window.confirm(
         `You have written code in ${selectedLanguage}. Do you want to keep your current code when switching to ${newLanguage}?\n\nClick OK to keep your code, Cancel to load the ${newLanguage} template.`
       );
-      
+
       if (shouldKeepCode) {
         setSelectedLanguage(newLanguage);
         currentLanguageRef.current = newLanguage;
         return;
       }
     }
-    
+
     // Load new language template
     setSelectedLanguage(newLanguage);
     currentLanguageRef.current = newLanguage;
-    
+
     const template = LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
     setEditorCode(template);
     onAnswerChange(question._id, template);
@@ -199,13 +203,13 @@ const SolutionSection = ({
   const handleResetCode = useCallback(() => {
     const confirmReset = window.confirm('Are you sure you want to reset your code? This will delete all your current code and load the template.');
     if (!confirmReset) return;
-    
+
     const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
     setEditorCode(template);
     onAnswerChange(question._id, template);
     setCustomInput('');
     setJudge0Results(null);
-    
+
     showNotification('success', `Code reset to ${selectedLanguage.toUpperCase()} template`);
   }, [selectedLanguage, question._id, onAnswerChange]);
 
@@ -242,7 +246,7 @@ const SolutionSection = ({
     if (executionTimeoutTimer) {
       clearTimeout(executionTimeoutTimer);
     }
-    
+
     const timeoutTimer = setTimeout(() => {
       resetExecutionState();
       showNotification('warning', 'Execution timed out after 60 seconds. Please try again.');
@@ -356,7 +360,7 @@ const SolutionSection = ({
         progress: 10,
         message: 'Checking syntax...',
         executionTime: 0,
-        queuePosition: Math.floor(Math.random() * 3) + 1 
+        queuePosition: Math.floor(Math.random() * 3) + 1
       });
 
       startExecutionTimer();
@@ -486,7 +490,7 @@ const SolutionSection = ({
       };
 
       await saveCodingAnswer(currentSubmissionId, savePayload);
-      
+
       setTimeout(() => {
         updateExecutionState({
           progress: 30,
@@ -503,7 +507,7 @@ const SolutionSection = ({
       }, 1000);
 
       const testPayload = {
-        code: editorCode, 
+        code: editorCode,
         language_id: getLanguageIdforRunCode(selectedLanguage),
       };
 
@@ -571,11 +575,11 @@ const SolutionSection = ({
         }
 
         setSaveStatus('saved');
-        
+
         if (refreshSectionStatus) {
           refreshSectionStatus();
         }
-        
+
         setTimeout(() => setSaveStatus('idle'), 3000);
       } else {
         resetExecutionState();
@@ -634,7 +638,7 @@ const SolutionSection = ({
 
       setSaveStatus('saved');
       showNotification('success', 'Answer saved successfully!');
-      
+
       if (refreshSectionStatus) {
         refreshSectionStatus();
       }
@@ -912,10 +916,10 @@ const SolutionSection = ({
   if (!fullDetails) return <div className="text-center py-10">Loading question details...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Dynamic Execution Indicator */}
       <ExecutionIndicator />
-      
+
       {notification && (
         <NotificationMessage
           type={notification.type}
@@ -924,27 +928,96 @@ const SolutionSection = ({
         />
       )}
 
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
-          <Code2 className="w-6 h-6 text-indigo-500" />
-          Code Editor & Execution Environment
-        </h2>
+     
+        {/* Header Title */}
+        {/* <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+    <Code2 className="w-5 h-5 text-indigo-500" />
+    Code Editor & Execution Environment
+  </h2> */}
 
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full border border-green-200">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-green-700 font-medium">Compiler Ready</span>
-          </div>
+        {/* Action Buttons */}
+        {/* <div className="flex gap-2">
+    
+    <button
+      type="button"
+      onClick={handleRunWithAPI}
+      disabled={executionState.isRunning || submitStatus === "success"}
+      className={`relative group p-2 rounded-md flex items-center justify-center transition-all border
+        ${
+          executionState.isRunning
+            ? "bg-blue-500 text-white border-blue-600 cursor-not-allowed animate-pulse"
+            : submitStatus === "success"
+            ? "bg-gray-200 text-gray-600 border-gray-300 cursor-not-allowed"
+            : "bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100"
+        }`}
+    >
+      {executionState.isRunning ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        <Play className="w-4 h-4" />
+      )}
+      <span className="absolute bottom-full mb-1 hidden group-hover:block text-xs bg-black text-white px-2 py-1 rounded shadow">
+        {executionState.isRunning ? "Running..." : "Run Code"}
+      </span>
+    </button>
 
-          <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-200">
-            <Zap className="w-3 h-3 text-blue-500" />
-            <span className="text-blue-700 font-medium">API Online</span>
-          </div>
-        </div>
-      </div>
+    
+    <button
+      onClick={handleResetCode}
+      className="relative group p-2 rounded-md flex items-center justify-center transition-all bg-orange-50 text-orange-700 border border-orange-300 hover:bg-orange-100"
+    >
+      <RotateCcw className="w-4 h-4" />
+      <span className="absolute bottom-full mb-1 hidden group-hover:block text-xs bg-black text-white px-2 py-1 rounded shadow">
+        Reset Code
+      </span>
+    </button>
+
+    
+    <button
+      type="button"
+      onClick={handleSaveAnswer}
+      disabled={saveStatus === "saving" || submitStatus === "success"}
+      className={`relative group p-2 rounded-md flex items-center justify-center transition-all border
+        ${
+          submitStatus === "success"
+            ? "bg-gray-200 text-gray-600 border-gray-300 cursor-not-allowed"
+            : saveStatus === "saving"
+            ? "bg-cyan-400 text-white border-cyan-500 cursor-not-allowed"
+            : saveStatus === "saved"
+            ? "bg-green-100 text-green-700 border-green-300"
+            : saveStatus === "error"
+            ? "bg-red-100 text-red-700 border-red-300"
+            : "bg-cyan-50 text-cyan-700 border-cyan-300 hover:bg-cyan-100"
+        }`}
+    >
+      {submitStatus === "success" ? (
+        <FileCheck2 className="w-4 h-4" />
+      ) : saveStatus === "saving" ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : saveStatus === "saved" ? (
+        <CheckCircle className="w-4 h-4" />
+      ) : saveStatus === "error" ? (
+        <XCircle className="w-4 h-4" />
+      ) : (
+        <Save className="w-4 h-4" />
+      )}
+      <span className="absolute bottom-full mb-1 hidden group-hover:block text-xs bg-black text-white px-2 py-1 rounded shadow">
+        {submitStatus === "success"
+          ? "Submitted"
+          : saveStatus === "saving"
+          ? "Saving..."
+          : saveStatus === "saved"
+          ? "Saved!"
+          : saveStatus === "error"
+          ? "Error Saving"
+          : "Save"}
+      </span>
+    </button>
+  </div> */}
+      
 
       {/* Language Selection */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="w-full md:w-1/2 space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <FileCode className="w-4 h-4" />
@@ -984,65 +1057,11 @@ const SolutionSection = ({
           </select>
         </div>
 
-        <div className="flex gap-2 flex-wrap md:flex-nowrap items-center mt-6">
-          <button
-            onClick={handleResetCode}
-            className="px-3 py-2 bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100 rounded-md text-sm font-medium flex items-center gap-1"
-            title="Reset to template and clear custom input"
-          >
-            <Settings className="w-4 h-4" />
-            Reset Code
-          </button>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleSaveAnswer}
-              disabled={saveStatus === 'saving' || submitStatus === 'success'}
-              className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all focus:outline-none focus:ring-2 ${saveStatus === 'saving'
-                ? 'bg-cyan-400 text-white cursor-not-allowed'
-                : submitStatus === 'success'
-                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                  : saveStatus === 'saved'
-                    ? 'bg-green-100 text-green-800 border border-green-300'
-                    : saveStatus === 'error'
-                      ? 'bg-red-100 text-red-800 border border-red-300'
-                      : 'bg-cyan-50 text-cyan-700 border border-cyan-300 hover:bg-cyan-100'
-                }`}
-            >
-              {submitStatus === 'success' ? (
-                <>
-                  <FileCheck2 className="w-4 h-4" />
-                  Submitted
-                </>
-              ) : saveStatus === 'saving' ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : saveStatus === 'saved' ? (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  Saved!
-                </>
-              ) : saveStatus === 'error' ? (
-                <>
-                  <XCircle className="w-4 h-4" />
-                  Error Saving
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+       
+      </div> */}
 
       {/* User-friendly guidance */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm">
+      {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-blue-800 text-sm">
         <div className="flex items-start gap-2">
           <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div>
@@ -1054,66 +1073,32 @@ const SolutionSection = ({
             </ul>
           </div>
         </div>
-      </div>
+      </div> */}
 
-      <div className="space-y-6">
+      <div className="space-y-0">
         {/* Enhanced Monaco Editor Container */}
         <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
-          
-          <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-4">
-            <div className="flex items-center justify-between">
-              
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-red-400 rounded-full shadow-lg"></div>
-                  <div className="w-4 h-4 bg-yellow-400 rounded-full shadow-lg"></div>
-                  <div className="w-4 h-4 bg-green-400 rounded-full shadow-lg"></div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                    <span className="text-sm font-mono text-white font-thin">
-                      solution.{
-                        selectedLanguage === 'javascript' ? 'js' :
-                          selectedLanguage === 'python' ? 'py' :
-                            selectedLanguage === 'java' ? 'java' :
-                              selectedLanguage === 'cpp' ? 'cpp' :
-                                selectedLanguage === 'c' ? 'c' :
-                                  selectedLanguage === 'csharp' ? 'cs' :
-                                    selectedLanguage === 'php' ? 'php' :
-                                      selectedLanguage === 'ruby' ? 'rb' :
-                                        selectedLanguage === 'go' ? 'go' :
-                                          selectedLanguage === 'rust' ? 'rs' :
-                                            selectedLanguage === 'swift' ? 'swift' :
-                                              selectedLanguage === 'kotlin' ? 'kt' :
-                                                selectedLanguage === 'typescript' ? 'ts' : 'txt'
-                      }
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-4 text-white/90">
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                    <span className="text-xs font-mono">{editorCode ? editorCode.split('\n').length : 0} lines</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1.5">
-                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                    <span className="text-xs font-mono">{editorCode ? editorCode.length : 0} chars</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+
+          <CodeEditorHeader
+            selectedLanguage={selectedLanguage}
+            handleLanguageChange={handleLanguageChange}
+            availableLanguages={availableLanguages}
+            handleRunWithAPI={handleRunWithAPI}
+            handleResetCode={handleResetCode}
+            handleSaveAnswer={handleSaveAnswer}
+            executionState={executionState}
+            saveStatus={saveStatus}
+            submitStatus={submitStatus}
+            editorCode={editorCode}
+          />
 
           {/* Monaco Editor with stable state management */}
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 pointer-events-none"></div>
-            
+
             <Editor
-              height="480px"
+              height="250px"
               language={
                 selectedLanguage.toLowerCase() === 'cpp' ? 'cpp' :
                   selectedLanguage.toLowerCase() === 'csharp' ? 'csharp' :
@@ -1125,7 +1110,7 @@ const SolutionSection = ({
               theme="vs-dark"
               key={`editor_${question?._id}_${selectedLanguage}`}
               options={{
-                minimap: { 
+                minimap: {
                   enabled: true,
                   side: 'right',
                   showSlider: 'always',
@@ -1201,13 +1186,13 @@ const SolutionSection = ({
                 }
               }}
             />
-            
+
             <div className="absolute bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-2 opacity-80">
               <Code2 className="w-4 h-4 text-white" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-3 border-t border-purple-500/20">
+          <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-6 py-2 border-t border-purple-500/20">
             <div className="flex items-center justify-between">
               <div className="text-xs font-mono text-purple-300">
                 Ready to Execute • Press Run Code
@@ -1217,316 +1202,24 @@ const SolutionSection = ({
         </div>
       </div>
 
-      <div className="space-y-6">
-        {submitStatus === "success" ? (
-          <div className="w-full flex items-center justify-center mt-4">
-            <button
-              type="button"
-              disabled
-              className="px-5 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm cursor-not-allowed"
-            >
-              <CheckCircle className="w-5 h-5" />
-              You have already submitted your answer
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => setShowCustomInput(!showCustomInput)}
-              className="text-sm text-gray-700 hover:text-indigo-600 font-medium flex items-center gap-1"
-            >
-              {showCustomInput ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-              {showCustomInput ? "Hide Custom Input" : "Show Custom Input"}
-            </button>
+      <SubmissionControls
+        submitStatus={submitStatus}
+        executionState={executionState}
+        handleRunTestCases={handleRunTestCases}
+        handleSubmitCode={handleSubmitCode}
+        fullDetails={fullDetails}
+        customInput={customInput}
+        setCustomInput={setCustomInput}
+      />
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleRunWithAPI}
-                disabled={executionState.isRunning || submitStatus === 'success'}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-blue-500 ${executionState.isRunning && executionState.phase === 'executing'
-                  ? 'bg-green-500 text-white cursor-not-allowed'
-                  : executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'runCode')
-                    ? 'bg-blue-500 text-white cursor-not-allowed animate-pulse'
-                    : submitStatus === 'success'
-                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-              >
-                {executionState.isRunning && (executionState.phase === 'compiling' || executionState.phase === 'executing') ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {executionState.phase === 'compiling' ? 'Compiling...' : 'Running...'}
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4" />
-                    Run Code
-                  </>
-                )}
-              </button>
 
-              <button
-                type="button"
-                onClick={handleRunTestCases}
-                disabled={executionState.isRunning || submitStatus === 'success'}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-purple-500 ${executionState.isRunning && executionState.phase === 'testing'
-                  ? 'bg-purple-500 text-white cursor-not-allowed animate-pulse'
-                  : submitStatus === 'success'
-                    ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                  }`}
-              >
-                {executionState.isRunning && executionState.phase === 'testing' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Testing...
-                  </>
-                ) : (
-                  <>
-                    <FlaskConical className="w-4 h-4" />
-                    Run Test Cases
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSubmitCode}
-                disabled={executionState.isRunning || submitStatus === 'success'}
-                className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-sm focus:ring-2 focus:ring-emerald-500 ${executionState.isRunning && executionState.phase === 'submitting'
-                  ? 'bg-emerald-500 text-white cursor-not-allowed animate-pulse'
-                  : submitStatus === 'success'
-                    ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-              >
-                {executionState.isRunning && executionState.phase === 'submitting' ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Terminal className="w-4 h-4" />
-                    Submit Answer
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Custom Input Section */}
-      {showCustomInput && (
-        <div className="border-t border-gray-200 pt-6">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-base font-medium text-gray-800">
-                <Terminal className="w-5 h-5" />
-                Custom Input (stdin)
-              </label>
-              {fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 && (
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                  Pre-filled with Sample Test Case 1
-                </span>
-              )}
-            </div>
-            <div className="bg-gray-50 rounded-lg shadow-sm">
-              <div className="relative">
-                <textarea
-                  value={customInput}
-                  onChange={(e) => setCustomInput(e.target.value)}
-                  placeholder={fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 
-                    ? "Auto-filled with first sample test case input. You can edit this if needed..."
-                    : "Enter input for your program (one value per line)...\nExample:\n5\n3\nHello World"
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white resize-none font-mono"
-                  rows={6}
-                />
-                {fullDetails?.sample_test_cases && fullDetails.sample_test_cases.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setCustomInput(fullDetails.sample_test_cases[0].input)}
-                    className="absolute top-2 right-2 bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded hover:bg-indigo-200 transition-colors duration-200 font-medium"
-                    title="Reset to first sample test case input"
-                  >
-                    Reset Sample
-                  </button>
-                )}
-              </div>
-              <div className="flex items-center justify-between mt-2 px-2 pb-1 text-xs text-gray-500">
-                <div>This input will be passed to your program via stdin</div>
-                <div>
-                  Characters: {customInput.length} | Lines: {customInput.split("\n").length}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Results Display */}
-      {judge0Results && (
-        <div>
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <Zap className="w-5 h-5 text-blue-500" />
-            Execution Results
-          </h3>
-
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-white p-3 rounded-lg border border-gray-300">
-              <div className="flex items-center gap-2 mb-1">
-                <MemoryStick className="w-4 h-4 text-purple-500" />
-                <p className="text-sm font-medium text-gray-600">Memory Used</p>
-              </div>
-              <span className="text-sm text-gray-800 font-mono">
-                {judge0Results.memory ? `${judge0Results.memory} KB` : 'N/A'}
-              </span>
-            </div>
-          </div>
-
-          {/* Show output for Run Code without comparison */}
-          {lastActionType === 'runCode' && judge0Results && (
-              <div className="mt-4 bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-3">
-                  <Terminal className="w-5 h-5 text-blue-600" />
-                  <span>Program Output</span>
-                </div>
-
-                <div className="text-sm font-mono space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Upload className="w-4 h-4 text-indigo-500 mt-1" />
-                    <div className="flex-1">
-                      <span className="font-semibold">Output:</span>
-                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono mt-2">
-                        {judge0Results.stdout || judge0Results.stdout === '' ? 
-                          (judge0Results.stdout.trim() === '' ? 
-                            "No output produced\n\n Your program ran successfully but didn't print anything.\n   Try adding print statements to see output." : 
-                            judge0Results.stdout
-                          ) : 
-                          "No output available"
-                        }
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          {judge0Results.stderr && (
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                <XCircle className="w-4 h-4 text-red-500" />
-                Error Output
-              </p>
-              <pre className="bg-red-950 text-red-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                {judge0Results.stderr}
-              </pre>
-            </div>
-          )}
-
-          {judge0Results.compile_output && (
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-2 flex items-center gap-1">
-                <Cpu className="w-4 h-4 text-yellow-500" />
-                Compile Output
-              </p>
-              <pre className="bg-yellow-950 text-yellow-200 p-4 rounded-lg text-sm overflow-x-auto border font-mono">
-                {judge0Results.compile_output}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Test Results Display */}
-      {(testResults || judge0Results?.testResults) && (
-        <div className="border border-gray-200 rounded-lg p-5 bg-gradient-to-br from-green-50 to-blue-50">
-          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            Sample Test Case Results
-          </h3>
-
-          {/* Display sample test results from judge0Results */}
-          {judge0Results?.testResults && (
-            <div className="mb-4">
-              <div className="text-sm text-blue-600 mb-2">Latest Test Run Results:</div>
-              <div className="space-y-3">
-                {judge0Results.testResults.map((result, index) => (
-                  <div key={index} className={`p-3 rounded-lg border bg-white ${result.status === 'PASSED' ? 'border-green-200' : 'border-red-200'
-                    }`}>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Test Case {index + 1}</span>
-                      <span className={`px-2 py-1 rounded text-xs ${result.status === 'PASSED'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                        }`}>
-                        {result.status || 'COMPLETED'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Display existing testResults */}
-          {testResults && (
-            <div className="space-y-4">
-              {testResults.map((result, index) => (
-                <div key={index} className={`p-4 rounded-lg border-2 bg-white ${result.status === 'PASSED'
-                  ? 'border-green-200'
-                  : 'border-red-200'
-                  }`}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-semibold text-lg">Test Case {index + 1}</span>
-                    <div className="flex items-center gap-2">
-                      {result.status === 'PASSED' ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500" />
-                      )}
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${result.status === 'PASSED'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                        }`}>
-                        {result.status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600 text-sm font-medium mb-2">Input</p>
-                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                        {result.input}
-                      </pre>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 text-sm font-medium mb-2">Your Output</p>
-                      <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                        {result.actual_output}
-                      </pre>
-                    </div>
-                  </div>
-                  {result.expected_output && (
-                    <div className="mt-3">
-                      <p className="text-gray-600 text-sm font-medium mb-2">Expected Output</p>
-                      <pre className="bg-blue-900 text-blue-100 p-3 rounded-lg overflow-x-auto border font-mono">
-                        {result.expected_output}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      <ExecutionResults 
+  judge0Results={judge0Results} 
+  testResults={testResults} 
+  lastActionType={lastActionType} 
+/>
     </div>
   );
 };
