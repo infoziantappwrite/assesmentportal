@@ -9,7 +9,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-export default function ExecutionResults({ judge0Results, testResults, submitStatus }) {
+export default function ExecutionResults({ judge0Results, testResults, submitStatus, isAnswerSubmitted }) {
   // ✅ Provide fallback data (for testing)
   const results = judge0Results || {
     stdout: "",
@@ -21,7 +21,7 @@ export default function ExecutionResults({ judge0Results, testResults, submitSta
   return (
     <div className="space-y-6 w-full ">
       {/* Execution Results */}
-      {results && !results?.testResults && submitStatus !== "success" && (
+      {results && !results?.testResults && submitStatus !== "success" && isAnswerSubmitted?.isAlreadyExecuted !== true && (
         <div className="space-y-4">
           {/* <h3 className="font-semibold text-gray-800 flex items-center gap-2">
             <Zap className="w-5 h-5 text-blue-500" />

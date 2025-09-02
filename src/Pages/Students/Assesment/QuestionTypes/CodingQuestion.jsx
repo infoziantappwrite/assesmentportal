@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   FileText,
   Download,
@@ -10,23 +11,12 @@ import {
   Timer,
   MemoryStick,
   Info,
-  ShieldQuestion,
-  Code2,
-  ChevronDown,
-  ChevronRight,
-  Terminal,
-  Cpu,
-  Clock,
-  Award,
-  HardDrive,
   Hash
 } from 'lucide-react';
 import { getCodingQuestionById } from '../../../../Controllers/QuestionController';
 import SolutionSection from './SolutionSection';
 import ErrorBoundary from '../../../../Components/ErrorBoundary';
-import { questionVisited, } from '../../../../Controllers/SubmissionController';
-import { getAnsweredStatus } from '../../../../Controllers/SubmissionController';
-
+import { questionVisited, getAnsweredStatus } from '../../../../Controllers/SubmissionController';
 
 const CodingQuestion = ({
   question,
@@ -36,52 +26,28 @@ const CodingQuestion = ({
   layout
 }) => {
   const submissionId = localStorage.getItem('submission_id');
-  //console.log(answerStatus)
+
   const [answer, setAnswer] = useState('');
   const [fullDetails, setFullDetails] = useState(null);
-
   const [selectedLanguage, setSelectedLanguage] = useState('python');
-  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false); // null = loading
-
-
-  // Safety check for required props
-
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(null); // null = loading
 
   // Function to handle answer changes
   const handleAnswerChange = (questionId, newAnswer) => {
     setAnswer(newAnswer);
   };
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await getAnsweredStatus(submissionId, question._id);
-        if(res.isAlreadyExecuted === true){
-          setIsAnswerSubmitted(true);
-        } else{
-          setIsAnswerSubmitted(false);
-        }
-
-        
-      } catch (err) {
-        console.error("Error fetching status:", err);
-        
-      }
-    };
-
-    if (submissionId && question._id) {
-      fetchStatus();
-    }
-  }, [submissionId, question._id]);
-
-
+  // Fetch question details + answered status
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const res = await getCodingQuestionById(question._id);
         setFullDetails(res.data?.codingQuestion);
-        //console.log(fullDetails)
-        // Set default language if available
+
+        const codingAnswerStatus = await getAnsweredStatus(submissionId, question._id);
+        setIsAnswerSubmitted(codingAnswerStatus);
+
+        // Set default language if not already selected
         if (!answerStatus?.programming_language) {
           if (res.data?.codingQuestion?.supported_languages?.length) {
             setSelectedLanguage(res.data.codingQuestion.supported_languages[0].language);
@@ -92,60 +58,50 @@ const CodingQuestion = ({
       }
     };
 
-    fetchDetails();
-  }, [question._id]);
+    if (submissionId && question._id) {
+      fetchDetails();
+    }
+  }, [submissionId, question._id]);
 
-  // Load existing answer if any - FIXED: Clear state immediately on question change
+  // Load existing answer or mark as visited
   useEffect(() => {
-    const loadExistingAnswer = async () => {
-      try {
-        // CRITICAL FIX: Always clear answer state first when question changes
-        setAnswer('');
-        
-        if (!answerStatus) {
-          // Answer not available yet, mark as visited
-          await questionVisited({
-            submissionID: submissionId,
-            sectionID: question.section_id,
-            questionID: question._id,
-            type: question.type,
-            isMarkedForReview: false,
-            isSkipped: true,
-          });
-        } else {
-          // Set code and language from saved answer
-          setAnswer(answerStatus.code_solution || '');
-          if (answerStatus?.programming_language) {
-            //console.log(answerStatus.programming_language)
-            setSelectedLanguage(answerStatus.programming_language);
-          }
-        }
-      } catch {
-        //console.error('Failed to load or visit question:', error);
-      }
-    };
+    setAnswer(''); // Clear previous answer first
 
-    loadExistingAnswer();
+    if (!answerStatus) {
+      // No answer yet, mark question as visited
+      questionVisited({
+        submissionID: submissionId,
+        sectionID: question.section_id,
+        questionID: question._id,
+        type: question.type,
+        isMarkedForReview: false,
+        isSkipped: true,
+      }).catch(() => {
+        console.error('Failed to mark question as visited');
+      });
+    } else {
+      // Set code and language from saved answer
+      setAnswer(answerStatus.code_solution || '');
+      if (answerStatus?.programming_language) {
+        setSelectedLanguage(answerStatus.programming_language);
+      }
+    }
   }, [question._id, submissionId, answerStatus]);
 
-
-
-
-  if (!fullDetails) return <div className="text-center py-10">Loading question details...</div>;
+  if (!fullDetails) {
+    return <div className="text-center py-10">Loading question details...</div>;
+  }
 
   return (
-    <div >
-      {/* Header */}
+    <div>
       <div
-        className={`grid gap-4 ${layout === 'left-info' ? 'lg:grid-cols-2' : 'lg:grid-cols-5'
-          } md:grid-cols-2`}
+        className={`grid gap-4 ${
+          layout === 'left-info' ? 'lg:grid-cols-2' : 'lg:grid-cols-5'
+        } md:grid-cols-2`}
       >
-
-
-
-        <div className='col-span-2 bg-white border border-gray-200 rounded-xl p-2 '>
-          <div className=" h-[90vh] overflow-y-auto p-3 space-y-6">
-
+        {/* Question Panel */}
+        <div className="col-span-2 bg-white border border-gray-200 rounded-xl p-2">
+          <div className="h-[90vh] overflow-y-auto p-3 space-y-6">
             {/* Header Section */}
             <div>
               <h2 className="mb-2 font-semibold text-lg text-gray-800">
@@ -169,7 +125,9 @@ const CodingQuestion = ({
               </h2>
               <div className="prose prose-sm max-w-none text-gray-700">
                 <p>{fullDetails.problem_statement}</p>
-                {fullDetails.problem_description && <p className="mt-2">{fullDetails.problem_description}</p>}
+                {fullDetails.problem_description && (
+                  <p className="mt-2">{fullDetails.problem_description}</p>
+                )}
               </div>
               {fullDetails.algorithm_tags?.length > 0 && (
                 <div>
@@ -179,7 +137,10 @@ const CodingQuestion = ({
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {fullDetails.algorithm_tags.map((tag, i) => (
-                      <span key={i} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span
+                        key={i}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                      >
                         {tag.replace(/"/g, '')}
                       </span>
                     ))}
@@ -195,7 +156,7 @@ const CodingQuestion = ({
                   <Download className="w-5 h-5 text-indigo-500" />
                   Input Format
                 </h2>
-                <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap">
+                <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap overflow-x-auto">
                   {fullDetails.input_format}
                 </pre>
               </div>
@@ -204,7 +165,7 @@ const CodingQuestion = ({
                   <Upload className="w-5 h-5 text-indigo-500" />
                   Output Format
                 </h2>
-                <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap">
+                <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap overflow-x-auto">
                   {fullDetails.output_format}
                 </pre>
               </div>
@@ -216,7 +177,7 @@ const CodingQuestion = ({
                 <AlertCircle className="w-5 h-5 text-indigo-500" />
                 Constraints
               </h2>
-              <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap">
+              <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap overflow-x-auto">
                 {fullDetails.constraints}
               </pre>
               <div className="grid md:grid-cols-2 gap-4">
@@ -225,7 +186,7 @@ const CodingQuestion = ({
                     <Timer className="w-4 h-4" /> Time Complexity
                   </h3>
                   <p className="text-sm text-gray-800 font-mono">
-                    {fullDetails.time_complexity_expected || 'Not specified'}
+                    {fullDetails.time_complexity_expected || <em>Not specified</em>}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded">
@@ -233,7 +194,7 @@ const CodingQuestion = ({
                     <MemoryStick className="w-4 h-4" /> Space Complexity
                   </h3>
                   <p className="text-sm text-gray-800 font-mono">
-                    {fullDetails.space_complexity_expected || 'Not specified'}
+                    {fullDetails.space_complexity_expected || <em>Not specified</em>}
                   </p>
                 </div>
               </div>
@@ -249,15 +210,22 @@ const CodingQuestion = ({
                 </span>
               </div>
               {fullDetails.sample_test_cases?.map((tc, index) => (
-                <div key={index} className="space-y-3 border border-gray-200 rounded-xl p-4">
+                <div
+                  key={index}
+                  className="space-y-3 border border-gray-200 rounded-xl p-4"
+                >
                   <h4 className="font-medium text-gray-700">Sample Case {index + 1}</h4>
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1">Input</p>
-                    <pre className="bg-gray-800 text-gray-100 p-3 rounded text-sm overflow-x-auto">{tc.input}</pre>
+                    <pre className="bg-gray-800 text-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      {tc.input}
+                    </pre>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1">Output</p>
-                    <pre className="bg-gray-800 text-gray-100 p-3 rounded text-sm overflow-x-auto">{tc.output}</pre>
+                    <pre className="bg-gray-800 text-gray-100 p-3 rounded text-sm overflow-x-auto">
+                      {tc.output}
+                    </pre>
                   </div>
                   {tc.explanation && (
                     <div>
@@ -268,35 +236,36 @@ const CodingQuestion = ({
                 </div>
               ))}
             </div>
-
           </div>
         </div>
 
-
         {/* Solution Section */}
-        <div className='col-span-3'>
-          <div >
-            <ErrorBoundary>
-              <SolutionSection
-                question={question}
-                // if code is changed it calls onAnswerChange, which sets `answer` and passes down, but
-                // child has `stableAnswer` and manages its own state, but also stableAnswer is changed to `answer`.
-                answer={answer}
-                onAnswerChange={handleAnswerChange}
-                selectedLanguage={selectedLanguage}
-                setSelectedLanguage={setSelectedLanguage}
-                fullDetails={fullDetails}
-                submissionId={submissionId}
-                refreshSectionStatus={refreshSectionStatus}
-              />
-            </ErrorBoundary>
-          </div>
+        <div className="col-span-3">
+          <ErrorBoundary>
+            <SolutionSection
+              question={question}
+              answer={answer}
+              onAnswerChange={handleAnswerChange}
+              selectedLanguage={selectedLanguage}
+              setSelectedLanguage={setSelectedLanguage}
+              fullDetails={fullDetails}
+              submissionId={submissionId}
+              refreshSectionStatus={refreshSectionStatus}
+              isAnswerSubmitted={isAnswerSubmitted}
+            />
+          </ErrorBoundary>
         </div>
       </div>
     </div>
   );
 };
 
-
+CodingQuestion.propTypes = {
+  question: PropTypes.object.isRequired,
+  refreshSectionStatus: PropTypes.func.isRequired,
+  answerStatus: PropTypes.object,
+  questionIndex: PropTypes.number.isRequired,
+  layout: PropTypes.string,
+};
 
 export default CodingQuestion;
