@@ -18,6 +18,7 @@ export default function SubmissionControls({
   fullDetails,
   customInput,
   setCustomInput,
+  isAnswerSubmitted
 }) {
   const [showCustomInput, setShowCustomInput] = useState(true);
   const customInputRef = useRef(null);
@@ -28,13 +29,14 @@ export default function SubmissionControls({
     setShowCustomInput(false);
     handleRunTestCases?.();
   };
-
+  console.log("----------------------------------------------------------1")
+  console.log("isAnswerSubmitted in SubmissionControls:", isAnswerSubmitted);
+  console.log("submitStatus in SubmissionControls:", submitStatus);
   // Unified button style (like sample test case)
   const buttonBaseClass = "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg font-medium shadow-sm";
-
   return (
     <div className="space-y-4 py-4">
-      {submitStatus === "success" ? (
+      {submitStatus === "success" || isAnswerSubmitted?.isAlreadyExecuted ? (
         <div className="w-full flex items-center justify-center">
           <button
             disabled
@@ -58,7 +60,7 @@ export default function SubmissionControls({
               ) : (
                 <ChevronRight className="w-4 h-4" />
               )}
-              {showCustomInput ? "Hide Custom Input" : "Show Custom Input"}
+              {showCustomInput ? "Hide Custom Input" : "Show Custom Input - Click here to type your input"}
             </button>
 
             {/* Right Buttons: Run Code / Run Test Cases / Submit */}
@@ -114,7 +116,7 @@ export default function SubmissionControls({
                 <div className="flex items-center gap-3">
                   <Terminal className="w-5 h-5 text-indigo-600" />
                   <span className="text-sm font-medium text-gray-800">
-                    Custom Input (stdin)
+                    Custom Input (stdin) - <b>Type your input here...</b>
                   </span>
                   <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                     {customInput.split("\n").length} lines | {customInput.length} chars

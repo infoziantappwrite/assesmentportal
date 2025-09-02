@@ -65,12 +65,15 @@ export const saveAnswer = async (submissionId, payload) => {
 //   return saveAnswerr(submissionId, payload);
 // };
 export const getAnsweredStatus = async (submissionId, questionId) => {
-  const response = await axiosClient.get(`/submissions/${submissionId}/is-already-submitted`, {
-    params: { questionId },
-    withCredentials: true,
-  });
+  const response = await axiosClient.post(
+    `/submissions/${submissionId}/is-already-submitted`,
+    { question_id: questionId }, // match the backend expected key
+    { withCredentials: true }
+  );
   return response.data;
 };
+
+
 
 
 export const submitSubmission = async (submissionId) => {

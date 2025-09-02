@@ -28,7 +28,8 @@ const SolutionSection = ({
   fullDetails,
   testResults,
   submissionId,
-  refreshSectionStatus
+  refreshSectionStatus,
+  isAnswerSubmitted
 }) => {
 
   // CRITICAL: Prevent code reset - stable state management
@@ -104,37 +105,37 @@ const SolutionSection = ({
     setIsInitialized(true);
   }, []);
 
-  // CRITICAL FIX: Only reset when question actually changes
+
   useEffect(() => {
     if (!question?._id) return;
 
     const questionChanged = currentQuestionIdRef.current !== question._id;
+    if (!questionChanged) return;
 
-    if (questionChanged) {
-      console.log(`Question changed to ${question._id}, resetting state`);
+    console.log(`Question changed to ${question._id}, resetting state`);
+    currentQuestionIdRef.current = question._id;
 
-      // Clear debounce timeout for previous question
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
-      // Reset initialization tracking
-      initializationRef.current = false;
-      setIsInitialized(false);
-
-      // Reset UI state
-      setJudge0Results(null);
-      setCustomInput('');
-      setLastActionType(null);
-      setSaveStatus('idle');
-      setSubmitStatus(null);
-
-      // Set sample input if available
-      if (fullDetails?.sample_test_cases?.[0]?.input) {
-        setCustomInput(fullDetails.sample_test_cases[0].input.trim());
-      }
+    // Clear debounce
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
-  }, [question._id, fullDetails]);
+
+    // Reset UI state
+    initializationRef.current = false;
+    setIsInitialized(false);
+    setJudge0Results(null);
+    setCustomInput(''); // TEMP clear
+    setLastActionType(null);
+    setSaveStatus('idle');
+    setSubmitStatus(null);
+  }, [question._id]);
+
+
+  useEffect(() => {
+    if (fullDetails?.sample_test_cases?.[0]?.input) {
+      setCustomInput(fullDetails.sample_test_cases[0].input.trim());
+    }
+  }, [fullDetails]);
 
   // CRITICAL FIX: Initialize code only once per question
   useEffect(() => {
@@ -1164,6 +1165,7 @@ const handleLanguageChange = useCallback(
         fullDetails={fullDetails}
         customInput={customInput}
         setCustomInput={setCustomInput}
+        isAnswerSubmitted={isAnswerSubmitted}
       />
 
 
@@ -1174,6 +1176,7 @@ const handleLanguageChange = useCallback(
   testResults={testResults} 
   lastActionType={lastActionType} 
   submitStatus={submitStatus}
+  isAnswerSubmitted={isAnswerSubmitted}
 />
     </div>
   );
