@@ -65,7 +65,7 @@ export const saveAnswer = async (submissionId, payload) => {
 //   return saveAnswerr(submissionId, payload);
 // };
 export const getAnsweredStatus = async (submissionId, questionId) => {
-  const response = await axiosClient.get(`/submissions/answered-status/${submissionId}`, {
+  const response = await axiosClient.get(`/submissions/${submissionId}/is-already-submitted`, {
     params: { questionId },
     withCredentials: true,
   });

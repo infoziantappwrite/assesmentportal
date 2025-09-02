@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FileText,
   Download,
@@ -24,7 +24,9 @@ import {
 import { getCodingQuestionById } from '../../../../Controllers/QuestionController';
 import SolutionSection from './SolutionSection';
 import ErrorBoundary from '../../../../Components/ErrorBoundary';
-import { questionVisited } from '../../../../Controllers/SubmissionController';
+import { questionVisited, } from '../../../../Controllers/SubmissionController';
+import { getAnsweredStatus } from '../../../../Controllers/SubmissionController';
+
 
 const CodingQuestion = ({
   question,
@@ -34,228 +36,115 @@ const CodingQuestion = ({
   layout
 }) => {
   const submissionId = localStorage.getItem('submission_id');
-  
-  // Combined state to reduce re-renders
-  const [state, setState] = useState({
-    answer: '',
-    fullDetails: null,
-    selectedLanguage: 'python',
-    isLoading: true,
-    isInitialized: false,
-    error: null
-  });
-  
-  // Refs for tracking
-  const currentQuestionIdRef = useRef(null);
-  const lastAnswerStatusRef = useRef(null);
-  const abortControllerRef = useRef(null);
-  const initializationPromiseRef = useRef(null);
+  //console.log(answerStatus)
+  const [answer, setAnswer] = useState('');
+  const [fullDetails, setFullDetails] = useState(null);
 
-  // Memoized handlers
-  const handleAnswerChange = useCallback((questionId, newAnswer) => {
-    if (questionId === question?._id) {
-      setState(prev => ({ ...prev, answer: newAnswer }));
-    }
-  }, [question?._id]);
+  const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false); // null = loading
 
-  const handleLanguageChange = useCallback((newLanguage) => {
-    setState(prev => ({ ...prev, selectedLanguage: newLanguage }));
-  }, []);
 
-  // Cleanup function
-  const cleanup = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    initializationPromiseRef.current = null;
-  }, []);
+  // Safety check for required props
 
-  // Helper to check if answerStatus changed significantly
-  const hasAnswerStatusChanged = useCallback((newAnswerStatus) => {
-    const oldStatus = lastAnswerStatusRef.current;
-    
-    if (!oldStatus && !newAnswerStatus) return false;
-    if (!oldStatus || !newAnswerStatus) return true;
-    
-    return (
-      oldStatus.code_solution !== newAnswerStatus.code_solution ||
-      oldStatus.programming_language !== newAnswerStatus.programming_language
-    );
-  }, []);
 
-  // Main initialization effect - FIXED
+  // Function to handle answer changes
+  const handleAnswerChange = (questionId, newAnswer) => {
+    setAnswer(newAnswer);
+  };
+
   useEffect(() => {
-    if (!question?._id) {
-      setState({
-        answer: '',
-        fullDetails: null,
-        selectedLanguage: 'python',
-        isLoading: false,
-        isInitialized: false,
-        error: 'No question provided'
-      });
-      return;
-    }
-
-    // Check if we need to re-initialize
-    const questionChanged = currentQuestionIdRef.current !== question._id;
-    const answerStatusChanged = hasAnswerStatusChanged(answerStatus);
-    
-    // Only initialize if question changed OR if it's the first load
-    if (!questionChanged && !answerStatusChanged && state.isInitialized) {
-      return; // No need to re-initialize
-    }
-
-    // Cleanup previous request
-    cleanup();
-
-    // Update references
-    currentQuestionIdRef.current = question._id;
-    lastAnswerStatusRef.current = answerStatus;
-
-    // Create new abort controller
-    abortControllerRef.current = new AbortController();
-    
-    const initializeQuestion = async (signal) => {
+    const fetchStatus = async () => {
       try {
-        console.log(`Initializing question ${question._id}`);
+        const res = await getAnsweredStatus(submissionId, question._id);
+        if(res.isAlreadyExecuted === true){
+          setIsAnswerSubmitted(true);
+        } else{
+          setIsAnswerSubmitted(false);
+        }
+
         
-        // Set loading state
-        setState(prev => ({
-          ...prev,
-          isLoading: true,
-          error: null,
-          ...(questionChanged && {
-            answer: '',
-            fullDetails: null,
-            selectedLanguage: 'python',
-            isInitialized: false
-          })
-        }));
-
-        // Load question details (skip if we already have them and question didn't change)
-        let details = state.fullDetails;
-        if (questionChanged || !details) {
-          const res = await getCodingQuestionById(question._id);
-          
-          // Check if request was aborted or question changed
-          if (signal.aborted || currentQuestionIdRef.current !== question._id) {
-            return;
-          }
-
-          details = res.data?.codingQuestion;
-          if (!details) {
-            throw new Error('Failed to load question details');
-          }
-        }
-
-        // Determine initial values
-        let initialAnswer = '';
-        let initialLanguage = 'python';
-
-        if (answerStatus && answerStatus.code_solution !== undefined) {
-          // Load existing answer and language
-          initialAnswer = answerStatus.code_solution || '';
-          if (answerStatus.programming_language) {
-            initialLanguage = answerStatus.programming_language;
-          } else if (details.supported_languages?.length) {
-            initialLanguage = details.supported_languages[0].language;
-          }
-        } else {
-          // Set default language for new questions
-          if (details.supported_languages?.length) {
-            initialLanguage = details.supported_languages[0].language;
-          }
-          
-          // Mark as visited for new questions (only if question changed)
-          if (questionChanged) {
-            try {
-              await questionVisited({
-                submissionID: submissionId,
-                sectionID: question.section_id,
-                questionID: question._id,
-                type: question.type,
-                isMarkedForReview: false,
-                isSkipped: true,
-              });
-            } catch (visitError) {
-              console.warn('Failed to mark question as visited:', visitError);
-            }
-          }
-        }
-
-        // Final check before updating state
-        if (signal.aborted || currentQuestionIdRef.current !== question._id) {
-          return;
-        }
-
-        // Update state in a single batch
-        setState({
-          answer: initialAnswer,
-          fullDetails: details,
-          selectedLanguage: initialLanguage,
-          isLoading: false,
-          isInitialized: true,
-          error: null
-        });
-
-        console.log(`Question ${question._id} initialized successfully`);
-
-      } catch (error) {
-        if (!signal.aborted && currentQuestionIdRef.current === question._id) {
-          console.error('Failed to initialize question:', error);
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            error: error.message || 'Failed to load question'
-          }));
-        }
+      } catch (err) {
+        console.error("Error fetching status:", err);
+        
       }
     };
 
-    // Store the promise and start initialization
-    initializationPromiseRef.current = initializeQuestion(abortControllerRef.current.signal);
+    if (submissionId && question._id) {
+      fetchStatus();
+    }
+  }, [submissionId, question._id]);
 
-    // Cleanup function
-    return cleanup;
-  }, [question._id, answerStatus, cleanup, hasAnswerStatusChanged, state.fullDetails, state.isInitialized]); // Added back necessary dependencies
 
-  // Cleanup on unmount
   useEffect(() => {
-    return cleanup;
-  }, [cleanup]);
+    const fetchDetails = async () => {
+      try {
+        const res = await getCodingQuestionById(question._id);
+        setFullDetails(res.data?.codingQuestion);
+        //console.log(fullDetails)
+        // Set default language if available
+        if (!answerStatus?.programming_language) {
+          if (res.data?.codingQuestion?.supported_languages?.length) {
+            setSelectedLanguage(res.data.codingQuestion.supported_languages[0].language);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch coding question details:', error);
+      }
+    };
 
-  // Error state
-  if (state.error) {
-    return (
-      <div className="text-center py-10 text-red-600">
-        <AlertCircle className="w-8 h-8 mx-auto mb-2" />
-        <p>Error loading question: {state.error}</p>
-      </div>
-    );
-  }
+    fetchDetails();
+  }, [question._id]);
 
-  // Loading state
-  if (!state.fullDetails || state.isLoading || !state.isInitialized) {
-    return (
-      <div className="text-center py-10">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-        <p>Loading question details...</p>
-      </div>
-    );
-  }
+  // Load existing answer if any - FIXED: Clear state immediately on question change
+  useEffect(() => {
+    const loadExistingAnswer = async () => {
+      try {
+        // CRITICAL FIX: Always clear answer state first when question changes
+        setAnswer('');
+        
+        if (!answerStatus) {
+          // Answer not available yet, mark as visited
+          await questionVisited({
+            submissionID: submissionId,
+            sectionID: question.section_id,
+            questionID: question._id,
+            type: question.type,
+            isMarkedForReview: false,
+            isSkipped: true,
+          });
+        } else {
+          // Set code and language from saved answer
+          setAnswer(answerStatus.code_solution || '');
+          if (answerStatus?.programming_language) {
+            //console.log(answerStatus.programming_language)
+            setSelectedLanguage(answerStatus.programming_language);
+          }
+        }
+      } catch {
+        //console.error('Failed to load or visit question:', error);
+      }
+    };
+
+    loadExistingAnswer();
+  }, [question._id, submissionId, answerStatus]);
+
+
+
+
+  if (!fullDetails) return <div className="text-center py-10">Loading question details...</div>;
 
   return (
-    <div>
+    <div >
       {/* Header */}
       <div
         className={`grid gap-4 ${layout === 'left-info' ? 'lg:grid-cols-2' : 'lg:grid-cols-5'
           } md:grid-cols-2`}
       >
-        {/* Problem Statement Panel */}
-        <div className='col-span-2 bg-white border border-gray-200 rounded-xl p-2'>
-          <div className="h-[90vh] overflow-y-auto p-3 ">
+
+
+
+        <div className='col-span-2 bg-white border border-gray-200 rounded-xl p-2 '>
+          <div className=" h-[90vh] overflow-y-auto p-3 space-y-6">
 
             {/* Header Section */}
             <div>
@@ -264,7 +153,7 @@ const CodingQuestion = ({
               </h2>
               <div className="flex items-center gap-3">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  <Target className="w-3 h-3 mr-1" /> {state.fullDetails.difficulty_level}
+                  <Target className="w-3 h-3 mr-1" /> {fullDetails.difficulty_level}
                 </span>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                   <Hash className="w-3 h-3 mr-1" /> {question.marks} marks
@@ -279,17 +168,17 @@ const CodingQuestion = ({
                 Problem Statement
               </h2>
               <div className="prose prose-sm max-w-none text-gray-700">
-                <p>{state.fullDetails.problem_statement}</p>
-                {state.fullDetails.problem_description && <p className="mt-2">{state.fullDetails.problem_description}</p>}
+                <p>{fullDetails.problem_statement}</p>
+                {fullDetails.problem_description && <p className="mt-2">{fullDetails.problem_description}</p>}
               </div>
-              {state.fullDetails.algorithm_tags?.length > 0 && (
+              {fullDetails.algorithm_tags?.length > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 flex items-center gap-2 mb-2">
                     <Tag className="w-4 h-4 text-gray-500" />
                     Tags
                   </h3>
                   <div className="flex flex-wrap gap-2">
-                    {state.fullDetails.algorithm_tags.map((tag, i) => (
+                    {fullDetails.algorithm_tags.map((tag, i) => (
                       <span key={i} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         {tag.replace(/"/g, '')}
                       </span>
@@ -307,7 +196,7 @@ const CodingQuestion = ({
                   Input Format
                 </h2>
                 <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap">
-                  {state.fullDetails.input_format}
+                  {fullDetails.input_format}
                 </pre>
               </div>
               <div>
@@ -316,7 +205,7 @@ const CodingQuestion = ({
                   Output Format
                 </h2>
                 <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap">
-                  {state.fullDetails.output_format}
+                  {fullDetails.output_format}
                 </pre>
               </div>
             </div>
@@ -328,7 +217,7 @@ const CodingQuestion = ({
                 Constraints
               </h2>
               <pre className="bg-gray-50 text-gray-700 p-3 text-sm rounded whitespace-pre-wrap">
-                {state.fullDetails.constraints}
+                {fullDetails.constraints}
               </pre>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3 rounded">
@@ -336,7 +225,7 @@ const CodingQuestion = ({
                     <Timer className="w-4 h-4" /> Time Complexity
                   </h3>
                   <p className="text-sm text-gray-800 font-mono">
-                    {state.fullDetails.time_complexity_expected || 'Not specified'}
+                    {fullDetails.time_complexity_expected || 'Not specified'}
                   </p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded">
@@ -344,7 +233,7 @@ const CodingQuestion = ({
                     <MemoryStick className="w-4 h-4" /> Space Complexity
                   </h3>
                   <p className="text-sm text-gray-800 font-mono">
-                    {state.fullDetails.space_complexity_expected || 'Not specified'}
+                    {fullDetails.space_complexity_expected || 'Not specified'}
                   </p>
                 </div>
               </div>
@@ -356,10 +245,10 @@ const CodingQuestion = ({
                 <FlaskConical className="w-5 h-5 text-yellow-500" />
                 Sample Test Cases
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {state.fullDetails.sample_test_cases?.length || 0} cases
+                  {fullDetails.sample_test_cases?.length || 0} cases
                 </span>
               </div>
-              {state.fullDetails.sample_test_cases?.map((tc, index) => (
+              {fullDetails.sample_test_cases?.map((tc, index) => (
                 <div key={index} className="space-y-3 border border-gray-200 rounded-xl p-4">
                   <h4 className="font-medium text-gray-700">Sample Case {index + 1}</h4>
                   <div>
@@ -379,20 +268,24 @@ const CodingQuestion = ({
                 </div>
               ))}
             </div>
+
           </div>
         </div>
 
-        {/* Solution Section Panel */}
-        <div className='col-span-3 '>
-          <div >
+
+        {/* Solution Section */}
+        <div className='col-span-3 bg-white border border-gray-200 rounded-xl p-2 '>
+          <div className=" h-[90vh] overflow-y-auto p-3 space-y-6">
             <ErrorBoundary>
               <SolutionSection
                 question={question}
-                answer={state.answer}
+                // if code is changed it calls onAnswerChange, which sets `answer` and passes down, but
+                // child has `stableAnswer` and manages its own state, but also stableAnswer is changed to `answer`.
+                answer={answer}
                 onAnswerChange={handleAnswerChange}
-                selectedLanguage={state.selectedLanguage}
-                setSelectedLanguage={handleLanguageChange}
-                fullDetails={state.fullDetails}
+                selectedLanguage={selectedLanguage}
+                setSelectedLanguage={setSelectedLanguage}
+                fullDetails={fullDetails}
                 submissionId={submissionId}
                 refreshSectionStatus={refreshSectionStatus}
               />
@@ -403,5 +296,7 @@ const CodingQuestion = ({
     </div>
   );
 };
+
+
 
 export default CodingQuestion;
