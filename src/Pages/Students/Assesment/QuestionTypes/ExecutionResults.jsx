@@ -29,13 +29,13 @@ export default function ExecutionResults({ judge0Results, testResults, submitSta
           </h3> */}
 
           {/* Program Output */}
-          <div className="bg-white p-3 rounded-lg border border-gray-300 shadow-sm">
+          <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
               <Terminal className="w-5 h-5 text-blue-600" />
               Program Output
             </div>
             <div className="flex items-start gap-2">
-              <Upload className="w-4 h-4 text-indigo-500 mt-1" />
+            
               <pre className="flex-1 bg-gray-900 text-gray-100 p-2 rounded-md overflow-x-auto text-sm font-mono">
                 {results.stdout !== null && results.stdout !== undefined
                   ? results.stdout || "Click run to execute your code"
