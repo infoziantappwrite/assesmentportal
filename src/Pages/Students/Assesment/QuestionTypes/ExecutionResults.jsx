@@ -19,7 +19,7 @@ export default function ExecutionResults({ judge0Results, testResults, submitSta
   };
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6 w-full ">
       {/* Execution Results */}
       {results && !results?.testResults && submitStatus !== "success" && (
         <div className="space-y-4">
