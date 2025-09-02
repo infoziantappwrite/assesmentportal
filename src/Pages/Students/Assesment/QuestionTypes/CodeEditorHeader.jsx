@@ -78,7 +78,7 @@ function CodeEditorHeader({
   </div>
 
   {/* Buttons */}
-  <div className="flex gap-1">
+  <div className="flex gap-1 z-10">
     {/* Run */}
     <button
       onClick={handleRunWithAPI}
