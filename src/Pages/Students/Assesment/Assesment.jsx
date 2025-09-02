@@ -134,26 +134,7 @@ const Assessment = () => {
 )}
 
 {showPopup && <ProctoringPopup message={popupMessage} onClose={() => setShowPopup(false)} />}
-      <div className="p-4 border-b border-gray-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex overflow-x-auto gap-2 md:justify-end scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-          {sections.map((sec, idx) => (
-            <button
-              key={sec._id}
-              onClick={() => {
-                setSectionIndex(idx);
-                setQuestionIndex(0);
-              }}
-              className={`px-4 py-2 rounded-full font-medium transition whitespace-nowrap ${
-                idx === sectionIndex
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-blue-100'
-              }`}
-            >
-              {sec.title}
-            </button>
-          ))}
-        </div>
-      </div>
+      
 
       <AssessmentSection
         layout="top-info-nav"
