@@ -11,11 +11,11 @@ import useProctoringEvents from '../Proctoring/useProctoringEvents';
 import ProctoringPopup from '../Proctoring/ProctoringPopup';
 
 const Assessment = () => {
-  const { state } = useLocation();
+  const {state } = useLocation();
   const {user}=useUser();
   
   const { sections,submission,settings } = state;
-  console.log(settings)
+  //console.log(settings)
   const submissionId = submission._id;
   const assignmentId=submission.assignment_id;
   const studentId=user._id
@@ -41,12 +41,18 @@ const Assessment = () => {
     try {
       const res = await getSectionWiseStatus(submissionId);
       setSectionWiseStatus(res || {});
+      //console.log("Section Wise Status:", res);
     } catch (error) {
       console.error("Failed to refresh status:", error.message);
     }
   };
+//   useEffect(() => {
+//   refreshSectionStatus();
+// }, []); // runs only once on first mount
+
 
   useEffect(() => {
+   
     const map = {};
     Object.values(sectionWiseStatus).forEach((questionArray) => {
       questionArray.forEach((q) => {
@@ -54,6 +60,7 @@ const Assessment = () => {
       });
     });
     setAnswerStatusMap(map);
+     //console.log(map)
   }, [sectionWiseStatus]);
 
 
@@ -67,6 +74,7 @@ const Assessment = () => {
     if (!question) return <div>No question available</div>;
 
     const answerStatus = answerStatusMap[question._id];
+    //console.log("Answer Status:", answerStatus);
     const props = { question, refreshSectionStatus, answerStatus, questionIndex, layout };
     const isMobileOrTablet = window.innerWidth < 768;
 

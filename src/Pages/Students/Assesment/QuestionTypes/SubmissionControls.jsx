@@ -29,9 +29,9 @@ export default function SubmissionControls({
     setShowCustomInput(false);
     handleRunTestCases?.();
   };
-  console.log("----------------------------------------------------------1")
-  console.log("isAnswerSubmitted in SubmissionControls:", isAnswerSubmitted);
-  console.log("submitStatus in SubmissionControls:", submitStatus);
+  //console.log("----------------------------------------------------------1")
+  //console.log("isAnswerSubmitted in SubmissionControls:", isAnswerSubmitted);
+  //console.log("submitStatus in SubmissionControls:", submitStatus);
   // Unified button style (like sample test case)
   const buttonBaseClass = "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg font-medium shadow-sm";
   return (
