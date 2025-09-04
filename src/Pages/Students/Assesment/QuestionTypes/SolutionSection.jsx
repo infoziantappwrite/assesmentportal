@@ -9,7 +9,9 @@ import {
   MemoryStick,
   Upload,
   Loader2,
-  
+  Save,
+  ArrowDown
+
 } from 'lucide-react';
 
 import { saveCodingAnswer, evaluateCodingSubmission, runSampleTestCases, RunCode } from "../../../../Controllers/SubmissionController"
@@ -31,6 +33,8 @@ const SolutionSection = ({
   refreshSectionStatus,
   isAnswerSubmitted
 }) => {
+  console.log(answer, selectedLanguage);
+  // console.log(fullDetails);
 
   // CRITICAL: Prevent code reset - stable state management
   const [editorCode, setEditorCode] = useState('');
@@ -38,6 +42,7 @@ const SolutionSection = ({
   const currentQuestionIdRef = useRef(null);
   const currentLanguageRef = useRef(null);
   const initializationRef = useRef(false);
+  //console.log(selectedLanguage)
 
   // UI State
 
@@ -55,7 +60,7 @@ const SolutionSection = ({
 
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [pendingLanguage, setPendingLanguage] = useState(null);
-  
+
 
   // Session and timing
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -80,6 +85,7 @@ const SolutionSection = ({
 
   // CRITICAL FIX: Initialize code ONLY when question changes, not on every render
   const initializeEditorCode = useCallback((questionId, language, initialAnswer) => {
+    //console.log('initializeEditorCode called with:', { language });
     // Prevent re-initialization of same question
     if (currentQuestionIdRef.current === questionId &&
       currentLanguageRef.current === language &&
@@ -87,14 +93,14 @@ const SolutionSection = ({
       return;
     }
 
-    console.log(`Initializing editor for question ${questionId} with language ${language}`);
+    //console.log(`Initializing editor for question ${questionId} with language ${language}`);
 
     if (initialAnswer && initialAnswer.trim() !== '') {
-      console.log('Loading existing code');
+      //console.log('Loading existing code');
       setEditorCode(initialAnswer);
     } else {
-      const template = LANGUAGE_TEMPLATES[language.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
-      console.log('Loading template for', language);
+      const template = LANGUAGE_TEMPLATES[language.toLowerCase()] || LANGUAGE_TEMPLATES['java'] || '';
+      //console.log('Loading template for', language);
       setEditorCode(template);
     }
 
@@ -112,7 +118,7 @@ const SolutionSection = ({
     const questionChanged = currentQuestionIdRef.current !== question._id;
     if (!questionChanged) return;
 
-    console.log(`Question changed to ${question._id}, resetting state`);
+    //console.log(`Question changed to ${question._id}, resetting state`);
     currentQuestionIdRef.current = question._id;
 
     // Clear debounce
@@ -141,7 +147,7 @@ const SolutionSection = ({
   useEffect(() => {
     if (!question?._id || !selectedLanguage || isInitialized) return;
 
-    console.log('Initializing code for question', question._id);
+    //console.log('Initializing code for question', question._id);
     initializeEditorCode(question._id, selectedLanguage, answer);
   }, [question._id, selectedLanguage, answer, isInitialized, initializeEditorCode]);
 
@@ -166,7 +172,7 @@ const SolutionSection = ({
   }, [question._id, onAnswerChange]);
 
   // FIXED: Language change handler
-const handleLanguageChange = useCallback(
+  const handleLanguageChange = useCallback(
     (newLanguage) => {
       if (newLanguage === selectedLanguage) return;
 
@@ -180,7 +186,7 @@ const handleLanguageChange = useCallback(
       // Otherwise switch immediately
       switchLanguage(newLanguage);
     },
-    [editorCode, selectedLanguage,question]
+    [editorCode, selectedLanguage, question]
   );
 
   const switchLanguage = (newLanguage) => {
@@ -189,7 +195,7 @@ const handleLanguageChange = useCallback(
 
     const template =
       LANGUAGE_TEMPLATES[newLanguage.toLowerCase()] ||
-      LANGUAGE_TEMPLATES["javascript"] ||
+      LANGUAGE_TEMPLATES["java"] ||
       "";
     setEditorCode(template);
     onAnswerChange(question._id, template);
@@ -206,15 +212,15 @@ const handleLanguageChange = useCallback(
     setShowLanguageModal(false);
   };
 
-    const [showResetModal, setShowResetModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
-     const handleResetCode = useCallback(() => {
+  const handleResetCode = useCallback(() => {
     setShowResetModal(true)
-     }, []);
+  }, []);
 
   // FIXED: Simple reset handler
   const handleResetCodeconfirm = useCallback(() => {
-    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['javascript'] || '';
+    const template = LANGUAGE_TEMPLATES[selectedLanguage.toLowerCase()] || LANGUAGE_TEMPLATES['java'] || '';
     setEditorCode(template);
     onAnswerChange(question._id, template);
     setCustomInput('');
@@ -807,7 +813,7 @@ const handleLanguageChange = useCallback(
   }, [executionTimer, executionTimeoutTimer]);
 
   // Helper functions
-  
+
 
   // Dynamic Execution Indicator Component
   const ExecutionIndicator = () => {
@@ -925,68 +931,75 @@ const handleLanguageChange = useCallback(
         />
       )}
 
-     {showLanguageModal && (
-  <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    {/* Modal Card */}
-    <div className="bg-white rounded-xl shadow-2xl w-96 p-6 text-center relative overflow-hidden">
-      {/* Gradient Header */}
-      <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+      {showLanguageModal && (
+        <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          {/* Modal Card */}
+          <div className="bg-white rounded-xl shadow-2xl w-96 p-6 text-center relative overflow-hidden">
+            {/* Gradient Header */}
+            <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
 
-      {/* Icon */}
-      <div className="flex justify-center mb-3">
-        <svg
-          className="w-12 h-12 text-blue-500"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 8v4l3 3"
-          />
-        </svg>
-      </div>
+            {/* Icon */}
+            <div className="flex justify-center mb-3">
+              <svg
+                className="w-12 h-12 text-blue-500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 8v4l3 3"
+                />
+              </svg>
+            </div>
 
-      {/* Title */}
-      <h2 className="text-xl font-bold text-gray-900 mb-2">
-        Switch Language
-      </h2>
+            {/* Title */}
+            <h2 className="text-xl font-bold text-gray-900 mb-2">
+              Switch Language
+            </h2>
 
-      {/* Message */}
-      <p className="text-gray-700 mb-6 text-sm">
-        You have written code in <strong>{selectedLanguage}</strong>. Do you want to keep your current code when switching to <strong>{pendingLanguage}</strong>?
-      </p>
+            {/* Message */}
+            <p className="text-gray-700 mb-6 text-sm">
+              You have written code in <strong>{selectedLanguage}</strong>. <br />
+              Do you want to keep your current code when switching to{" "}
+              <strong>{pendingLanguage}</strong>?
+              <br />
+              <span className="text-red-500 font-medium">
+                Warning: If you choose to load the template, your previous code will be lost.
+              </span>
+            </p>
 
-      {/* Buttons */}
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={handleKeepCode}
-          className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 transition"
-        >
-          Keep Code
-        </button>
-        <button
-          onClick={handleLoadTemplate}
-          className="px-5 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold shadow-md hover:bg-gray-200 transition"
-        >
-          Load Template
-        </button>
-      </div>
 
-      {/* Close button */}
-      <button
-        onClick={() => setShowLanguageModal(false)}
-        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
-      >
-        &times;
-      </button>
-    </div>
-  </div>
-)}
-{showResetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            {/* Buttons */}
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={handleKeepCode}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 transition"
+              >
+                Keep Code
+              </button>
+              <button
+                onClick={handleLoadTemplate}
+                className="px-5 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold shadow-md hover:bg-gray-200 transition"
+              >
+                Load Template
+              </button>
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowLanguageModal(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+      {showResetModal && (
+        <div className="fixed inset-0 z-52 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-96 p-6 text-center relative overflow-hidden">
             {/* Gradient header */}
             <div className="absolute inset-x-0 top-0 h-2 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600"></div>
@@ -995,9 +1008,14 @@ const handleLanguageChange = useCallback(
               Reset Code
             </h2>
             <p className="text-gray-700 mb-6 text-sm">
-              Are you sure you want to reset your code? This will delete all
-              your current code and load the {selectedLanguage} template.
+              Are you sure you want to reset your code? This will delete all your current
+              code and load the <span className="font-semibold">{selectedLanguage}</span> template.
+              <br />
+              <span className="text-red-500 font-medium">
+                Warning: Your previous code will be lost.
+              </span>
             </p>
+
 
             <div className="flex justify-center gap-4">
               <button
@@ -1026,11 +1044,22 @@ const handleLanguageChange = useCallback(
       )}
 
 
-     
-        
+
+
 
       <div className="space-y-0">
+        <div className="mb-3 text-xs text-red-600 font-medium bg-red-50 border border-red-200 px-3 py-2 rounded-md flex items-center">
+          <span>
+            ⚠️ Please save your code before moving to the next question,
+            else your code will be lost.{" "}
+            <span className="text-gray-700">
+              Click the <Save className="inline w-4 h-4 mx-1 text-cyan-600" /> icon to save code .
+            </span>
+          </span>
+          <ArrowDown className="w-4 h-4 text-red-500 ml-2 animate-bounce" />
+        </div>
         {/* Enhanced Monaco Editor Container */}
+
         <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-purple-500/30">
 
 
@@ -1045,6 +1074,7 @@ const handleLanguageChange = useCallback(
             saveStatus={saveStatus}
             submitStatus={submitStatus}
             editorCode={editorCode}
+            isAnswerSubmitted={isAnswerSubmitted}
           />
 
           {/* Monaco Editor with stable state management */}
@@ -1171,13 +1201,13 @@ const handleLanguageChange = useCallback(
 
 
       {/* Results Display */}
-      <ExecutionResults 
-  judge0Results={judge0Results} 
-  testResults={testResults} 
-  lastActionType={lastActionType} 
-  submitStatus={submitStatus}
-  isAnswerSubmitted={isAnswerSubmitted}
-/>
+      <ExecutionResults
+        judge0Results={judge0Results}
+        testResults={testResults}
+        lastActionType={lastActionType}
+        submitStatus={submitStatus}
+        isAnswerSubmitted={isAnswerSubmitted}
+      />
     </div>
   );
 };

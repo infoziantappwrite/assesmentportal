@@ -110,6 +110,7 @@ export const getSubmissionReport = async (submissionID) => {
   }
 };
 
+
 export const getSectionWiseStatus = async (submissionID) => {
   try {
     const response = await axiosClient.get(`/submissions/section-wise-status/${submissionID}`, {
@@ -126,6 +127,27 @@ export const getSectionWiseStatus = async (submissionID) => {
     throw new Error(error.response?.data?.message || 'Something went wrong while fetching section answers.');
   }
 };
+
+export const getQuestionAnswerdStatus = async (submissionId, questionId) => {
+  //console.log("Fetching answer status for submission:", submissionId, "question:", questionId);
+
+  try {
+    const response = await axiosClient.get(
+      `/submissions/answered-status/${submissionId}?questionId=${questionId}`,
+      { withCredentials: true }
+    );
+
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || "Failed to fetch Question status");
+    }
+  } catch (error) {
+    console.error("Error fetching Question answer status:", error);
+    throw new Error(error.response?.data?.message || "Something went wrong while fetching Question answers.");
+  }
+};
+
 
 //Coding part 
 
