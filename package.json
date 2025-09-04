@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@sentry/react": "^10.9.0",
-    "@sentry/tracing": "^7.120.4",
+    "@sentry/react": "^10.8.0",
     "@tailwindcss/vite": "^4.1.11",
     "ace-builds": "^1.43.2",
     "axios": "^1.10.0",
