@@ -9,18 +9,20 @@ export const getBaseAnalytics = async () => {
 };
 
 export const getDashboardData = async (payload = {}) => {
-  const res = await axiosClient.post(`/analytics`, payload, {
+  const res = await axiosClient.get(`/analytics`, payload, {
+    withCredentials: true,
+  });
+  //console.log("Dashboard Data Response:", res);
+  return res.data;
+};
+
+export const getRoleBasedDashboardData = async (role) => {
+  const res = await axiosClient.get(`/analytics/${role}?role=${role}`, {
     withCredentials: true,
   });
   return res.data;
 };
 
-export const getRoleBasedDashboardData = async (role) => {
-  const res = await axiosClient.get(`/analytics/${role}`, {
-    withCredentials: true,
-  });
-  return res.data;
-};
 
 export const getAssessmentAnalytics = async (assessmentId) => {
   const res = await axiosClient.get(`/analytics/assessment/${assessmentId}`, {
@@ -36,9 +38,11 @@ export const getStudentPerformanceAnalytics = async (studentId) => {
   return res.data;
 };
 
-export const getCollegePerformanceAnalytics = async (collegeId) => {
+export const getCollegePerformanceAnalytics = async (collegeId, filters) => {
+  //console.log("Filters sent to backend:", filters);
   const res = await axiosClient.get(`/analytics/college/${collegeId}/performance`, {
     withCredentials: true,
+    params: filters, // ✅ This sends filters as query parameters
   });
   return res.data;
 };
