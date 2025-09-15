@@ -109,7 +109,7 @@ const ReportHistoryPage = () => {
                                     <div className="space-y-2 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <h3 className="font-semibold text-gray-800 capitalize">
-                                                {report_type?.replace(/_/g, " ")}
+                                                {file_info?.file_name?.replace(/_/g, " ").split(".")[0] || report_type}
                                             </h3>
                                             <span className={`px-2.5 py-0.5 text-xs rounded-full ${getStatusColor(processing?.status)} font-medium`}>
                                                 {processing?.status || "pending"}
