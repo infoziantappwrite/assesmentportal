@@ -173,7 +173,7 @@ const BulkUploadUser = () => {
       <p className="text-sm text-gray-500 mt-2">
         Upload an Excel <code>.xlsx</code> file with columns:{" "}
         <span className="text-gray-700 font-medium">
-          name, email, password, role, dob, groupId (optional)
+          name, email, password, roll_number, role (optional, default CANDIDATE), groupId (optional), collegeId (optional)
         </span>
       </p>
 
