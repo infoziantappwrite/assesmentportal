@@ -20,7 +20,7 @@ const CreateGroupModal = ({ onClose, onCreated }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [collegeRes] = await Promise.all([getAllColleges()]);
+        const [collegeRes] = await Promise.all([getAllColleges({ limit: 100 })]);
         setColleges(collegeRes.colleges || []);
       } catch (err) {
         console.error("Failed to load data", err);

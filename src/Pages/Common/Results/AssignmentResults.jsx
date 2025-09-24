@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { getAssignmentResults } from '../../../Controllers/AssignmentControllers';
-import { RefreshCw } from 'lucide-react'; // You can swap this with your icon lib
-// import Loader from './Loader'; // Uncomment if you have a custom Loader component
+import { getAssignmentResults } from "../../../Controllers/AssignmentControllers";
+import { RefreshCw, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const AssignmentResults = ({ id }) => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [results, setResults] = useState([]);
-  
   const [refreshing, setRefreshing] = useState(false);
-  const resultsPerPage = 6;
+
+  // Show 10 per page in UI
+  const resultsPerPage = 30;
 
   const fetchResults = async () => {
     try {
-     
       const response = await getAssignmentResults(id);
       setResults(response.data || []);
+      console.log(response.data);
     } catch {
-      // Handle error if needed
+      // Handle error
     } finally {
-      
       setRefreshing(false);
     }
   };
@@ -33,28 +34,80 @@ const AssignmentResults = ({ id }) => {
     await fetchResults();
   };
 
-  // Filter results by search
+  // 🔍 Filter by search
   const filteredResults = results.filter(
     (res) =>
       res.student_info.name.toLowerCase().includes(search.toLowerCase()) ||
       res.student_info.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Pagination logic
+  // Pagination logic (UI only)
   const totalPages = Math.ceil(filteredResults.length / resultsPerPage);
   const startIndex = (currentPage - 1) * resultsPerPage;
-  const currentResults = filteredResults.slice(startIndex, startIndex + resultsPerPage);
+  const currentResults = filteredResults.slice(
+    startIndex,
+    startIndex + resultsPerPage
+  );
 
   let visiblePages = [];
   if (totalPages <= 3) {
     visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1);
   } else {
     if (currentPage === 1) visiblePages = [1, 2, 3];
-    else if (currentPage === totalPages) visiblePages = [totalPages - 2, totalPages - 1, totalPages];
+    else if (currentPage === totalPages)
+      visiblePages = [totalPages - 2, totalPages - 1, totalPages];
     else visiblePages = [currentPage, currentPage + 1, currentPage + 2];
   }
 
-  
+ // 📥 Download all results (sorted by highest percentage)
+const handleDownloadPDF = () => {
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.setFontSize(16);
+  doc.text("Assignment Results", 14, 15);
+
+  const tableColumn = [
+    "#",
+    "Name",
+    "Email",
+    "Status",
+    "Evaluation",
+    "Attempt",
+    "Score",
+    "Percentage",
+    "Time Taken",
+  ];
+
+  // 🔽 Sort by highest percentage
+  const sortedResults = [...filteredResults].sort(
+    (a, b) => b.scores.percentage - a.scores.percentage
+  );
+
+  const tableRows = sortedResults.map((res, index) => [
+    index + 1,
+    res.student_info.name,
+    res.student_info.email,
+    res.status,
+    res.evaluation_status,
+    res.attempt_number,
+    `${res.scores.obtained_marks}/${res.scores.total_marks}`,
+    `${res.scores.percentage.toFixed(2)}%`,
+    `${Math.floor(res.timing.total_time_taken_seconds / 60)} min ${
+      res.timing.total_time_taken_seconds % 60
+    } sec`,
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumn],
+    body: tableRows,
+    startY: 25,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [22, 163, 74] },
+    alternateRowStyles: { fillColor: [240, 253, 244] },
+  });
+
+  doc.save("assignment_results.pdf");
+};
+
 
   return (
     <div className="bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-200 shadow-lg">
@@ -66,16 +119,30 @@ const AssignmentResults = ({ id }) => {
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
               Assignment Results
             </h2>
+
+            {/* Refresh Button */}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
               className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition disabled:opacity-50"
               title="Refresh"
             >
-              <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`}
+              />
+            </button>
+
+            {/* 📥 Download Button */}
+            <button
+              onClick={handleDownloadPDF}
+              className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+              title="Download All as PDF"
+            >
+              <Download className="w-5 h-5" />
             </button>
           </div>
 
+          {/* Search */}
           <input
             type="text"
             placeholder="Search by name or email..."
@@ -89,7 +156,7 @@ const AssignmentResults = ({ id }) => {
         </div>
       </div>
 
-      {/* Results Table */}
+      {/* Table (page-wise, 10 per page) */}
       {currentResults.length === 0 ? (
         <div className="text-gray-500 text-center py-8 px-4">
           No results available.
@@ -101,14 +168,24 @@ const AssignmentResults = ({ id }) => {
               <thead className="bg-green-100 text-gray-700 text-xs uppercase">
                 <tr>
                   <th className="border border-green-200 p-2 w-8">#</th>
-                  <th className="border border-green-200 p-2 w-32 truncate">Name</th>
-                  <th className="border border-green-200 p-2 w-48 truncate">Email</th>
+                  <th className="border border-green-200 p-2 w-32 truncate">
+                    Name
+                  </th>
+                  <th className="border border-green-200 p-2 w-48 truncate">
+                    Email
+                  </th>
                   <th className="border border-green-200 p-2 w-20">Status</th>
-                  <th className="border border-green-200 p-2 w-24">Evaluation</th>
+                  <th className="border border-green-200 p-2 w-24">
+                    Evaluation
+                  </th>
                   <th className="border border-green-200 p-2 w-16">Attempt</th>
                   <th className="border border-green-200 p-2 w-24">Score</th>
-                  <th className="border border-green-200 p-2 w-24">Percentage</th>
-                  <th className="border border-green-200 p-2 w-24">Time Taken</th>
+                  <th className="border border-green-200 p-2 w-24">
+                    Percentage
+                  </th>
+                  <th className="border border-green-200 p-2 w-24">
+                    Time Taken
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -120,10 +197,16 @@ const AssignmentResults = ({ id }) => {
                     <td className="border border-green-200 p-2 text-center font-semibold text-green-700">
                       {startIndex + index + 1}
                     </td>
-                    <td className="border border-green-200 p-2 truncate font-medium text-green-800" title={res.student_info.name}>
+                    <td
+                      className="border border-green-200 p-2 truncate font-medium text-green-800"
+                      title={res.student_info.name}
+                    >
                       {res.student_info.name}
                     </td>
-                    <td className="border border-green-200 p-2 truncate text-blue-600" title={res.student_info.email}>
+                    <td
+                      className="border border-green-200 p-2 truncate text-blue-600"
+                      title={res.student_info.email}
+                    >
                       {res.student_info.email}
                     </td>
                     <td className="border border-green-200 p-2 text-yellow-600">
@@ -182,7 +265,9 @@ const AssignmentResults = ({ id }) => {
                 </button>
               ))}
               <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-green-100 disabled:opacity-50"
               >

@@ -19,7 +19,7 @@ const AllUsers = () => {
 
   const [filters, setFilters] = useState({
     page: 1,
-    limit: 10,
+    limit: 3000,
     sortBy: 'createdAt',
     sortOrder: 'desc',
     search: '',
