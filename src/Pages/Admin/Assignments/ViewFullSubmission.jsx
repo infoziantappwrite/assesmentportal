@@ -2,7 +2,185 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { calculateResultsForSubmission } from "../../../Controllers/AssignmentControllers";
 import Loader from "../../../Components/Loader";
-import { FileText, Award, BarChart3, CheckCircle, Clock, User, Target, TrendingUp } from "lucide-react";
+import { FileText, Award, BarChart3, CheckCircle,CheckCircle2, Clock, User, Target, TrendingUp, Copy } from "lucide-react";
+
+
+function QAItem({ ans, index }) {
+  const question = ans.question_id;
+  const isCoding = ans.question_type === "coding";
+
+  const getCopyText = () => {
+    let copyText = `Q${index + 1}. ${question?.content?.question_text}\n\n`;
+
+    if (isCoding) {
+      copyText += `Language: ${ans.programming_language?.toUpperCase() || "N/A"}\n\n`;
+      copyText += ans.code_solution || "No code submitted.";
+    } else {
+      copyText += "Answer:\n";
+      if (Array.isArray(ans.selected_options)) {
+        const selectedOptions = question?.options.filter(opt =>
+          ans.selected_options.includes(opt.option_id)
+        );
+        copyText += selectedOptions.map(opt => `- ${opt.text}`).join("\n");
+      }
+    }
+    return copyText;
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(getCopyText());
+  };
+
+  return (
+    <div className="border rounded-xl p-5 bg-white border-gray-200 shadow-sm relative">
+      {/* Question Header */}
+      <div className="mb-2 flex justify-between items-start">
+        <h4 className="text-md font-semibold text-indigo-700">
+          Q{index + 1}. {question?.content?.question_text}
+        </h4>
+        <button
+          onClick={handleCopy}
+          className="flex items-center text-xs px-2 py-1 bg-gray-100 border rounded-md hover:bg-gray-200"
+        >
+          <Copy className="w-3 h-3 mr-1" /> Copy
+        </button>
+      </div>
+
+      {/* Marks */}
+      <p className="text-xs text-gray-500 italic mb-1">
+        Marks: {ans.evaluation?.marks_obtained ?? 0}/{ans.evaluation?.total_marks ?? question?.marks ?? 0}
+      </p>
+      <span
+        className={`inline-block text-xs px-2 py-1 rounded font-medium ${ans.evaluation?.is_correct
+            ? "bg-green-100 text-green-700"
+            : "bg-rose-100 text-rose-700"
+          }`}
+      >
+        {ans.evaluation?.is_correct ? "Correct" : "Incorrect"}
+      </span>
+
+      {/* CODING QUESTION */}
+      {isCoding ? (
+        <div className="space-y-4 mt-3">
+          <div className="text-sm text-gray-600">
+            <strong>Language:</strong> {ans.programming_language?.toUpperCase() || "N/A"}
+          </div>
+          {ans.code_solution ? (
+            <div className="bg-gray-100 border border-gray-300 rounded-md p-4 overflow-x-auto text-sm font-mono whitespace-pre-wrap text-gray-800">
+              {ans.code_solution}
+            </div>
+          ) : (
+            <p className="text-sm text-red-500">No code submitted.</p>
+          )}
+        </div>
+      ) : (
+        <ul className="space-y-2 mt-3">
+          {question?.options.map((opt) => {
+            const isSelected = ans.selected_options?.includes(opt.option_id);
+            const isCorrectOption = opt.is_correct;
+
+            let bgColor = "bg-white border-gray-200 text-gray-700";
+            let label = null;
+
+            if (isCorrectOption && isSelected) {
+              bgColor = "bg-green-50 border-green-200 text-green-700";
+              label = "Correct & Selected";
+            } else if (isCorrectOption) {
+              bgColor = "bg-green-50 border-green-200 text-green-700";
+              label = "Correct";
+            } else if (isSelected) {
+              bgColor = "bg-rose-50 border-rose-200 text-rose-700";
+              label = "Your Answer";
+            }
+
+            return (
+              <li key={opt.option_id} className={`p-2 rounded border text-sm ${bgColor}`}>
+                <div className="flex justify-between items-center">
+                  <span>{opt.text}</span>
+                  {label && <span className="text-xs font-medium">{label}</span>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SubmissionQA({ submission }) {
+  const [copied, setCopied] = useState(false);
+
+  const getAllCopyText = () => {
+    if (!Array.isArray(submission?.answers)) return "";
+
+    return submission.answers
+      .map((ans, index) => {
+        const question = ans.question_id;
+        let text = `Q${index + 1}. ${question?.content?.question_text}\n\n`;
+
+        if (ans.question_type === "coding") {
+          text += `Language: ${ans.programming_language?.toUpperCase() || "N/A"}\n\n`;
+          text += ans.code_solution || "No code submitted.";
+        } else {
+          text += "Answer:\n";
+          if (Array.isArray(ans.selected_options)) {
+            const selectedOptions = question?.options.filter(opt =>
+              ans.selected_options.includes(opt.option_id)
+            );
+            text += selectedOptions.map(opt => `- ${opt.text}`).join("\n") || "No option selected.";
+          }
+        }
+
+        return text;
+      })
+      .join("\n\n----------------------\n\n");
+  };
+
+  const handleCopyAll = () => {
+    navigator.clipboard.writeText(getAllCopyText());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000); // hide message after 2s
+  };
+
+  return (
+    <div className="lg:col-span-3 space-y-6 relative">
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+        {/* Header with Copy All button */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+              ✅
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">Submitted Answers</h3>
+          </div>
+          <button
+            onClick={handleCopyAll}
+            className="flex items-center text-gray-600 text-sm px-3 py-1 bg-gray-100 border border-gray-400 rounded-md hover:bg-gray-200"
+          >
+            <Copy className="w-4 h-4 mr-1 text-gray-600" /> Copy All
+          </button>
+        </div>
+
+        {/* Questions */}
+        <div className="space-y-6">
+          {Array.isArray(submission?.answers) &&
+            submission.answers.map((ans, index) => (
+              <QAItem key={ans._id} ans={ans} index={index} />
+            ))}
+        </div>
+      </div>
+
+      {/* ✅ Copied message */}
+      {copied && (
+        <div className="absolute top-6 right-6 flex items-center space-x-2 bg-green-100 text-green-700 px-4 py-3 rounded-lg shadow">
+          <CheckCircle2 className="w-4 h-4" />
+          <span className="text-sm font-medium">Copied!</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ViewFullSubmission = () => {
   const { submissionId } = useParams();
@@ -151,123 +329,8 @@ const ViewFullSubmission = () => {
             </div>
 
             {/* Submitted Answers */}
-            <div className="lg:col-span-3 space-y-6">
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                <div className="flex items-center mb-6">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800">Submitted Answers</h3>
-                </div>
-
-                <div className="space-y-6">
-                  {Array.isArray(submission?.answers) && submission.answers.map((ans, index) => {
-                    const question = ans.question_id;
-                    const selectedOptionIds = ans.selected_options || [];
-                    const isCorrect = ans.evaluation?.is_correct;
-                    const marksObtained = ans.evaluation?.marks_obtained ?? 0;
-                    const totalMarks = ans.evaluation?.total_marks ?? question?.marks ?? 0;
-                    const isCoding = ans.question_type === "coding";
-
-                    return (
-                      <div
-                        key={ans._id}
-                        className="border rounded-xl p-5 bg-white border-gray-200 shadow-sm"
-                      >
-                        {/* Question Header */}
-                        <div className="mb-2">
-                          <h4 className="text-md font-semibold text-indigo-700">
-                            Q{index + 1}. {question?.content?.question_text}
-                          </h4>
-                          <p className="text-xs text-gray-500 italic mb-1">
-                            Marks: {marksObtained}/{totalMarks}
-                          </p>
-                          <span
-                            className={`inline-block text-xs px-2 py-1 rounded font-medium ${isCorrect ? "bg-green-100 text-green-700" : "bg-rose-100 text-rose-700"
-                              }`}
-                          >
-                            {isCorrect ? "Correct" : "Incorrect"}
-                          </span>
-                        </div>
-
-                        {/* CODING QUESTION */}
-                        {isCoding ? (
-                          <div className="space-y-4 mt-3">
-                            <div className="text-sm text-gray-600">
-                              <strong>Language:</strong> {ans.programming_language?.toUpperCase() || "N/A"}
-                            </div>
-
-                            {ans.code_solution ? (
-                              <div className="bg-gray-100 border border-gray-300 rounded-md p-4 overflow-x-auto text-sm font-mono whitespace-pre-wrap text-gray-800">
-                                {ans.code_solution}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-red-500">No code submitted.</p>
-                            )}
-
-                            {question?.explanation && (
-                              <div className="text-sm text-gray-600">
-                                <strong>Explanation:</strong> {question.explanation}
-                              </div>
-                            )}
-
-                            <div className="text-xs text-gray-500">
-                              <p>Time Taken: {ans.timing?.time_taken_seconds || 0}s</p>
-                              <p>Attempts: {ans.timing?.attempt_count || 1}</p>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            {/* NON-CODING OPTIONS */}
-                            <ul className="space-y-2 mt-3">
-                              {question?.options.map((opt) => {
-                                const isSelected = selectedOptionIds.includes(opt.option_id);
-                                const isCorrectOption = opt.is_correct;
-
-                                let bgColor = "bg-white border-gray-200 text-gray-700";
-                                let label = null;
-
-                                if (isCorrectOption && isSelected) {
-                                  bgColor = "bg-green-50 border-green-200 text-green-700";
-                                  label = "Correct & Selected";
-                                } else if (isCorrectOption) {
-                                  bgColor = "bg-green-50 border-green-200 text-green-700";
-                                  label = "Correct";
-                                } else if (isSelected) {
-                                  bgColor = "bg-rose-50 border-rose-200 text-rose-700";
-                                  label = "Your Answer";
-                                }
-
-                                return (
-                                  <li
-                                    key={opt.option_id}
-                                    className={`p-2 rounded border text-sm ${bgColor}`}
-                                  >
-                                    <div className="flex justify-between items-center">
-                                      <span>{opt.text}</span>
-                                      {label && (
-                                        <span className="text-xs font-medium">{label}</span>
-                                      )}
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-
-                            {/* Explanation for non-coding */}
-                            {question?.explanation && (
-                              <div className="mt-4 text-sm text-gray-600">
-                                <strong>Explanation:</strong> {question.explanation}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                </div>
-              </div>
+            <div className="container mx-auto p-6">
+              <SubmissionQA submission={submission} />
             </div>
 
           </div>

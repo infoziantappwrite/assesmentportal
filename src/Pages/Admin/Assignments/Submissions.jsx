@@ -215,7 +215,7 @@ const Submissions = () => {
   const [filteredSubmissions, setFilteredSubmissions] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 10 });
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 1000 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFormats, setSelectedFormats] = useState({});

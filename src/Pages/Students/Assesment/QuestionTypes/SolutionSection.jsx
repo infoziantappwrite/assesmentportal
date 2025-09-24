@@ -33,7 +33,7 @@ const SolutionSection = ({
   refreshSectionStatus,
   isAnswerSubmitted
 }) => {
-  console.log(answer, selectedLanguage);
+ // console.log(answer, selectedLanguage);
   // console.log(fullDetails);
 
   // CRITICAL: Prevent code reset - stable state management
@@ -356,6 +356,7 @@ const SolutionSection = ({
 
   // API handlers
   const handleRunWithAPI = async () => {
+    console.log("Running code via API...");
     if (!hasValidCode(editorCode)) {
       showNotification('warning', 'Please write your solution code before running!');
       return;
@@ -688,6 +689,7 @@ const SolutionSection = ({
   };
 
   const handleSubmitCode = async () => {
+    console.log("Submitting code...");
     if (!hasValidCode(editorCode)) {
       showNotification('warning', 'Please write your solution code before submitting!');
       return;
