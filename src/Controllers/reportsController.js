@@ -104,7 +104,7 @@ export const getReportStatus = async (exportLogId) => {
 };
 
 // ✅ GET /reports/download/:exportLogId
-export const downloadReport = async (exportLogId) => {
+export const downloadReport = async (exportLogId, name) => {
   try {
     const response = await axiosClient.get(`/reports/download/${exportLogId}`, {
       responseType: 'blob',
@@ -114,9 +114,10 @@ export const downloadReport = async (exportLogId) => {
     // Extract filename and content type from headers
     const contentDisposition = response.headers['content-disposition'];
     const contentType = response.headers['content-type'];
-
-    let filename = 'report';
-    if (contentDisposition) {
+    let filename = name.split("_").map((word) => {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join(" ") || 'report';
+    if (contentDisposition && !name) {
       const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
       if (filenameMatch && filenameMatch[1]) {
         filename = filenameMatch[1];
