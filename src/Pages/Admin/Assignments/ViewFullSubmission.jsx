@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { calculateResultsForSubmission } from "../../../Controllers/AssignmentControllers";
 import Loader from "../../../Components/Loader";
 import { FileText, Award, BarChart3, CheckCircle,CheckCircle2, Clock, User, Target, TrendingUp, Copy } from "lucide-react";
+import SubmissionQAExport from "./SubmissionQAExport";
 
 
 function QAItem({ ans, index }) {
@@ -330,7 +331,8 @@ const ViewFullSubmission = () => {
 
             {/* Submitted Answers */}
             <div className="container mx-auto p-6">
-              <SubmissionQA submission={submission} />
+               <SubmissionQAExport submission={submission}/>
+              {/* <SubmissionQA submission={submission} /> */}
             </div>
 
           </div>

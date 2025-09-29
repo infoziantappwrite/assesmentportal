@@ -15,3 +15,10 @@
   animation: slide-in-right 0.3s ease-out;
 }
 
+/* export-safe.css */
+.pdf-export * {
+  color: rgb(31, 41, 55) !important; /* text-gray-800 */
+  background: white !important;
+  border-color: rgb(209, 213, 219) !important; /* border-gray-200 */
+}
+
