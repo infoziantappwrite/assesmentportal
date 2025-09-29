@@ -116,9 +116,24 @@ export default function SubmissionQAExport({ submission }) {
     body.push({ text: questionText, bold: true, fontSize: 12, margin: [0, 5, 0, 5] });
 
     if (ans.question_type === "coding") {
-      const code = `Language: ${ans.programming_language?.toUpperCase() || "N/A"}\n\n${ans.code_solution || "No code submitted."}`;
-      body.push({ text: code, fontSize: 10, margin: [0, 0, 0, 5], style: "code", color: "#1f2937" });
-    } else {
+    // Prepare the code text with language info and solution
+    const codeLines = [
+        `Language: ${ans.programming_language?.toUpperCase() || "N/A"}`,
+        "",
+        ans.code_solution || "No code submitted."
+    ];
+    const codeText = codeLines.join("\n");
+
+    // Push to PDF body with code style
+    body.push({
+        text: codeText,
+        fontSize: 10,
+        margin: [0, 0, 0, 5],
+        style: "code",
+        color: "#1f2937"
+    });
+}
+ else {
       const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       ans.question_id?.options.forEach((opt, i) => {
         const isSelected = ans.selected_options?.includes(opt.option_id);
@@ -151,7 +166,7 @@ export default function SubmissionQAExport({ submission }) {
     content: body,
     defaultStyle: { fontSize: 11, color: "#222222" },
     styles: {
-      code: { font: "Courier", color: "#1f2937" },
+      code: {  color: "#1f2937" },
     },
     pageMargins: [40, 40, 40, 40],
   };
